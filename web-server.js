@@ -200,8 +200,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files (index.html + assets)
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files — disable index so root '/' falls through to the route handler below
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // ── API Auth + Rate Limiting ──────────────────────────────────────
 // /api/health, /api/stats, /api/states are open — everything else requires a key
