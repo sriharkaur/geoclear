@@ -687,8 +687,11 @@ app.post('/v1/admin/merge', adminAuth, (req, res) => {
     setImmediate(() => {
       try {
         const src = require('better-sqlite3')(dbPath, { readonly: true });
-        nad.db.pragma('synchronous = NORMAL');
-        const stmt = nad.db.prepare(`INSERT OR IGNORE INTO addresses
+        const DATA_DIR_M = process.env.DATA_DIR || path.join(__dirname, 'data');
+        const mergeDb = require('better-sqlite3')(path.join(DATA_DIR_M, 'nad.db'));
+        mergeDb.pragma('journal_mode = WAL');
+        mergeDb.pragma('synchronous = NORMAL');
+        const stmt = mergeDb.prepare(`INSERT OR IGNORE INTO addresses
           (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
            latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
           SELECT nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
@@ -696,7 +699,7 @@ app.post('/v1/admin/merge', adminAuth, (req, res) => {
           FROM addresses ${where} LIMIT 10000 OFFSET ?`);
         const BATCH = 10000;
         let offset = 0, inserted = 0;
-        const go = nad.db.transaction((off) => { const r = stmt.run(off); return r.changes; });
+        const go = mergeDb.transaction((off) => { const r = stmt.run(off); return r.changes; });
         while (true) {
           const changes = go(offset);
           inserted += changes;
@@ -704,6 +707,9 @@ app.post('/v1/admin/merge', adminAuth, (req, res) => {
           if (changes === 0) break;
         }
         src.close();
+        mergeDb.pragma('synchronous = FULL');
+        mergeDb.close();
+        cache.delete('stats');
         console.log(`[merge] Done: ${inserted.toLocaleString()} new rows from ${dbPath}`);
       } catch (e) {
         console.error('[merge] Failed:', e.message);
@@ -734,11 +740,15 @@ app.post('/v1/admin/import-tsv-gz', (req, res) => {
     'zip_code','latitude','longitude','addr_type','placement','nad_source',
     'full_address','date_update','date_imported'];
 
-  const stmt = nad.db.prepare(`INSERT OR IGNORE INTO addresses
+  const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+  const writeDb  = require('better-sqlite3')(path.join(DATA_DIR, 'nad.db'));
+  writeDb.pragma('journal_mode = WAL');
+  writeDb.pragma('synchronous = NORMAL');
+  const stmt = writeDb.prepare(`INSERT OR IGNORE INTO addresses
     (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
      latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
     VALUES (${COLS.map(() => '?').join(',')})`);
-  const insertBatch = nad.db.transaction(rows => {
+  const insertBatch = writeDb.transaction(rows => {
     let n = 0;
     for (const r of rows) { stmt.run(...r); n++; }
     return n;
@@ -746,7 +756,6 @@ app.post('/v1/admin/import-tsv-gz', (req, res) => {
 
   let inserted = 0, lineCount = 0, batch = [];
   const BATCH = 10000;
-  const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
   const CACHE_PATH = path.join(DATA_DIR, 'overture.tsv.gz');
   const fs = require('fs');
 
@@ -775,7 +784,9 @@ app.post('/v1/admin/import-tsv-gz', (req, res) => {
   });
   rl.on('close', () => {
     if (batch.length) inserted += insertBatch(batch);
-    nad.db.pragma('synchronous = FULL');
+    writeDb.pragma('synchronous = FULL');
+    writeDb.close();
+    cache.delete('stats');
     console.log(`[import-tsv-gz] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows inserted`);
   });
   gunzip.on('error', e => console.error('[import-tsv-gz] gunzip error:', e.message));
@@ -795,15 +806,18 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
   const COLS = ['nad_uuid','add_number','st_name','unit','post_city','inc_muni','state',
     'zip_code','latitude','longitude','addr_type','placement','nad_source',
     'full_address','date_update','date_imported'];
-  const stmt = nad.db.prepare(`INSERT OR IGNORE INTO addresses
+
+  const writeDb2 = require('better-sqlite3')(path.join(DATA_DIR, 'nad.db'));
+  writeDb2.pragma('journal_mode = WAL');
+  writeDb2.pragma('synchronous = NORMAL');
+  const stmt2 = writeDb2.prepare(`INSERT OR IGNORE INTO addresses
     (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
      latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
     VALUES (${COLS.map(() => '?').join(',')})`);
-  const insertBatch = nad.db.transaction(rows => { let n=0; for (const r of rows) { stmt.run(...r); n++; } return n; });
+  const insertBatch2 = writeDb2.transaction(rows => { let n=0; for (const r of rows) { stmt2.run(...r); n++; } return n; });
 
   res.json({ ok: true, message: `Re-running import from ${CACHE_PATH}. Check /api/stats.` });
 
-  nad.db.pragma('synchronous = NORMAL');
   let inserted = 0, lineCount = 0, batch = [];
   const BATCH = 10000;
   const gunzip = zlib.createGunzip();
@@ -815,11 +829,13 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
     if (parts.length < COLS.length) return;
     batch.push(parts.slice(0, COLS.length).map(v => v === '' ? null : v));
     if (++lineCount % 1000000 === 0) console.log(`[import-cached] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted`);
-    if (batch.length >= BATCH) { inserted += insertBatch(batch); batch = []; }
+    if (batch.length >= BATCH) { inserted += insertBatch2(batch); batch = []; }
   });
   rl.on('close', () => {
-    if (batch.length) inserted += insertBatch(batch);
-    nad.db.pragma('synchronous = FULL');
+    if (batch.length) inserted += insertBatch2(batch);
+    writeDb2.pragma('synchronous = FULL');
+    writeDb2.close();
+    cache.delete('stats');
     console.log(`[import-cached] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows`);
   });
 });
