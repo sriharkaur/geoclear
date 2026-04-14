@@ -1515,7 +1515,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         const zip2   = d.zip_code || '';
         const county = d.county ? `<span class="tag tag-sky">${d.county}</span>` : '';
         const fips   = d.fips   ? `<span class="tag tag-dim">FIPS ${d.fips}</span>` : '';
-        const tz     = d.timezone ? `<span class="tag tag-dim">${d.timezone.replace('America/','')}</span>` : '';
+        const tzMap  = {'America/New_York':'Eastern','America/Chicago':'Central','America/Denver':'Mountain','America/Phoenix':'Mountain','America/Los_Angeles':'Pacific','America/Anchorage':'Alaska','America/Honolulu':'Hawaii','Pacific/Honolulu':'Hawaii','America/Indiana/Indianapolis':'Eastern','America/Kentucky/Louisville':'Eastern','America/Detroit':'Eastern'};
+        const tz     = d.timezone ? `<span class="tag tag-dim">${tzMap[d.timezone] || d.timezone.replace('America/','').replace('_',' ')}</span>` : '';
         const res    = d.residential === 'residential' ? `<span class="tag tag-indigo">Residential</span>`
                      : d.residential === 'commercial'  ? `<span class="tag tag-amber">Commercial</span>` : '';
         const conf   = d.verified ? `<span class="tag tag-green">✓ Verified ${d.confidence}%</span>` : '';
