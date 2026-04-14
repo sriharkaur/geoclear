@@ -14,6 +14,20 @@
 - Metered billing live: `STRIPE_METER_ID` + `STRIPE_PRICE_METERED` set to live Stripe Billing Meter (`mtr_61UVWpc...`, event `geoclear_lookup`)
 - Fix: metered tier checkout session omits `quantity` (required by Stripe for metered prices)
 - `GET /privacy` and `GET /terms` — Privacy Policy and Terms of Service pages
+- **Landing page full redesign** (`public/landing.html`) — dark navy/sky/indigo design: hero with dot grid + live terminal, metrics strip, 3×3 feature grid, how-it-works, 4-tab code examples, live demo widget, enrichment fields, pricing grid, CTA section, signup modal
+- **Route change**: `GET /` → `landing.html` (marketing page); `GET /explorer` → `index.html` (address explorer)
+- `GET /api/demo` — open demo endpoint, 10 req/hr per IP, max 3 results; powers landing page demo widget without exposing a real API key
+- Metered flush **daily cron** — in-process self-rescheduling `setTimeout` fires at midnight UTC; no external cron service needed
+- `invoice.payment_failed` webhook → SendGrid dunning email (attempt count + Stripe customer portal link)
+- `POST /v1/admin/stream-upload` — stream large files to `/data/<filename>` with no body size limit
+- `POST /v1/admin/upload-chunk` — resumable chunked upload to `/data/<filename>` at byte offset (`X-Chunk-Offset` header)
+- `POST /v1/admin/merge` — fold addresses from a staging SQLite DB into prod nad.db (Overture promotion path)
+- `customer.subscription.updated` — key tier synced on plan change (detects upgrade/downgrade by `price.id`)
+- **Landing page design refinements**: SVG pin logo mark, SVG stroke feature icons (replacing emojis), plain-white stats (removed gradient text overuse), outlined step circles, tighter copy
+- **Trust layer**: Sri Yantra ghost watermark in hero (5% opacity, screen blend, personal founder mark); data sources strip (USDOT NAD r22, Overture Maps, Census TIGER/Line, FEMA NFHL); Stripe secured badge + cancel-anytime note under pricing; uptime badge linking to `/status`
+- `UptimeRobot` monitors live: IDs 802836799 (API Health) + 802836800 (Landing Page), 5-min interval
+- `GET /api/status` — server-side UptimeRobot proxy (real uptime ratios + avg response time; key never exposed to browser)
+- `/ship` master skill — runs doc sync + commit + deploy + optional release cut in one call
 
 ---
 

@@ -164,7 +164,8 @@ All require `X-Admin-Secret` header.
 
 | Page | Path | Description |
 |------|------|-------------|
-| Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, animated coverage bars, pricing grid, free signup modal. Route updated: `/` → `landing.html`, `/explorer` → `index.html` |
+| Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, pricing grid, free signup modal. Route: `/` → `landing.html`, `/explorer` → `index.html` |
+| Trust layer | landing page | Sri Yantra ghost watermark (5% opacity, screen blend); data sources strip (USDOT NAD r22, Overture Maps, Census TIGER/Line, FEMA NFHL); Stripe secured badge + cancel-anytime note under pricing; 99.9% uptime badge → `/status` |
 | Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel |
 | Status | `/status.html` | Real UptimeRobot data via `/api/status` proxy — uptime table (1d/7d/30d/90d), live response time, external dep checks (Census, FEMA) |
 | API explorer | `/explorer` | Interactive API docs |
