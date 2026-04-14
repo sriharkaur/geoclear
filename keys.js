@@ -25,10 +25,11 @@ const crypto   = require('crypto');
 const DB_PATH = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'keys.db');
 
 const TIERS = {
-  free:       { req_per_day: 1_000,       req_per_min: 10,   bulk_max: 0,    enrichment: false, price_usd: 0    },
-  starter:    { req_per_day: 50_000,      req_per_min: 100,  bulk_max: 100,  enrichment: false, price_usd: 49   },
-  pro:        { req_per_day: 500_000,     req_per_min: 1000, bulk_max: 1000, enrichment: true,  price_usd: 249  },
-  enterprise: { req_per_day: 999_999_999, req_per_min: 9999, bulk_max: 1000, enrichment: true,  price_usd: null },
+  free:       { req_per_day: 1_000,       req_per_min: 10,   bulk_max: 0,    enrichment: false, price_usd: 0,    metered: false },
+  starter:    { req_per_day: 50_000,      req_per_min: 100,  bulk_max: 100,  enrichment: false, price_usd: 49,   metered: false },
+  pro:        { req_per_day: 500_000,     req_per_min: 1000, bulk_max: 1000, enrichment: true,  price_usd: 249,  metered: false },
+  metered:    { req_per_day: 999_999_999, req_per_min: 500,  bulk_max: 1000, enrichment: false, price_usd: null, metered: true  },
+  enterprise: { req_per_day: 999_999_999, req_per_min: 9999, bulk_max: 1000, enrichment: true,  price_usd: null, metered: false },
 };
 
 class KeyStore {
@@ -78,6 +79,12 @@ class KeyStore {
         created_at   TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `);
+
+    // ── Migrations ────────────────────────────────────────────────
+    try { this.db.exec(`ALTER TABLE api_keys ADD COLUMN stripe_subscription_id TEXT`); } catch (_) {}
+    try { this.db.exec(`ALTER TABLE api_keys ADD COLUMN stripe_customer_id TEXT`); } catch (_) {}
+    try { this.db.exec(`ALTER TABLE api_keys ADD COLUMN metered_unreported INTEGER NOT NULL DEFAULT 0`); } catch (_) {}
+    try { this.db.exec(`CREATE INDEX IF NOT EXISTS idx_keys_sub ON api_keys(stripe_subscription_id)`); } catch (_) {}
 
     // ── Security migration: hash existing plaintext keys ──────────
     // Add columns idempotently (SQLite has no IF NOT EXISTS for ADD COLUMN)
@@ -160,9 +167,10 @@ class KeyStore {
     try {
       this.db.prepare(`
         UPDATE api_keys
-        SET requests_today = requests_today + 1,
-            requests_total = requests_total + 1,
-            last_used_at   = datetime('now')
+        SET requests_today    = requests_today + 1,
+            requests_total    = requests_total + 1,
+            metered_unreported = metered_unreported + CASE WHEN tier='metered' THEN 1 ELSE 0 END,
+            last_used_at      = datetime('now')
         WHERE id = ?
       `).run(keyId);
       // Log only non-200 or sampled 1-in-10 to keep log small
@@ -180,6 +188,49 @@ class KeyStore {
       `UPDATE api_keys SET is_active=0, revoked_at=datetime('now') WHERE id=?`
     ).run(parseInt(keyId, 10));
     return info.changes > 0;
+  }
+
+  /** Upgrade an existing key's tier (or create new if none exists for email) */
+  upgradeTier(email, tier, subscriptionId = null, customerId = null) {
+    const existing = this.findByEmail(email);
+    if (existing) {
+      this.db.prepare(
+        `UPDATE api_keys SET tier=?, stripe_subscription_id=?, stripe_customer_id=COALESCE(?,stripe_customer_id) WHERE id=?`
+      ).run(tier, subscriptionId, customerId, existing.id);
+      return { upgraded: true, id: existing.id, tier };
+    }
+    return null;
+  }
+
+  /** Return all metered keys with unreported usage (for Stripe flush) */
+  getMeteredKeysWithUsage() {
+    return this.db.prepare(`
+      SELECT id, email, stripe_customer_id, metered_unreported
+      FROM api_keys
+      WHERE tier='metered' AND is_active=1 AND metered_unreported > 0
+    `).all();
+  }
+
+  /** Zero out unreported usage after successful Stripe flush */
+  markMeteredFlushed(keyId, quantity) {
+    this.db.prepare(`
+      UPDATE api_keys SET metered_unreported = MAX(0, metered_unreported - ?) WHERE id=?
+    `).run(quantity, keyId);
+  }
+
+  /** Downgrade key to free when Stripe subscription is cancelled */
+  downgradeBySubscription(subscriptionId) {
+    const info = this.db.prepare(
+      `UPDATE api_keys SET tier='free', stripe_subscription_id=NULL WHERE stripe_subscription_id=? AND is_active=1`
+    ).run(subscriptionId);
+    return info.changes > 0;
+  }
+
+  /** Find active key by email (used to prevent duplicate free signups) */
+  findByEmail(email) {
+    return this.db.prepare(
+      `SELECT id, key_prefix, tier, email, is_active FROM api_keys WHERE email=? AND is_active=1 ORDER BY created_at DESC LIMIT 1`
+    ).get(email) || null;
   }
 
   /** List all keys (admin) */

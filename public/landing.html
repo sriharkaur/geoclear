@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NAD Address Intelligence — 96M US Addresses, Verified & Enriched</title>
+  <title>GeoClear — 120M+ US Addresses, Verified & Enriched</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -265,7 +265,7 @@
 <!-- ── Nav ── -->
 <nav>
   <div class="nav-logo">
-    <span>◉</span> NAD Address Intelligence
+    <span>◉</span> GeoClear
   </div>
   <div class="nav-links">
     <a href="#features">Features</a>
@@ -281,28 +281,28 @@
 <!-- ── Hero ── -->
 <div class="hero">
   <div>
-    <div class="hero-eyebrow">🇺🇸 USDOT National Address Database</div>
-    <h1>96M US addresses.<br/><em>Verified.</em> Enriched.<br/>Instant.</h1>
-    <p>The complete US address dataset — structured, searchable, and enriched with FIPS codes, census tracts, FEMA flood zones, confidence scores, and timezone. Built on USDOT public domain data. No usage fees, no per-request billing surprises.</p>
+    <div class="hero-eyebrow">🇺🇸 US Address Intelligence API</div>
+    <h1>120M+ US addresses.<br/><em>Verified.</em> Enriched.<br/>Instant.</h1>
+    <p>The most complete US address dataset — structured, searchable, and enriched with FIPS codes, census tracts, FEMA flood zones, confidence scores, and timezone. Built on USDOT + Overture Maps data. Start free, scale as you grow.</p>
     <div class="hero-actions">
-      <a href="index.html" class="btn-primary">Open Explorer</a>
+      <a href="#pricing" class="btn-primary">Get API Key</a>
       <a href="#api" class="btn-secondary">View API Docs</a>
     </div>
     <div class="hero-stats">
       <div class="stat">
-        <div class="stat-num" id="stat-addresses">96.9M</div>
+        <div class="stat-num" id="stat-addresses">120M+</div>
         <div class="stat-label">Verified addresses</div>
       </div>
       <div class="stat">
-        <div class="stat-num">56</div>
-        <div class="stat-label">States + territories</div>
+        <div class="stat-num">50</div>
+        <div class="stat-label">States covered</div>
       </div>
       <div class="stat">
         <div class="stat-num">&lt;5ms</div>
         <div class="stat-label">P99 response time</div>
       </div>
       <div class="stat">
-        <div class="stat-num">100%</div>
+        <div class="stat-num">99.9%</div>
         <div class="stat-label">Uptime SLA (Pro+)</div>
       </div>
     </div>
@@ -396,13 +396,9 @@
           address compilation from 50-state GIS agencies. Updated quarterly.
         </p>
         <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.7;margin-top:12px;">
-          Coverage gaps in FL, MI, NJ, NV, NH (voluntary submission states) are being backfilled
-          from Overture Maps Foundation (Apache 2.0, 200M+ records).
+          Core data from the USDOT National Address Database. Gap states (FL, MI, NJ, NV, NH)
+          backfilled via Overture Maps Foundation (Apache 2.0, 200M+ records) — now at full coverage.
         </p>
-        <div class="coverage-note">
-          ⚠ FL, MI, NJ, NV, NH have near-zero NAD coverage due to state data sharing policies.
-          Overture Maps integration in progress — ETA Q3 2025.
-        </div>
       </div>
       <div class="coverage-bars" id="coverage-bars">
         <!-- Populated by JS -->
@@ -532,8 +528,9 @@ curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
 <section id="pricing">
   <div class="section-label">Pricing</div>
   <h2>Simple, transparent pricing</h2>
-  <p class="subtitle">No per-record fees. No hidden charges. Upgrade or cancel anytime.</p>
-  <div class="pricing-grid">
+  <p class="subtitle">Start free. Pay as you grow. Cancel anytime.</p>
+  <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+
     <div class="pricing-card">
       <div class="pricing-tier">Free</div>
       <div class="pricing-price"><sup>$</sup>0</div>
@@ -544,12 +541,17 @@ curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
         <li>Confidence scores</li>
         <li>County FIPS codes</li>
         <li>Autocomplete (10 req/min)</li>
-        <li class="disabled">Bulk (100+ addresses)</li>
+        <li class="disabled">Bulk addresses</li>
         <li class="disabled">Census tract + FEMA</li>
-        <li class="disabled">SLA guarantee</li>
       </ul>
-      <a href="portal.html" class="pricing-cta">Get Free Key</a>
+      <div id="free-signup-area">
+        <input id="free-email" type="email" placeholder="you@company.com"
+          style="width:100%;padding:10px 12px;margin-bottom:8px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:0.9rem;box-sizing:border-box;"/>
+        <button onclick="getFreeKey()" class="pricing-cta" style="width:100%;cursor:pointer;border:none;">Get Free Key</button>
+        <div id="free-msg" style="font-size:0.8rem;margin-top:8px;min-height:18px;"></div>
+      </div>
     </div>
+
     <div class="pricing-card">
       <div class="pricing-tier">Starter</div>
       <div class="pricing-price"><sup>$</sup>49</div>
@@ -563,8 +565,9 @@ curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
         <li class="disabled">Census tract + FEMA</li>
         <li class="disabled">99.9% uptime SLA</li>
       </ul>
-      <a href="portal.html" class="pricing-cta">Start Trial</a>
+      <button onclick="startCheckout('starter')" class="pricing-cta" style="width:100%;cursor:pointer;border:none;">Start Now</button>
     </div>
+
     <div class="pricing-card featured">
       <div class="pricing-badge">Most Popular</div>
       <div class="pricing-tier">Pro</div>
@@ -579,9 +582,26 @@ curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
         <li>99.9% uptime SLA</li>
         <li>Priority support</li>
       </ul>
-      <a href="portal.html" class="pricing-cta">Start Trial</a>
+      <button onclick="startCheckout('pro')" class="pricing-cta" style="width:100%;cursor:pointer;border:none;">Start Now</button>
     </div>
+
     <div class="pricing-card">
+      <div class="pricing-tier">Pay-as-you-go</div>
+      <div class="pricing-price" style="font-size:1.6rem;"><sup style="font-size:0.9rem">$</sup>0.001</div>
+      <div class="pricing-period">per lookup</div>
+      <div class="pricing-limit">No daily cap</div>
+      <ul class="pricing-features">
+        <li>Bulk up to 1,000 addresses</li>
+        <li>500 req/min rate limit</li>
+        <li>Billed monthly by usage</li>
+        <li>No commitment</li>
+        <li class="disabled">Census tract + FEMA</li>
+        <li class="disabled">99.9% uptime SLA</li>
+      </ul>
+      <button onclick="startCheckout('metered')" class="pricing-cta" style="width:100%;cursor:pointer;border:none;">Start Now</button>
+    </div>
+
+    <div class="pricing-card" style="grid-column:span 1;">
       <div class="pricing-tier">Enterprise</div>
       <div class="pricing-price">Custom</div>
       <div class="pricing-period">annual contract</div>
@@ -590,23 +610,77 @@ curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
         <li>Everything in Pro</li>
         <li>Custom rate limits</li>
         <li>Dedicated instance</li>
-        <li>On-prem deployment</li>
         <li>SLA with credits</li>
         <li>Slack / Teams support</li>
+        <li>On-prem option</li>
       </ul>
-      <a href="mailto:enterprise@nad.example.com" class="pricing-cta">Contact Sales</a>
+      <a href="mailto:enterprise@geoclear.io" class="pricing-cta">Contact Sales</a>
     </div>
+  </div>
+
+  <div id="checkout-area" style="display:none;margin-top:32px;max-width:400px;margin-left:auto;margin-right:auto;text-align:center;">
+    <input id="checkout-email" type="email" placeholder="your@email.com"
+      style="width:100%;padding:12px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:1rem;box-sizing:border-box;margin-bottom:12px;"/>
+    <button id="checkout-btn" class="pricing-cta" style="width:100%;cursor:pointer;border:none;padding:14px;font-size:1rem;">Continue to Payment</button>
+    <div id="checkout-msg" style="font-size:0.85rem;margin-top:10px;color:#8b949e;min-height:20px;"></div>
   </div>
 </section>
 
+<script>
+let selectedTier = null;
+
+async function getFreeKey() {
+  const email = document.getElementById('free-email').value.trim();
+  const msg   = document.getElementById('free-msg');
+  if (!email) { msg.style.color='#f85149'; msg.textContent='Enter your email.'; return; }
+  msg.style.color='#8b949e'; msg.textContent='Sending…';
+  try {
+    const r = await fetch('/v1/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    const d = await r.json();
+    if (d.ok) {
+      msg.style.color='#2ea043';
+      msg.textContent='Check your email for your API key!';
+      document.getElementById('free-email').value='';
+    } else {
+      msg.style.color='#f85149';
+      msg.textContent = d.error || 'Something went wrong.';
+    }
+  } catch(e) { msg.style.color='#f85149'; msg.textContent='Network error.'; }
+}
+
+function startCheckout(tier) {
+  selectedTier = tier;
+  document.getElementById('checkout-area').style.display='block';
+  document.getElementById('checkout-area').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('checkout-btn').textContent = `Continue to Payment — ${tier.charAt(0).toUpperCase()+tier.slice(1)}`;
+  document.getElementById('checkout-email').focus();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('checkout-btn');
+  if (btn) btn.addEventListener('click', async () => {
+    const email = document.getElementById('checkout-email').value.trim();
+    const msg   = document.getElementById('checkout-msg');
+    if (!email) { msg.style.color='#f85149'; msg.textContent='Enter your email.'; return; }
+    msg.style.color='#8b949e'; msg.textContent='Redirecting to payment…';
+    try {
+      const r = await fetch('/v1/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, tier: selectedTier}) });
+      const d = await r.json();
+      if (d.ok) { window.location.href = d.data.url; }
+      else { msg.style.color='#f85149'; msg.textContent = d.error || 'Something went wrong.'; }
+    } catch(e) { msg.style.color='#f85149'; msg.textContent='Network error.'; }
+  });
+});
+</script>
+
 <!-- ── Footer ── -->
 <footer>
-  <div>© 2025 NAD Address Intelligence. Data: USDOT National Address Database (public domain) + Overture Maps (CDLA-2.0).</div>
+  <div>© 2026 GeoClear. Data: USDOT National Address Database (public domain) + Overture Maps (CDLA-2.0).</div>
   <div style="display:flex;gap:24px;">
     <a href="index.html">Explorer</a>
-    <a href="portal.html">Portal</a>
     <a href="status.html">Status</a>
     <a href="/api/health">Health</a>
+    <a href="mailto:enterprise@geoclear.io">Enterprise</a>
   </div>
 </footer>
 

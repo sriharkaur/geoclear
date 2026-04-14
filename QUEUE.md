@@ -27,8 +27,11 @@ _Last updated: 2026-04-13_
   - `NAD_ALLOWED_ORIGINS=https://geoclear.io`
 
 ### Stripe Setup
-- [ ] Create Stripe products: **Starter $49/mo** + **Pro $249/mo** → copy Price IDs
-- [ ] Create Stripe webhook → URL: `https://geoclear.io/v1/webhook/stripe` → event: `checkout.session.completed`
+- [x] Create Stripe products: **Starter $49/mo** + **Pro $249/mo** → Price IDs in `.zshrc` ✅
+- [x] Create Stripe webhook → URL: `https://geoclear.io/v1/webhook/stripe` → events wired ✅
+- [x] Free tier self-serve signup (`POST /v1/signup`) ✅
+- [x] Handle `customer.subscription.deleted` webhook → downgrade key to free on cancel ✅
+- [x] Handle upgrade flow → existing key upgraded in place, no duplicate key issued ✅
 
 ### DNS (Cloudflare — already managing geoclear.io)
 - [ ] After Render deploy: copy the `.onrender.com` service URL
@@ -72,7 +75,7 @@ _Last updated: 2026-04-13_
 
 ### Infrastructure
 - [ ] API key management portal (self-serve signup → get key in <60s)
-- [ ] Stripe metered billing wired to usage
+- [x] Per-lookup metered billing: `metered` tier in keys.js, Stripe usage records, flush via `POST /v1/admin/metered/flush` ✅
 - [ ] Usage dashboard for API customers
 - [ ] Rate limit tiers per API key (Starter vs Growth vs Enterprise)
 - [ ] Status page (UptimeRobot — free tier fine to start)

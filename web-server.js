@@ -40,9 +40,57 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_PRICES         = {
   starter: process.env.STRIPE_PRICE_STARTER || '',
   pro:     process.env.STRIPE_PRICE_PRO     || '',
+  metered: process.env.STRIPE_PRICE_METERED || '',
 };
-const BASE_URL = process.env.NAD_BASE_URL || `http://localhost:${PORT}`;
-const stripe   = STRIPE_SECRET ? require('stripe')(STRIPE_SECRET) : null;
+const STRIPE_METER_ID    = process.env.STRIPE_METER_ID       || '';
+const BASE_URL           = process.env.NAD_BASE_URL           || `http://localhost:${PORT}`;
+const SENDGRID_API_KEY   = process.env.SENDGRID_API_KEY       || '';
+const FROM_EMAIL         = process.env.GEOCLEAR_FROM_EMAIL    || 'noreply@geoclear.io';
+const stripe             = STRIPE_SECRET ? require('stripe')(STRIPE_SECRET) : null;
+
+// ── SendGrid email helper ─────────────────────────────────────────
+async function sendEmail(to, subject, html) {
+  if (!SENDGRID_API_KEY) { console.warn('[email] SENDGRID_API_KEY not set — skipping email to', to); return; }
+  try {
+    const https = require('https');
+    const body  = JSON.stringify({
+      personalizations: [{ to: [{ email: to }] }],
+      from:    { email: FROM_EMAIL, name: 'GeoClear' },
+      subject,
+      content: [{ type: 'text/html', value: html }],
+    });
+    await new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'api.sendgrid.com',
+        path:     '/v3/mail/send',
+        method:   'POST',
+        headers:  { 'Authorization': `Bearer ${SENDGRID_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      }, (res) => {
+        res.resume();
+        res.statusCode < 300 ? resolve() : reject(new Error(`SendGrid ${res.statusCode}`));
+      });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+    console.log(`[email] Sent "${subject}" → ${to}`);
+  } catch (e) {
+    console.error('[email] Failed:', e.message);
+  }
+}
+
+function keyEmail(apiKey, tier, limits) {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0d1117;color:#e6edf3;border-radius:8px;">
+      <h2 style="color:#2ea043;margin:0 0 8px">Your GeoClear API key</h2>
+      <p style="color:#8b949e;margin:0 0 24px">You're on the <strong style="color:#e6edf3">${tier}</strong> tier.</p>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:16px;font-family:monospace;font-size:14px;word-break:break-all;color:#2ea043;">${apiKey}</div>
+      <p style="color:#8b949e;margin:24px 0 8px;font-size:13px;">Limits: <strong style="color:#e6edf3">${limits.req_per_day.toLocaleString()} req/day</strong> · <strong style="color:#e6edf3">${limits.req_per_min} req/min</strong></p>
+      <p style="color:#8b949e;font-size:13px;">Pass it as <code style="background:#21262d;padding:2px 6px;border-radius:4px;">X-Api-Key: ${apiKey.slice(0,24)}…</code> on every request.</p>
+      <hr style="border:none;border-top:1px solid #30363d;margin:24px 0"/>
+      <p style="color:#8b949e;font-size:12px;">Questions? Reply to this email or visit <a href="https://geoclear.io" style="color:#388bfd;">geoclear.io</a></p>
+    </div>`;
+}
 
 // Simple in-memory cache for expensive queries
 const cache = new Map();
@@ -68,17 +116,40 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
     return res.status(400).send(`Webhook Error: ${e.message}`);
   }
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const { tier } = session.metadata || {};
-    const email    = session.customer_details?.email || session.customer_email;
+    const session      = event.data.object;
+    const { tier }     = session.metadata || {};
+    const email        = session.customer_details?.email || session.customer_email;
+    const subId        = session.subscription || null;
+    const customerId   = session.customer || null;
     if (email && tier) {
       try {
-        const result = keys.generate({ email, tier, notes: `stripe:${session.id}` });
-        keys.completeStripeSession(session.id, result.key);
-        console.log(`[Stripe] Key issued for ${email} (${tier}): ${result.key.slice(0, 24)}…`);
+        const upgraded = keys.upgradeTier(email.toLowerCase(), tier, subId, customerId);
+        if (upgraded) {
+          console.log(`[Stripe] Upgraded existing key for ${email} → ${tier}`);
+          keys.completeStripeSession(session.id, `upgraded:${upgraded.id}`);
+          const { TIERS } = require('./keys.js');
+          sendEmail(email, 'Your GeoClear plan has been upgraded', keyEmail('(your existing key — unchanged)', tier, TIERS[tier] || TIERS.free)).catch(() => {});
+        } else {
+          const result = keys.generate({ email: email.toLowerCase(), tier, notes: `stripe:${session.id}` });
+          keys.upgradeTier(email.toLowerCase(), tier, subId, customerId);
+          keys.completeStripeSession(session.id, result.key);
+          console.log(`[Stripe] New key issued for ${email} (${tier}): ${result.key.slice(0, 24)}…`);
+          sendEmail(email, 'Your GeoClear API key', keyEmail(result.key, tier, result.limits)).catch(() => {});
+        }
       } catch (e) {
         console.error('[Stripe] Key generation failed:', e.message);
       }
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const sub   = event.data.object;
+    const subId = sub.id;
+    const downgraded = keys.downgradeBySubscription(subId);
+    if (downgraded) {
+      console.log(`[Stripe] Subscription ${subId} cancelled → key downgraded to free`);
+    } else {
+      console.warn(`[Stripe] Subscription ${subId} cancelled but no matching key found`);
     }
   }
   res.json({ received: true });
@@ -147,8 +218,6 @@ const apiLimiter = rateLimit({
   keyGenerator: (req) => `k:${req.keyInfo?.key_id ?? req.ip}`,
   standardHeaders: true,
   legacyHeaders: false,
-  // IP fallback in keyGenerator is never reached — apiAuth rejects unauthenticated requests first
-  validate: { keyGeneratorIpFallback: false },
   handler: (req, res) => {
     const lim  = req.keyInfo?.limits?.req_per_min ?? 10;
     const tier = req.keyInfo?.tier ?? 'free';
@@ -420,6 +489,32 @@ app.delete('/v1/admin/keys/:id', adminAuth, (req, res) => {
   if (!revoked) return err(res, 'Key not found.', 404);
   ok(res, { revoked: true, id: parseInt(req.params.id, 10) });
 });
+// Flush metered usage to Stripe (called by daily cron or manually)
+app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
+  if (!stripe || !STRIPE_METER_ID) {
+    return err(res, 'Stripe or meter not configured.', 503);
+  }
+  const rows   = keys.getMeteredKeysWithUsage();
+  const results = [];
+  for (const row of rows) {
+    if (!row.stripe_customer_id) {
+      results.push({ email: row.email, skipped: true, reason: 'no stripe_customer_id' });
+      continue;
+    }
+    try {
+      await stripe.billing.meterEvents.create({
+        event_name:  'geoclear_lookup',
+        payload:     { value: String(row.metered_unreported), stripe_customer_id: row.stripe_customer_id },
+      });
+      keys.markMeteredFlushed(row.id, row.metered_unreported);
+      results.push({ email: row.email, reported: row.metered_unreported });
+    } catch (e) {
+      results.push({ email: row.email, error: e.message });
+    }
+  }
+  ok(res, { flushed: results.length, results });
+});
+
 app.get('/v1/me', (req, res) => {
   const rawKey = req.headers['x-api-key'] || req.query.key;
   const info   = keys.validate(rawKey);
@@ -434,13 +529,44 @@ app.get('/v1/me', (req, res) => {
   });
 });
 
+// ── Free Tier Signup ──────────────────────────────────────────────
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ ok: false, error: 'Too many signup attempts. Try again in an hour.' }),
+});
+
+app.post('/v1/signup', signupLimiter, (req, res) => {
+  const { email } = req.body || {};
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return err(res, 'Valid email required.');
+  }
+  const existing = keys.findByEmail(email.toLowerCase());
+  if (existing) {
+    return err(res, 'An API key already exists for this email. Use /v1/me to check your key status.', 409);
+  }
+  const result = keys.generate({ email: email.toLowerCase(), tier: 'free' });
+  sendEmail(email, 'Your GeoClear API key', keyEmail(result.key, result.tier, result.limits)).catch(() => {});
+  res.status(201).json({
+    ok: true,
+    data: {
+      api_key:  result.key,
+      tier:     result.tier,
+      email:    result.email,
+      limits:   result.limits,
+    },
+  });
+});
+
 // ── Stripe Checkout ────────────────────────────────────────────────
 // Create a Stripe Checkout Session (public endpoint — no API key required)
 app.post('/v1/checkout', async (req, res) => {
   if (!stripe) return err(res, 'Stripe not configured. Set STRIPE_SECRET_KEY env var.', 503);
   const { email, tier } = req.body || {};
   if (!email || !tier) return err(res, 'email and tier required.');
-  if (!['starter', 'pro'].includes(tier)) return err(res, 'tier must be "starter" or "pro".');
+  if (!['starter', 'pro', 'metered'].includes(tier)) return err(res, 'tier must be "starter", "pro", or "metered".');
   const priceId = STRIPE_PRICES[tier];
   if (!priceId) return err(res, `Stripe price not configured for ${tier}. Set STRIPE_PRICE_${tier.toUpperCase()} env var.`, 503);
   try {
