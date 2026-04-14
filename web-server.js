@@ -46,8 +46,10 @@ const STRIPE_PRICES         = {
 };
 const STRIPE_METER_ID    = process.env.STRIPE_METER_ID       || '';
 const BASE_URL           = process.env.NAD_BASE_URL           || `http://localhost:${PORT}`;
-const SENDGRID_API_KEY   = process.env.SENDGRID_API_KEY       || '';
-const FROM_EMAIL         = process.env.GEOCLEAR_FROM_EMAIL    || 'noreply@geoclear.io';
+const SENDGRID_API_KEY       = process.env.SENDGRID_API_KEY       || '';
+const FROM_EMAIL             = process.env.GEOCLEAR_FROM_EMAIL    || 'noreply@geoclear.io';
+const UPTIMEROBOT_API_KEY    = process.env.UPTIMEROBOT_API_KEY    || '';
+const UPTIMEROBOT_MONITOR_IDS = '802836799-802836800'; // GeoClear API Health + Landing Page
 const stripe             = STRIPE_SECRET ? require('stripe')(STRIPE_SECRET) : null;
 
 // ── SendGrid email helper ─────────────────────────────────────────
@@ -278,7 +280,7 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // ── API Auth + Rate Limiting ──────────────────────────────────────
 // /api/health, /api/stats, /api/states are open — everything else requires a key
-const OPEN_API_PATHS = new Set(['/health', '/stats', '/states', '/demo']);
+const OPEN_API_PATHS = new Set(['/health', '/stats', '/states', '/demo', '/status']);
 
 function apiAuth(req, res, next) {
   const rawKey = req.headers['x-api-key'] || req.query.key;
@@ -553,6 +555,53 @@ app.get('/api/health', (req, res) => {
   if (!nad.isReady()) return res.json({ status: 'starting', addresses: null, version: '1.0.0' });
   const hit = cache.get('stats');
   res.json({ status: 'ok', addresses: hit ? hit.val.addresses : null, version: '1.0.0' });
+});
+
+// UptimeRobot proxy — returns real uptime data for GeoClear monitors only.
+// API key stays server-side; browser never sees it.
+app.get('/api/status', async (req, res) => {
+  if (!UPTIMEROBOT_API_KEY) return res.json({ ok: false, error: 'Uptime monitoring not configured' });
+  try {
+    const body = new URLSearchParams({
+      api_key: UPTIMEROBOT_API_KEY,
+      monitors: UPTIMEROBOT_MONITOR_IDS,
+      format: 'json',
+      custom_uptime_ratios: '1-7-30-90',
+      response_times: '1',
+      response_times_limit: '24',
+    });
+    const r = await fetch('https://api.uptimerobot.com/v2/getMonitors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await r.json();
+    if (data.stat !== 'ok') return res.status(502).json({ ok: false, error: 'UptimeRobot error' });
+
+    const monitors = data.monitors.map(m => {
+      const ratios = (m.custom_uptime_ratio || '').split('-').map(Number);
+      const avgResponseMs = m.response_times && m.response_times.length
+        ? Math.round(m.response_times.reduce((s, t) => s + t.value, 0) / m.response_times.length)
+        : null;
+      return {
+        id: m.id,
+        name: m.friendly_name,
+        url: m.url,
+        status: m.status, // 2=up, 9=down, 1=unknown
+        uptime_1d:  ratios[0] ?? null,
+        uptime_7d:  ratios[1] ?? null,
+        uptime_30d: ratios[2] ?? null,
+        uptime_90d: ratios[3] ?? null,
+        avg_response_ms: avgResponseMs,
+        interval_s: m.interval,
+      };
+    });
+
+    res.json({ ok: true, monitors });
+  } catch (e) {
+    res.status(502).json({ ok: false, error: 'Failed to reach UptimeRobot' });
+  }
 });
 
 // ── Key management (portal routes) ───────────────────────────────
