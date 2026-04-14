@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-13_
+_Last updated: 2026-04-14 (session 5)_
 
 ---
 
@@ -20,9 +20,14 @@ _Last updated: 2026-04-13_
 - [x] Metered billing live: `STRIPE_METER_ID` + `STRIPE_PRICE_METERED` (live meter) ✅
 - [x] Free tier self-serve signup (`POST /v1/signup`) ✅
 - [x] `customer.subscription.deleted` → downgrade to free ✅
+- [x] `customer.subscription.updated` → key tier synced on plan change ✅
 - [x] `invoice.payment_failed` → dunning email sent ✅
 - [x] Upgrade-in-place — existing key upgraded, no duplicate issued ✅
-- [ ] `customer.subscription.updated` handler (plan-change detection) — **PENDING**
+
+### Legal & Trust — ALL DONE ✅
+- [x] Privacy Policy — `GET /privacy` ✅
+- [x] Terms of Service — `GET /terms` ✅
+- [x] Status page — UptimeRobot monitors live, shown on landing page + `/status.html` ✅
 
 ---
 
@@ -30,57 +35,78 @@ _Last updated: 2026-04-13_
 
 - [x] Overture Maps gap-fill — FL, MI, NJ, NV, NH ✅
 - [x] `inc_muni` vs `post_city` bug fixed ✅
-- [x] Address confidence score 0–100 on every response (`confidenceScore()` in enrich.js) ✅
-- [x] Fuzzy / typo matching — `?fuzzy=true` on `/api/address` (`findAddressFuzzy` in query.js) ✅
-- [ ] **Overture gap-fill full run** — `overture-import.js` exists; run locally against nad.db, then rsync delta to Render. Goal: 120M → ~130–135M addresses.
-- [ ] Fill remaining state gaps via state GIS portals (GA, CA partial)
+- [x] Address confidence score 0–100 on every response ✅
+- [x] Fuzzy / typo matching — `?fuzzy=true` on `/api/address` ✅
+- [x] Staging Render service (`srv-d7f6rh58nd3s73cve8dg`, `geoclear-staging.onrender.com`) — 100GB disk, autoDeploy OFF — data import environment, no local disk needed ✅
+- [x] `create-dev-db.js` — generates `data/dev.db` (572MB, 20K addrs/state) for local dev without 91GB nad.db ✅
+- [x] `POST /v1/admin/stream-upload` — streams large files to `/data` without buffering ✅
+- [x] `POST /v1/admin/upload-chunk` — resumable chunked upload for 37GB+ files (bypasses Render HTTP timeout) ✅
+- [x] `POST /v1/admin/merge` — merges a SQLite DB into nad.db in background (INSERT OR IGNORE, 10K-row batches) ✅
+- [x] `sync-staging-to-prod.sh` — documents and guides staging → prod data promotion workflow ✅
+- [x] **Overture full gap-fill import** — 64.9M addresses across FL(16.1M), CA(27.1M), MI(4.7M), NJ(4.9M), PA(2.3M), MS(2.3M), SC, GA, SD, HI, LA, NV, NH + more — in `overture-additions.db` (37GB) ✅
+- [ ] **Merge Overture data into prod** — upload `overture-additions.db` → `POST /v1/admin/merge` → 120M + 64.9M = ~185M addresses. **IN PROGRESS** (chunked upload running)
+- [ ] Fill remaining state gaps via state GIS portals (AL, AK — not in Overture)
 - [ ] Address disambiguation — rank candidates when multiple "123 Main St" exist
 - [ ] Coverage declaration per response — which states have full/partial/no coverage
+- [ ] OpenAddresses import (~50M additional US addresses, new source)
+- [ ] NAD r23 quarterly update (~June 2026) — run on staging, merge to prod
 
 ---
 
 ## T1 — REVENUE UNLOCKING (first paying customers)
 
-### Data Enrichment — DONE ✅
-- [x] Census tract + block group — via Census Bureau Geocoder API (`/api/enrich`) ✅
-- [x] County FIPS code — `countyFips()` in enrich.js, on every `/api/address` response ✅
-- [x] FEMA flood zone — via FEMA NFHL API (`/api/enrich`) ✅
-- [x] RDI — `residentialFlag()` in enrich.js, on every `/api/address` response ✅
-- [x] Timezone — `timezone()` in enrich.js, on every `/api/address` response ✅
+### Data Enrichment — ALL DONE ✅
+- [x] Census tract + block group — `GET /api/enrich` ✅
+- [x] County FIPS code — on every `/api/address` response ✅
+- [x] FEMA flood zone — `GET /api/enrich` ✅
+- [x] RDI — residential/commercial flag on every `/api/address` response ✅
+- [x] Timezone — on every `/api/address` response ✅
 - [ ] FCC broadband tier by address ($42B BEAD program demand)
 
-### API Completeness — MOSTLY DONE
+### API Completeness — MOSTLY DONE ✅
 - [x] Autocomplete / typeahead — `GET /api/suggest` ✅
 - [x] Proximity / reverse geocoding — `GET /api/near` + `GET /api/enrich` ✅
-- [x] Bulk address verify — `POST /api/address/bulk` (max 1,000) ✅
+- [x] Bulk address verify — `POST /api/address/bulk` (max 1,000 sync) ✅
 - [ ] Address standardization (normalize to USPS format)
 - [ ] Bulk async + webhooks (for 10M+ record jobs — current bulk is sync, max 1K)
 - [ ] CSV upload → enriched CSV download (web UI, no-code users)
 
 ### Infrastructure — MOSTLY DONE
-- [x] Metered flush cron — self-scheduling `setTimeout` at midnight UTC in server process ✅
-- [x] Per-lookup metered billing — `metered` tier, Stripe Billing Meter, flush endpoint ✅
-- [x] Rate limit tiers per API key — `req_per_min` + `req_per_day` enforced per-key ✅
-- [x] API key portal — `public/portal.html` (signup, upgrade, key display) ✅
-- [x] Landing page with live demo widget — `public/index.html` ✅
-- [ ] Usage dashboard for API customers (show their own usage over time)
-- [ ] Status page (UptimeRobot — free tier fine to start)
+- [x] Metered flush cron — self-scheduling at midnight UTC in server process ✅
+- [x] Per-lookup metered billing — `metered` tier, Stripe Billing Meter ✅
+- [x] Rate limit tiers per API key — `req_per_min` + `req_per_day` per-key ✅
+- [x] API key portal — `public/portal.html` ✅
+- [x] Landing page with live demo widget — `public/landing.html` ✅
+- [x] Status page — UptimeRobot + `/api/status` proxy + `/status.html` ✅
+- [x] OpenAPI spec — `openapi.yaml` at repo root (OAS 3.0, all public endpoints) ✅
+- [ ] Usage dashboard for API customers (self-serve usage over time)
+
+### Launch Announcement — Pre-HN Gates
+- [ ] **Docs page** `/docs` — full endpoint reference with curl + Node.js examples. Blocker for HN post.
+- [ ] **15 warm outreach emails** — PropTech/Mortgage SaaS (Encompass, BytePro, Maxwell, Blend, Qualia, Snapdocs). Template in `AddressAPIBusinessGTM.md`. Include a live API key. Goal: 3 paying customers before HN.
+- [ ] **Hacker News Show HN** — Tuesday or Wednesday 9am PT after docs are live. Title + first-comment template in `AddressAPIBusinessGTM.md`.
+- [ ] **Product Hunt** — same day as HN.
+
+### Passive Channels (set up once)
+- [ ] **RapidAPI listing** — `openapi.yaml` ready. Steps: rapidapi.com → Provider Hub → Add New API → upload `openapi.yaml` → base URL `https://geoclear.io` → auth: `X-Api-Key`.
+- [ ] **G2 listing** — Category: "Address Verification Software". Content in `AddressAPIBusinessGTM.md`.
+- [ ] **Capterra listing** — same content as G2. Category: "Address Verification".
+- [ ] **SEO** — blog post targeting "SmartyStreets alternative", "US address verification API". Write after first 3 customers.
 
 ---
 
 ## T2 — DIFFERENTIATION (days 30–90)
 
 ### Distribution
-- [ ] Node.js SDK (`npm install geoclear`) 
+- [ ] Node.js SDK (`npm install geoclear`)
 - [ ] Python SDK (`pip install geoclear`)
-- [ ] RapidAPI listing
 - [ ] Zapier integration ("Verify US address" action)
 - [ ] Shopify App
 - [ ] WordPress / WooCommerce plugin
 - [ ] Salesforce AppExchange listing
 
 ### Enterprise
-- [ ] 99.9% uptime SLA + credits policy (legal doc, 1 day)
+- [ ] 99.9% uptime SLA + credits policy (legal doc)
 - [ ] SOC 2 Type II audit — start process now (takes 6–12 months)
 - [ ] NCOA integration (address change detection — 40M Americans move/year)
 - [ ] Mortgage compliance bundle (HMDA + CRA + census tract + FIPS + flood in 1 call)
@@ -122,13 +148,13 @@ _Last updated: 2026-04-13_
 
 | Item | Status |
 |------|--------|
-| geoclear.io DNS | ✅ Cloudflare (christina/sage nameservers) |
-| auduu.com | ✅ Transfer to Cloudflare initiated (5–7 days) |
+| geoclear.io DNS | ✅ Cloudflare CNAME → geoclear.onrender.com |
+| Render prod | ✅ Live — `srv-d7ep7bfavr4c73d46gng` (`geoclear.onrender.com`) |
+| Render staging | ✅ Live — `srv-d7f6rh58nd3s73cve8dg` (`geoclear-staging.onrender.com`) — 100GB disk, autoDeploy OFF |
+| GitHub repo | ✅ `sriharkaur/geoclear` — auto-deploys on push |
+| auduu.com | ✅ Transfer to Cloudflare initiated |
 | auduu.ai | 🔒 Locked at GoDaddy, auto-renew OFF, expires Feb 25 2027 |
 | axiomprotocol.ai | 🔒 Locked at GoDaddy, auto-renew OFF, expires Jan 13 2028 |
-| Clerk/SendGrid CNAMEs (axiomprotocol.ai) | ✅ All 6 added to Cloudflare |
-| Render deployment | ⏸ Not yet |
-| GitHub repo | ⏸ Not yet |
 
 ---
 
@@ -136,10 +162,10 @@ _Last updated: 2026-04-13_
 
 | Tier | Price | Lookups/mo |
 |------|-------|-----------|
-| Free | $0 | 10K |
-| Starter | $49/mo | 50K |
-| Growth | $249/mo | 500K |
-| Scale | $999/mo | 5M |
+| Free | $0 | 10K/day |
+| Starter | $49/mo | 50K/day |
+| Growth | $249/mo | 500K/day |
+| Scale | $999/mo | 5M/day |
 | Enterprise | Custom | Unlimited |
 | Data License | $10K–$100K/yr | Local copy |
 
@@ -147,4 +173,4 @@ _Last updated: 2026-04-13_
 
 ---
 
-_Reference docs: `AddressQueue.md` (full backlog with CEO review), `AddressArchitecture.md`, `AddressAPIBusinessGTM.md`, `AddressBusinessCases.md`, `LAUNCH-CHECKLIST.md`_
+_Reference docs: `FEATURES.md` (what's built), `RELEASES.md` (version history), `AddressAPIBusinessGTM.md` (GTM playbook)_
