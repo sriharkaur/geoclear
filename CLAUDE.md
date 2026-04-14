@@ -11,6 +11,21 @@
 
 ---
 
+## CRITICAL BEHAVIOR RULE — Auto-Update Docs After Every Change
+
+**After implementing any feature, fix, or infrastructure change — without being asked — always:**
+
+1. Update `FEATURES.md` — add to the right section; remove from "Not yet built" if it was there
+2. Add a bullet to `RELEASES.md` → `## Unreleased`
+3. Update `ARCHITECTURE.md` — endpoint tables, tier table, "Not Yet Built" list
+4. Check off the item in `QUEUE.md` with ✅
+
+**After a deploy** — without being asked — run the smoke test (`curl https://geoclear.io/api/health`) and report pass/fail.
+
+**Never declare a task done** without having updated these docs. The docs are part of the definition of done.
+
+---
+
 ## CRITICAL BEHAVIOR RULE — No Fabrication
 
 **NEVER make up, estimate, or guess facts presented as if real.** This includes:
