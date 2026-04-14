@@ -21,7 +21,7 @@
 const path     = require('path');
 const Database = require('better-sqlite3');
 
-const NAD_DIR = path.join(__dirname, 'data');
+const NAD_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DEFAULT_DB = path.join(NAD_DIR, 'nad.db');
 
 // ---------------------------------------------------------------------------

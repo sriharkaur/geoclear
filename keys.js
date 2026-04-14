@@ -21,7 +21,7 @@ const path     = require('path');
 const Database = require('better-sqlite3');
 const crypto   = require('crypto');
 
-const DB_PATH = path.join(__dirname, 'data', 'keys.db');
+const DB_PATH = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'keys.db');
 
 const TIERS = {
   free:       { req_per_day: 1_000,       req_per_min: 10,   bulk_max: 0,    enrichment: false, price_usd: 0    },
