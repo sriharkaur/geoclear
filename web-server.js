@@ -714,6 +714,20 @@ app.post('/v1/admin/merge', adminAuth, (req, res) => {
   }
 });
 
+// DELETE /v1/admin/data-file  body: { filename }
+// Deletes a file from /data/<filename>. Use to clean up partial uploads.
+app.delete('/v1/admin/data-file', adminAuth, (req, res) => {
+  const { filename } = req.body || {};
+  if (!filename || filename.includes('/') || filename.includes('..'))
+    return err(res, 'Invalid filename');
+  const fs   = require('fs');
+  const dest = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), filename);
+  if (!fs.existsSync(dest)) return err(res, `File not found: ${dest}`, 404);
+  fs.unlinkSync(dest);
+  console.log(`[data-file] Deleted ${dest}`);
+  res.json({ ok: true, deleted: dest });
+});
+
 // Open demo endpoint — no API key, IP rate-limited (10 req/hr)
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
