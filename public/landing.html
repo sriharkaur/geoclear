@@ -1475,7 +1475,14 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     results.innerHTML = '<div class="demo-placeholder" style="color:var(--sky)">Searching…</div>';
 
     try {
-      const params = new URLSearchParams({ street: streetVal, limit: 3 });
+      // Split "1600 Pennsylvania Ave" → number=1600, street=Pennsylvania
+      let streetName = streetVal, houseNumber = '';
+      const numMatch = streetVal.match(/^(\d+[-\d]*)\s+(.+)$/);
+      if (numMatch) { houseNumber = numMatch[1]; streetName = numMatch[2].replace(/\s+(st|ave|blvd|dr|rd|ln|ct|pl|way|circle|cir|terr?|ter|pkwy|hwy|fwy|loop|row|sq|aly|run|path|pass|pike|trl|trail|xing)\.?$/i, '').trim(); }
+
+      const params = new URLSearchParams({ limit: 3 });
+      params.set('street', streetName);
+      if (houseNumber) params.set('number', houseNumber);
       if (city)  params.set('city', city);
       if (state) params.set('state', state);
 
