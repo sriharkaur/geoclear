@@ -1,7 +1,7 @@
 # GeoClear — Feature Inventory
 > **Single source of truth for everything built.**
 > Update this file every time a feature ships. Mirrors RELEASES.md chronologically but organized by feature area for quick lookup.
-> Last updated: 2026-04-14 (session 2)
+> Last updated: 2026-04-14 (session 4)
 
 ---
 
@@ -119,6 +119,9 @@ All require `X-Admin-Secret` header.
 | POST | `/v1/admin/keys` | Issue a key manually `{ email, tier, name, notes }` |
 | DELETE | `/v1/admin/keys/:id` | Revoke a key |
 | POST | `/v1/admin/metered/flush` | Manually flush metered usage to Stripe |
+| POST | `/v1/admin/stream-upload` | Stream-write large files to `/data/<filename>` — no body limit; headers: `X-Upload-Filename` |
+| POST | `/v1/admin/upload-chunk` | Resumable chunked upload to `/data/<filename>` at byte offset; headers: `X-Upload-Filename`, `X-Chunk-Offset` |
+| POST | `/v1/admin/merge` | Merge all addresses from an attached SQLite DB into nad.db (staging → prod promotion); body: `{ dbPath, source }` |
 
 ---
 
@@ -154,7 +157,7 @@ All require `X-Admin-Secret` header.
 
 | Page | Path | Description |
 |------|------|-------------|
-| Landing page + demo | `/` → `public/landing.html` | Hero, demo widget, pricing, signup CTA |
+| Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, animated coverage bars, pricing grid, free signup modal. Route updated: `/` → `landing.html`, `/explorer` → `index.html` |
 | Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel |
 | Status | `/status.html` | Real UptimeRobot data via `/api/status` proxy — uptime table (1d/7d/30d/90d), live response time, external dep checks (Census, FEMA) |
 | API explorer | `/explorer` | Interactive API docs |
