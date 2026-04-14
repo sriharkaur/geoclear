@@ -614,13 +614,23 @@ app.use((err, req, res, next) => {  // eslint-disable-line no-unused-vars
 // ── Start ─────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   const dbReady  = nad.isReady();
-  const stats    = dbReady ? nad.stats() : null;
+  let stats      = null;
+  let dbStatus   = '⚠ nad.db not loaded (rsync to /data to activate)';
+  if (dbReady) {
+    try {
+      stats    = nad.stats();
+      dbStatus = `✓ ready — ${stats.addresses?.toLocaleString()} addresses`;
+    } catch (e) {
+      dbStatus = `⚠ nad.db present but unreadable: ${e.message}`;
+      console.error('[startup] nad.db error:', e.message);
+    }
+  }
   const keyStats = keys.stats();
   console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);
   console.log(`  URL       : ${BASE_URL}`);
   console.log(`  Port      : ${PORT}`);
-  console.log(`  DB Status : ${dbReady ? `✓ ready — ${stats.addresses?.toLocaleString()} addresses` : '⚠ nad.db not loaded (rsync to /data to activate)'}`);
+  console.log(`  DB Status : ${dbStatus}`);
   console.log(`  API Keys  : ${keyStats.active} active`);
   console.log(`    GET  /api/address?street=Main&state=TX`);
   console.log(`    GET  /api/health\n`);
