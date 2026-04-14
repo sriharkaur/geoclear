@@ -195,10 +195,9 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
 
 app.use(express.json());
 
-// ── Admin stream-upload (must be before body parsers consume stream) ──
+// ── Admin chunked upload (must be before body parsers consume stream) ──
 // POST /v1/admin/stream-upload  headers: X-Admin-Secret, X-Upload-Filename
-// Streams request body to /data/<filename> without buffering in memory.
-// Use for large DB files (e.g. 37GB overture-additions.db).
+// Streams request body to /data/<filename> — single-shot, no body limit.
 app.post('/v1/admin/stream-upload', (req, res) => {
   const secret   = req.headers['x-admin-secret'];
   const filename = req.headers['x-upload-filename'];
@@ -217,6 +216,36 @@ app.post('/v1/admin/stream-upload', (req, res) => {
   });
   out.on('error', e => {
     console.error('[stream-upload] error:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  });
+});
+
+// POST /v1/admin/upload-chunk  headers: X-Admin-Secret, X-Upload-Filename, X-Chunk-Offset
+// Writes one chunk at the given byte offset. Supports resumable uploads for large files.
+// Client sends chunks sequentially; server opens file with 'r+' (or creates if offset==0).
+app.post('/v1/admin/upload-chunk', (req, res) => {
+  const secret   = req.headers['x-admin-secret'];
+  const filename = req.headers['x-upload-filename'];
+  const offset   = parseInt(req.headers['x-chunk-offset'] || '0', 10);
+  if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!filename || filename.includes('/') || filename.includes('..'))
+    return res.status(400).json({ ok: false, error: 'Invalid X-Upload-Filename' });
+  if (isNaN(offset) || offset < 0) return res.status(400).json({ ok: false, error: 'Invalid X-Chunk-Offset' });
+  const fs   = require('fs');
+  const dest = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), filename);
+  // Create file on first chunk; append at offset for subsequent chunks
+  const flags = offset === 0 ? 'w' : 'r+';
+  const out   = fs.createWriteStream(dest, { flags, start: offset });
+  let bytes   = 0;
+  req.on('data', chunk => { bytes += chunk.length; });
+  req.pipe(out);
+  out.on('finish', () => {
+    const newOffset = offset + bytes;
+    console.log(`[upload-chunk] ${filename} offset=${offset} +${bytes}B → total=${newOffset}`);
+    res.json({ ok: true, offset, bytes, newOffset });
+  });
+  out.on('error', e => {
+    console.error('[upload-chunk] error:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   });
 });
