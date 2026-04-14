@@ -28,18 +28,29 @@
 
 ---
 
-## CRITICAL BEHAVIOR RULE — Auto-Update Docs After Every Change
+## CRITICAL BEHAVIOR RULE — Docs In The Same Commit, Always
 
-**After implementing any feature, fix, or infrastructure change — without being asked — always:**
+**Doc updates are not a follow-up step. They go in the same commit as the code.**
 
-1. Update `FEATURES.md` — add to the right section; remove from "Not yet built" if it was there
-2. Add a bullet to `RELEASES.md` → `## Unreleased`
-3. Update `ARCHITECTURE.md` — endpoint tables, tier table, "Not Yet Built" list
-4. Check off the item in `QUEUE.md` with ✅
+The sequence for every feature/fix/endpoint/infrastructure change:
 
-**After a deploy** — without being asked — run the smoke test (`curl https://geoclear.io/api/health`) and report pass/fail.
+1. Write and test the code
+2. Update `FEATURES.md` — add to the right section; remove from "Not yet built" if it was there
+3. Update `ARCHITECTURE.md` — endpoint tables, data sources, "Not Yet Built" list
+4. Add a bullet to `RELEASES.md` → `## Unreleased`
+5. Check off the item in `QUEUE.md` with ✅ (or add it and check it off if it wasn't listed)
+6. `git add` code + all four doc files together → one commit
 
-**Never declare a task done** without having updated these docs. The docs are part of the definition of done.
+**Hard rules:**
+- Never `git commit` feature code without staging the doc files in the same commit.
+- Never declare a task done without all four files updated.
+- If you built something that wasn't in `QUEUE.md`, add it AND check it off in the same commit.
+- If a feature is partially done, mark it `⏳ IN PROGRESS` in `QUEUE.md` — don't leave it unmarked.
+
+**After a deploy** — without being asked — run the smoke test and report pass/fail:
+```bash
+curl https://geoclear.io/api/health
+```
 
 ---
 
