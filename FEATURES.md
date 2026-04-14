@@ -126,15 +126,18 @@ All require `X-Admin-Secret` header.
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Hosting | Render Web Service `srv-d7ep7bfavr4c73d46gng` | Virginia region, Docker-based |
+| Hosting | Render Web Service `srv-d7ep7bfavr4c73d46gng` | Virginia region |
+| Deployment | Docker-based (`Dockerfile` in repo root) | Deps layer cached — code-only deploys ~45s; `better-sqlite3` native compile only on dep change |
 | Persistent data | Render disk at `/data` | nad.db 91GB, keys.db |
 | DNS | Cloudflare CNAME `geoclear.io → geoclear.onrender.com` | DNS-only (not proxied) |
 | SSL | Render custom domain cert | Auto-issued |
 | Email | SendGrid — `noreply@geoclear.io` | API keys, payment alerts |
-| Status page | UptimeRobot | Shown at bottom of landing page |
-| Health check | `GET /api/health` | Returns DB status + address count |
-| Coverage stats | `GET /api/stats` | Breakdown by state |
+| UptimeRobot monitors | IDs 802836799 (API Health) + 802836800 (Landing Page) | 5-min interval; 90-day uptime 99.963%, avg response 131ms |
+| Status proxy endpoint | `GET /api/status` | Server-side UptimeRobot proxy — real uptime ratios (1d/7d/30d/90d) + avg 24h response; API key never in browser |
+| Health check | `GET /api/health` | Returns DB status + address count (lazy: null until /api/stats warms cache) |
+| Coverage stats | `GET /api/stats` | Breakdown by state; warms 1-hr address count cache |
 | Demo widget | `GET /api/demo` | IP rate-limited 10/hr, no key required |
+| OpenAPI spec | `openapi.yaml` repo root | OAS 3.0, all public endpoints — ready to upload to RapidAPI Provider Hub |
 
 ---
 
@@ -153,22 +156,32 @@ All require `X-Admin-Secret` header.
 |------|------|-------------|
 | Landing page + demo | `/` → `public/landing.html` | Hero, demo widget, pricing, signup CTA |
 | Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel |
-| Status | `/status.html` | UptimeRobot embed |
+| Status | `/status.html` | Real UptimeRobot data via `/api/status` proxy — uptime table (1d/7d/30d/90d), live response time, external dep checks (Census, FEMA) |
 | API explorer | `/explorer` | Interactive API docs |
 | Privacy Policy | `/privacy` | Data collection, retention, third-party services |
 | Terms of Service | `/terms` | Acceptable use, billing, liability, governing law |
 
 ---
 
-## Not Yet Built (see QUEUE.md)
+## Distribution & GTM
 
-- `customer.subscription.updated` ~~handler~~ ✅ — shipped 2026-04-14
-- Overture full gap-fill run (all states)
-- Usage dashboard for customers
+| Item | Location | Notes |
+|------|----------|-------|
+| Launch announcement strategy | `AddressAPIBusinessGTM.md` | Full sequence: warm outreach → HN → Product Hunt → IH → LinkedIn; email template, HN title/first-comment, passive channel steps |
+| OpenAPI spec for marketplace listing | `openapi.yaml` | OAS 3.0, 9 endpoints, ready to upload to RapidAPI |
+| G2 / Capterra listing content | `AddressAPIBusinessGTM.md` → Passive Channels | Tagline, description, category pre-written |
+
+---
+
+## Not Yet Built (see QUEUE.md)
+- Overture full gap-fill run (all states beyond FL, MI, NJ, NV, NH)
+- Usage dashboard for customers (show their own usage over time)
 - CSV upload → enriched CSV download
 - Bulk async + webhooks for 10M+ record jobs
 - Address standardization (USPS format)
 - FCC broadband tier by address
 - SDKs (Node.js, Python)
-- Marketplace listings (RapidAPI, Zapier, Shopify)
-- Status page ~~(UptimeRobot)~~ ✅ — live per user confirmation 2026-04-14
+- RapidAPI marketplace listing (openapi.yaml ready, manual submission pending)
+- G2 / Capterra listing (content ready in AddressAPIBusinessGTM.md, manual submission pending)
+- Zapier / Shopify integrations
+- Docs page (`/docs`) — full endpoint reference with copy-paste examples (HN launch blocker)
