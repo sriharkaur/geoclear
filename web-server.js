@@ -814,11 +814,18 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
     (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
      latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
     VALUES (${COLS.map(() => '?').join(',')})`);
-  const insertBatch2 = writeDb2.transaction(rows => { let n=0; for (const r of rows) { stmt2.run(...r); n++; } return n; });
+  const insertBatch2 = writeDb2.transaction(rows => {
+    let n = 0;
+    for (const r of rows) { n += writeDb2.prepare(`INSERT OR IGNORE INTO addresses
+      (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
+       latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
+      VALUES (${COLS.map(() => '?').join(',')})`).run(...r).changes; }
+    return n;
+  });
 
   res.json({ ok: true, message: `Re-running import from ${CACHE_PATH}. Check /api/stats.` });
 
-  let inserted = 0, lineCount = 0, batch = [];
+  let inserted = 0, lineCount = 0, skipped = 0, batch = [];
   const BATCH = 10000;
   const gunzip = zlib.createGunzip();
   const rl = readline.createInterface({ input: gunzip, crlfDelay: Infinity });
@@ -826,18 +833,55 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
   rl.on('line', line => {
     if (!line.trim()) return;
     const parts = line.split('\t');
-    if (parts.length < COLS.length) return;
+    if (parts.length < COLS.length) { skipped++; return; }
     batch.push(parts.slice(0, COLS.length).map(v => v === '' ? null : v));
-    if (++lineCount % 1000000 === 0) console.log(`[import-cached] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted`);
-    if (batch.length >= BATCH) { inserted += insertBatch2(batch); batch = []; }
+    lineCount++;
+    if (batch.length >= BATCH) {
+      try { inserted += insertBatch2(batch); } catch(e) { console.error('[import-cached] batch error:', e.message); }
+      batch = [];
+      if (lineCount % 1000000 === 0) console.log(`[import-cached] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted, ${skipped} skipped`);
+    }
   });
   rl.on('close', () => {
-    if (batch.length) inserted += insertBatch2(batch);
+    try { if (batch.length) inserted += insertBatch2(batch); } catch(e) { console.error('[import-cached] final batch error:', e.message); }
     writeDb2.pragma('synchronous = FULL');
     writeDb2.close();
     cache.delete('stats');
-    console.log(`[import-cached] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows`);
+    console.log(`[import-cached] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} inserted, ${skipped} skipped`);
   });
+  gunzip.on('error', e => console.error('[import-cached] gunzip error:', e.message));
+});
+
+// GET /v1/admin/db-probe — query prod DB schema and test a direct INSERT
+// Returns addresses table schema, all indexes, and before/after count for a test row.
+app.get('/v1/admin/db-probe', adminAuth, (req, res) => {
+  const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+  let writeDb3;
+  try {
+    writeDb3 = require('better-sqlite3')(path.join(DATA_DIR, 'nad.db'));
+    writeDb3.pragma('journal_mode = WAL');
+    const tblSql    = writeDb3.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='addresses'").get();
+    const indexes   = writeDb3.prepare("SELECT name, sql FROM sqlite_master WHERE type='index' AND tbl_name='addresses'").all();
+    const before    = writeDb3.prepare('SELECT COUNT(*) as n FROM addresses').get().n;
+    let insertErr   = null, changes = 0;
+    try {
+      const r = writeDb3.prepare(`INSERT OR IGNORE INTO addresses
+        (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
+         latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+        .run('probe-uuid-zzzz-0000','0','Probe St','','ProbeCity','ProbeCity','TX','99998',
+             29.1,-95.1,'Point','Parcel','PROBE','0 Probe St ProbeCity TX 99998','2026-01-01','2026-01-01');
+      changes = r.changes;
+      // Roll back the test row if inserted
+      if (changes > 0) writeDb3.prepare("DELETE FROM addresses WHERE nad_uuid='probe-uuid-zzzz-0000'").run();
+    } catch (e) { insertErr = e.message; }
+    const after = writeDb3.prepare('SELECT COUNT(*) as n FROM addresses').get().n;
+    writeDb3.close();
+    res.json({ ok: true, schema: tblSql?.sql, indexes, before, after, changes, insertErr });
+  } catch (e) {
+    if (writeDb3) try { writeDb3.close(); } catch {}
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // DELETE /v1/admin/data-file  body: { filename }
