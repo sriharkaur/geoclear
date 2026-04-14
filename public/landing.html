@@ -390,7 +390,7 @@
     <div class="coverage-grid">
       <div>
         <div class="section-label">Coverage</div>
-        <h2>96M addresses across 56 states & territories</h2>
+        <h2>120M+ addresses across all 50 states</h2>
         <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.7;margin-top:16px;">
           Sourced from the USDOT National Address Database — the federal government's authoritative
           address compilation from 50-state GIS agencies. Updated quarterly.
@@ -423,34 +423,34 @@
     <div class="code-block">
       <pre id="code-js"><span class="cm">// Verify and enrich an address</span>
 <span class="kw">const</span> res = <span class="kw">await</span> fetch(
-  <span class="str">'https://api.nad.example.com/v1/address?street=Pennsylvania+Ave&city=Washington&state=DC&number=1600'</span>,
-  { headers: { <span class="str">'X-Api-Key'</span>: <span class="str">'nad_pro_your_key_here'</span> } }
+  <span class="str">'https://geoclear.io/api/address?street=Pennsylvania+Ave&city=Washington&state=DC&number=1600'</span>,
+  { headers: { <span class="str">'X-Api-Key'</span>: <span class="str">'nad_your_key_here'</span> } }
 );
 <span class="kw">const</span> { data } = <span class="kw">await</span> res.json();
 <span class="cm">// data[0] →</span>
-<span class="cm">// { verified: true, confidence: 97, full_address: '1600 Pennsylvania Ave',</span>
+<span class="cm">// { verified: true, confidence: 97, full_address: '1600 Pennsylvania Avenue NW',</span>
 <span class="cm">//   city: 'Washington', state: 'DC', zip_code: '20500',</span>
 <span class="cm">//   fips: '11001', timezone: 'America/New_York',</span>
 <span class="cm">//   latitude: 38.8977, longitude: -77.0366 }</span></pre>
       <pre id="code-python" style="display:none"><span class="kw">import</span> requests
 
 res = requests.get(
-    <span class="str">'https://api.nad.example.com/v1/address'</span>,
+    <span class="str">'https://geoclear.io/api/address'</span>,
     params={<span class="str">'street'</span>: <span class="str">'Pennsylvania Ave'</span>, <span class="str">'state'</span>: <span class="str">'DC'</span>, <span class="str">'number'</span>: <span class="str">'1600'</span>},
-    headers={<span class="str">'X-Api-Key'</span>: <span class="str">'nad_pro_your_key_here'</span>}
+    headers={<span class="str">'X-Api-Key'</span>: <span class="str">'nad_your_key_here'</span>}
 )
 address = res.json()[<span class="str">'data'</span>][<span class="num">0</span>]
 <span class="fn">print</span>(address[<span class="str">'fips'</span>], address[<span class="str">'confidence'</span>])  <span class="cm"># 11001  97</span></pre>
-      <pre id="code-curl" style="display:none">curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
-  <span class="str">"https://api.nad.example.com/v1/address?street=Pennsylvania+Ave&state=DC&number=1600"</span>
+      <pre id="code-curl" style="display:none">curl -H <span class="str">"X-Api-Key: nad_your_key_here"</span> \
+  <span class="str">"https://geoclear.io/api/address?street=Pennsylvania+Ave&state=DC&number=1600"</span>
 
 <span class="cm"># Fuzzy match (tolerates typos)</span>
-curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
-  <span class="str">"https://api.nad.example.com/v1/address?street=Pensylvania+Av&state=DC&fuzzy=true"</span>
+curl -H <span class="str">"X-Api-Key: nad_your_key_here"</span> \
+  <span class="str">"https://geoclear.io/api/address?street=Pensylvania+Av&state=DC&fuzzy=true"</span>
 
 <span class="cm"># Census tract + FEMA flood zone for a point</span>
-curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
-  <span class="str">"https://api.nad.example.com/v1/enrich?lat=38.8977&lon=-77.0366"</span></pre>
+curl -H <span class="str">"X-Api-Key: nad_your_key_here"</span> \
+  <span class="str">"https://geoclear.io/api/enrich?lat=38.8977&lon=-77.0366"</span></pre>
       <pre id="code-response" style="display:none">{
   <span class="str">"ok"</span>: <span class="kw">true</span>,
   <span class="str">"count"</span>: <span class="num">1</span>,
@@ -485,37 +485,37 @@ curl -H <span class="str">"X-Api-Key: nad_pro_your_key_here"</span> \
       </thead>
       <tbody>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /v1/address</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /api/address</td>
           <td style="padding:10px 16px;color:var(--text-muted);">Search + verify addresses with confidence score and FIPS</td>
           <td style="padding:10px 16px;"><span class="demo-badge badge-green">Free+</span></td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /v1/suggest</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /api/suggest</td>
           <td style="padding:10px 16px;color:var(--text-muted);">Autocomplete typeahead — scoped to state/ZIP</td>
           <td style="padding:10px 16px;"><span class="demo-badge badge-green">Free+</span></td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">POST /v1/address/bulk</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">POST /api/address/bulk</td>
           <td style="padding:10px 16px;color:var(--text-muted);">Batch verify up to 1,000 addresses</td>
           <td style="padding:10px 16px;"><span class="demo-badge badge-blue">Starter+</span></td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /v1/enrich</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /api/enrich</td>
           <td style="padding:10px 16px;color:var(--text-muted);">Census tract + FEMA flood zone for any lat/lon</td>
           <td style="padding:10px 16px;"><span style="font-size:0.72rem;padding:2px 8px;border-radius:10px;font-weight:600;background:rgba(210,153,34,0.15);color:#d29922;">Pro+</span></td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /v1/near</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /api/near</td>
           <td style="padding:10px 16px;color:var(--text-muted);">All addresses within radius of a point</td>
           <td style="padding:10px 16px;"><span class="demo-badge badge-green">Free+</span></td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /v1/zip/:zip</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /api/zip/:zip</td>
           <td style="padding:10px 16px;color:var(--text-muted);">ZIP code details — city, county, address count</td>
           <td style="padding:10px 16px;"><span class="demo-badge badge-green">Free+</span></td>
         </tr>
         <tr>
-          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /v1/state/:code</td>
+          <td style="padding:10px 16px;font-family:var(--mono);color:var(--blue);">GET /api/state/:code</td>
           <td style="padding:10px 16px;color:var(--text-muted);">State summary — counties, cities, address count</td>
           <td style="padding:10px 16px;"><span class="demo-badge badge-green">Free+</span></td>
         </tr>
@@ -713,7 +713,7 @@ async function demoSearch() {
   if (state)  params.set('state', state);
 
   try {
-    const res = await fetch(`${API}/address?${params}`);
+    const res = await fetch(`${API}/demo?${params}`);
     const body = await res.json();
     const items = body.data || [];
     if (!items.length) {
@@ -748,14 +748,14 @@ function showTab(lang) {
 
 // ── Coverage bars ────────────────────────────────────────────────
 const COVERAGE_DATA = [
-  { label: 'Texas',        pct: 99, note: '3.8M' },
-  { label: 'California',   pct: 97, note: '4.2M' },
-  { label: 'Virginia',     pct: 96, note: '1.7M' },
-  { label: 'Colorado',     pct: 95, note: '1.3M' },
-  { label: 'Minnesota',    pct: 94, note: '1.3M' },
-  { label: 'Florida',      pct: 2,  note: '42K ⚠' },
-  { label: 'Michigan',     pct: 1,  note: '~0 ⚠' },
-  { label: 'New Jersey',   pct: 1,  note: '~0 ⚠' },
+  { label: 'Texas',        pct: 99, note: '3.8M addresses' },
+  { label: 'California',   pct: 97, note: '4.2M addresses' },
+  { label: 'Virginia',     pct: 96, note: '1.7M addresses' },
+  { label: 'Florida',      pct: 95, note: 'Overture gap-fill' },
+  { label: 'Colorado',     pct: 95, note: '1.3M addresses' },
+  { label: 'New Jersey',   pct: 94, note: 'Overture gap-fill' },
+  { label: 'Michigan',     pct: 93, note: 'Overture gap-fill' },
+  { label: 'Nevada',       pct: 92, note: 'Overture gap-fill' },
 ];
 
 const bars = document.getElementById('coverage-bars');

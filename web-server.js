@@ -154,6 +154,24 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
       console.warn(`[Stripe] Subscription ${subId} cancelled but no matching key found`);
     }
   }
+
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object;
+    const email   = invoice.customer_email;
+    const attempt = invoice.attempt_count || 1;
+    if (email) {
+      const html = `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0d1117;color:#e6edf3;border-radius:8px;">
+          <h2 style="color:#f85149;margin:0 0 8px">Payment failed</h2>
+          <p style="color:#8b949e;margin:0 0 20px">Attempt ${attempt} of 4. Your GeoClear API subscription is still active — please update your payment method to prevent service interruption.</p>
+          <a href="${BASE_URL}/portal.html" style="display:inline-block;background:#388bfd;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Update Payment Method</a>
+          <p style="color:#8b949e;margin-top:24px;font-size:0.85rem;">Questions? Reply to this email or visit <a href="${BASE_URL}" style="color:#388bfd;">geoclear.io</a></p>
+        </div>`;
+      sendEmail(email, `GeoClear: Payment failed (attempt ${attempt} of 4)`, html).catch(() => {});
+      console.log(`[Stripe] invoice.payment_failed for ${email} (attempt ${attempt})`);
+    }
+  }
+
   res.json({ received: true });
 });
 
@@ -187,7 +205,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ── API Auth + Rate Limiting ──────────────────────────────────────
 // /api/health, /api/stats, /api/states are open — everything else requires a key
-const OPEN_API_PATHS = new Set(['/health', '/stats', '/states']);
+const OPEN_API_PATHS = new Set(['/health', '/stats', '/states', '/demo']);
 
 function apiAuth(req, res, next) {
   const rawKey = req.headers['x-api-key'] || req.query.key;
@@ -491,12 +509,10 @@ app.delete('/v1/admin/keys/:id', adminAuth, (req, res) => {
   if (!revoked) return err(res, 'Key not found.', 404);
   ok(res, { revoked: true, id: parseInt(req.params.id, 10) });
 });
-// Flush metered usage to Stripe (called by daily cron or manually)
-app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
-  if (!stripe || !STRIPE_METER_ID) {
-    return err(res, 'Stripe or meter not configured.', 503);
-  }
-  const rows   = keys.getMeteredKeysWithUsage();
+// ── Metered flush core (used by endpoint + daily cron) ───────────
+async function runMeteredFlush() {
+  if (!stripe || !STRIPE_METER_ID) return { skipped: true, reason: 'Stripe or meter not configured' };
+  const rows    = keys.getMeteredKeysWithUsage();
   const results = [];
   for (const row of rows) {
     if (!row.stripe_customer_id) {
@@ -505,8 +521,8 @@ app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
     }
     try {
       await stripe.billing.meterEvents.create({
-        event_name:  'geoclear_lookup',
-        payload:     { value: String(row.metered_unreported), stripe_customer_id: row.stripe_customer_id },
+        event_name: 'geoclear_lookup',
+        payload:    { value: String(row.metered_unreported), stripe_customer_id: row.stripe_customer_id },
       });
       keys.markMeteredFlushed(row.id, row.metered_unreported);
       results.push({ email: row.email, reported: row.metered_unreported });
@@ -514,7 +530,32 @@ app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
       results.push({ email: row.email, error: e.message });
     }
   }
-  ok(res, { flushed: results.length, results });
+  console.log(`[metered-flush] ${new Date().toISOString()} — ${results.length} records`);
+  return { flushed: results.length, results };
+}
+
+// Flush metered usage to Stripe (called by daily cron or manually)
+app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
+  if (!stripe || !STRIPE_METER_ID) return err(res, 'Stripe or meter not configured.', 503);
+  ok(res, await runMeteredFlush());
+});
+
+// Open demo endpoint — no API key, IP rate-limited (10 req/hr)
+const demoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => `demo:${req.ip}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ ok: false, error: 'Demo limit reached (10/hr). Sign up free at geoclear.io' }),
+});
+app.get('/api/demo', demoLimiter, (req, res) => {
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+  const { street, number, city, state, zip } = req.query;
+  if (!street && !zip && !number) return err(res, 'Provide at least street or zip.');
+  const raw = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 3 });
+  if (!raw.length) return err(res, 'No addresses found.', 404);
+  ok(res, raw.map(enrichAddress), { count: raw.length, demo: true });
 });
 
 app.get('/v1/me', (req, res) => {
@@ -636,4 +677,16 @@ app.listen(PORT, () => {
   console.log(`  API Keys  : ${keyStats.active} active`);
   console.log(`    GET  /api/address?street=Main&state=TX`);
   console.log(`    GET  /api/health\n`);
+
+  // Daily metered flush cron (self-scheduling, midnight UTC)
+  if (stripe && STRIPE_METER_ID) {
+    (function scheduleDailyFlush() {
+      const msUntilMidnight = new Date(new Date().setUTCHours(24, 0, 0, 0)) - Date.now();
+      setTimeout(async () => {
+        await runMeteredFlush().catch(e => console.error('[metered-flush] cron error:', e.message));
+        scheduleDailyFlush();
+      }, msUntilMidnight);
+      console.log(`  Metered flush : daily cron scheduled (next in ~${Math.round(msUntilMidnight / 3600000)}h at midnight UTC)`);
+    })();
+  }
 });
