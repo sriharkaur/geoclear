@@ -619,7 +619,7 @@ app.post('/v1/checkout', async (req, res) => {
       mode:                 'subscription',
       payment_method_types: ['card'],
       customer_email:       email,
-      line_items:           [{ price: priceId, quantity: 1 }],
+      line_items:           [tier === 'metered' ? { price: priceId } : { price: priceId, quantity: 1 }],
       metadata:             { tier, email },
       success_url: `${BASE_URL}/portal.html?success=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${BASE_URL}/portal.html?cancelled=1`,
