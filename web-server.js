@@ -642,9 +642,12 @@ app.use('/api', (req, res) => {
   res.status(404).json({ ok: false, error: `Unknown API endpoint: ${req.method} ${req.path}` });
 });
 
-// Serve index.html for all other routes (SPA fallback)
-app.get('*', (req, res) => {
+// Serve landing page for root; explorer for /explorer
+app.get('/explorer', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
 // Global error handler
