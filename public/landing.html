@@ -1479,7 +1479,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       if (city)  params.set('city', city);
       if (state) params.set('state', state);
 
-      const r = await fetch('/api/address?' + params);
+      const r = await fetch('/api/demo?' + params);
       const data = await r.json();
 
       if (!data.ok && data.error) {
