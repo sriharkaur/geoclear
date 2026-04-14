@@ -474,9 +474,10 @@ app.get('/api/enrich', async (req, res) => {
   }
 });
 
-// Health check
+// Health check — uses cached stats (1hr TTL) to avoid blocking COUNT(*) on every call
 app.get('/api/health', (req, res) => {
-  const stats = nad.stats();
+  if (!nad.isReady()) return res.json({ status: 'starting', addresses: 0, version: '1.0.0' });
+  const stats = cached('stats', () => nad.stats());
   res.json({ status: 'ok', addresses: stats.addresses, version: '1.0.0' });
 });
 
@@ -657,19 +658,28 @@ app.use((err, req, res, next) => {  // eslint-disable-line no-unused-vars
   res.status(500).json({ ok: false, error: 'Internal server error' });
 });
 
+// ── Warmup: force SQLite to open nad.db before accepting traffic ──
+// Opening a 90GB file defers the first page read until first query,
+// causing a timeout spike on health checks post-redeploy. A cheap
+// synchronous query here pays that cost at startup instead.
+if (nad.isReady()) {
+  try {
+    nad.db.prepare('SELECT 1 FROM addresses LIMIT 1').get();
+    console.log('[startup] nad.db warmed up');
+  } catch (e) {
+    console.warn('[startup] warmup query failed:', e.message);
+  }
+}
+
 // ── Start ─────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   const dbReady  = nad.isReady();
   let stats      = null;
   let dbStatus   = '⚠ nad.db not loaded (rsync to /data to activate)';
   if (dbReady) {
-    try {
-      stats    = nad.stats();
-      dbStatus = `✓ ready — ${stats.addresses?.toLocaleString()} addresses`;
-    } catch (e) {
-      dbStatus = `⚠ nad.db present but unreadable: ${e.message}`;
-      console.error('[startup] nad.db error:', e.message);
-    }
+    // Don't run COUNT(*) at startup — it blocks the event loop for minutes on cold cache.
+    // The first /api/health or /api/stats call will warm the 1-hr cache instead.
+    dbStatus = `✓ ready`;
   }
   const keyStats = keys.stats();
   console.log(`\n  GeoClear Address Intelligence API`);
