@@ -104,13 +104,7 @@
       display: flex; align-items: center; gap: 9px;
       font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em;
     }
-    .nav-logo-mark {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: var(--grad);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 900; color: #fff;
-      box-shadow: 0 0 20px rgba(56,189,248,0.3);
-    }
+    .logo-mark { display: block; flex-shrink: 0; }
     .nav-links {
       display: flex; align-items: center; gap: 4px;
     }
@@ -251,10 +245,7 @@
     .trust-item { display: flex; flex-direction: column; }
     .trust-val {
       font-size: 1.65rem; font-weight: 800; letter-spacing: -0.04em;
-      background: var(--grad);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text);
     }
     .trust-lbl {
       font-size: 0.71rem; color: var(--dim);
@@ -338,10 +329,7 @@
     .metric:hover { background: var(--surface2); }
     .metric-val {
       font-size: 2rem; font-weight: 800; letter-spacing: -0.04em;
-      background: var(--grad);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text);
       line-height: 1;
     }
     .metric-lbl { font-size: 0.76rem; color: var(--muted); margin-top: 6px; }
@@ -422,14 +410,13 @@
     }
     .step { text-align: center; }
     .step-num {
-      width: 52px; height: 52px; border-radius: 50%;
-      background: var(--surface2);
-      border: 1px solid var(--border2);
+      width: 48px; height: 48px; border-radius: 50%;
+      background: transparent;
+      border: 1.5px solid var(--border2);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; font-weight: 800;
-      background: var(--grad);
-      color: #fff; margin: 0 auto 20px;
-      box-shadow: 0 0 24px rgba(56,189,248,0.2);
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--muted); margin: 0 auto 20px;
+      font-family: var(--mono); letter-spacing: 0;
     }
     .step-title {
       font-size: 1rem; font-weight: 700; letter-spacing: -0.02em;
@@ -676,12 +663,7 @@
       font-weight: 800; font-size: 1rem; letter-spacing: -0.02em;
       margin-bottom: 16px;
     }
-    .footer-logo-mark {
-      width: 26px; height: 26px; border-radius: 7px;
-      background: var(--grad);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 900; color: #fff;
-    }
+    .footer-logo-mark { display: flex; align-items: center; }
     .footer-tagline {
       font-size: 0.84rem; color: var(--muted); line-height: 1.7;
       max-width: 220px; margin-bottom: 24px;
@@ -821,7 +803,11 @@
 <nav>
   <div class="nav-inner">
     <a href="/" class="nav-logo">
-      <div class="nav-logo-mark">G</div>
+      <svg class="logo-mark" width="22" height="28" viewBox="0 0 22 28" fill="none" aria-hidden="true">
+        <path d="M11 0C4.93 0 0 4.93 0 11C0 18.7 11 28 11 28C11 28 22 18.7 22 11C22 4.93 17.07 0 11 0Z" fill="#38BDF8"/>
+        <circle cx="11" cy="10.5" r="4.8" fill="#03071A"/>
+        <circle cx="11" cy="10.5" r="1.9" fill="#38BDF8"/>
+      </svg>
       GeoClear
     </a>
     <div class="nav-links">
@@ -856,9 +842,9 @@
       </h1>
 
       <p class="hero-sub">
-        The address intelligence layer for developers. Verify, standardize, and enrich
-        any US address with county FIPS, census tracts, FEMA flood zones, and timezone —
-        in a single API call.
+        120 million US addresses. County FIPS, census tracts, FEMA flood zones,
+        and coordinates — returned in under 5ms. One endpoint, one key, no
+        infrastructure to manage.
       </p>
 
       <div class="hero-btns">
@@ -903,7 +889,7 @@
         </div>
         <div class="term-body">
 <span class="tc"># Verify and enrich any US address</span>
-<span class="tk">curl</span> <span class="ts">"https://api.geoclear.io/api/address</span>
+<span class="tk">curl</span> <span class="ts">"https://geoclear.io/api/address</span>
 <span class="ts">  ?street=1600+Pennsylvania+Ave</span>
 <span class="ts">  &amp;city=Washington&amp;state=DC"</span> \
   -H <span class="ts">"X-Api-Key: gc_live_••••••••"</span>
@@ -954,39 +940,72 @@
 <section class="features-section" id="features">
   <div class="container">
     <div class="section-label">Features</div>
-    <h2 class="sh2">Everything your app needs<br>to work with addresses</h2>
+    <h2 class="sh2">What you get with<br>every API call</h2>
     <p class="ssub">
-      From simple verification to deep enrichment. One API, one key, no infrastructure to manage.
+      Not just verification — enrichment. Every address comes back with the data your
+      compliance, underwriting, or routing logic actually needs.
     </p>
 
     <div class="feat-grid">
       <div class="feat-card">
-        <div class="feat-icon">📍</div>
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 1C5.13 1 2 4.13 2 8C2 13 9 17 9 17C9 17 16 13 16 8C16 4.13 12.87 1 9 1Z"/>
+            <path d="M6 8.5L8 10.5L12 6.5"/>
+          </svg>
+        </div>
         <div class="feat-title">Address Verification</div>
         <div class="feat-desc">Validate and standardize any US address against 120M+ records. Fuzzy match handles typos and abbreviations automatically.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">🗺</div>
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="2" width="12" height="14" rx="1.5"/>
+            <path d="M6 7h6M6 10h6M6 13h3.5"/>
+          </svg>
+        </div>
         <div class="feat-title">County + FIPS Codes</div>
         <div class="feat-desc">Every address returns its county name and 5-digit FIPS code — essential for compliance, tax routing, and government reporting.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">📊</div>
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="14" height="14" rx="1.5"/>
+            <path d="M2 7.5h14M2 12h14M7.5 2v14"/>
+          </svg>
+        </div>
         <div class="feat-title">Census Tract Data</div>
         <div class="feat-desc">Census tract and block group enrichment for CRA compliance, demographic analysis, and financial eligibility determination.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">🌊</div>
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 2C9 2 5 5 5 8.5C5 10.99 6.79 13 9 13C11.21 13 13 10.99 13 8.5C13 5 9 2 9 2Z"/>
+            <path d="M2 15.5C4 13.5 6 17.5 8 15.5C10 13.5 12 17.5 14 15.5C15.5 13.9 16.5 17.5 16 16"/>
+          </svg>
+        </div>
         <div class="feat-title">FEMA Flood Zones</div>
         <div class="feat-desc">Instant flood zone classification (A, AE, X, etc.) for insurance underwriting, mortgage lending, and real estate applications.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">🔍</div>
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="7.5" r="4.5"/>
+            <path d="M10.5 10.5L16 16"/>
+            <path d="M4 7.5h7M7.5 4v7" stroke-width="1" opacity="0.5"/>
+          </svg>
+        </div>
         <div class="feat-title">Autocomplete &amp; Suggest</div>
         <div class="feat-desc">Real-time address autocomplete as users type. Reduce form abandonment and eliminate data entry errors at the source.</div>
       </div>
       <div class="feat-card">
-        <div class="feat-icon">⚡</div>
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#38BDF8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="12" height="4" rx="1.5"/>
+            <rect x="3" y="7" width="12" height="4" rx="1.5" opacity="0.55"/>
+            <rect x="3" y="3" width="12" height="4" rx="1.5" opacity="0.25"/>
+          </svg>
+        </div>
         <div class="feat-title">Bulk Processing</div>
         <div class="feat-desc">Verify up to 1,000 addresses per request. Clean entire datasets in seconds, not hours. No rate limiting on batch operations.</div>
       </div>
@@ -998,8 +1017,8 @@
 <section class="how-section" id="how-it-works">
   <div class="container">
     <div class="section-label">How it works</div>
-    <h2 class="sh2">From zero to verified<br>in three steps</h2>
-    <p class="ssub" style="margin-bottom: 56px;">No SDKs required. No infrastructure to set up. Works with any language that can make HTTP requests.</p>
+    <h2 class="sh2">Up and running<br>in under three minutes</h2>
+    <p class="ssub" style="margin-bottom: 56px;">No client library to install, no OAuth dance, no webhook configuration. If you can make an HTTP request, you're done.</p>
 
     <div class="steps">
       <div class="step">
@@ -1026,10 +1045,11 @@
   <div class="container">
     <div>
       <div class="section-label">Integrate in minutes</div>
-      <h2 class="sh2">Simple by design.<br>Powerful by default.</h2>
+      <h2 class="sh2">One request.<br>Eight fields back.</h2>
       <p class="ssub">
-        A clean REST API with predictable JSON responses. No query languages, no schemas to configure.
-        If you can read JSON, you can use GeoClear.
+        REST + JSON. No SDK required, no configuration, no query language.
+        Send a street address, get back county FIPS, census tract, coordinates, flood zone,
+        and timezone — every time.
       </p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <button class="btn-primary" onclick="openModal()">Get free API key →</button>
@@ -1047,18 +1067,18 @@
 
       <div class="cpanel on" id="tab-curl">
         <pre><span style="color:var(--dim)"># Verify and enrich an address</span>
-<span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://api.geoclear.io/api/address\
+<span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://geoclear.io/api/address\
   ?street=350+Fifth+Ave\
   &city=New+York&state=NY"</span> \
   -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span>
 
 <span style="color:var(--dim)"># Autocomplete as user types</span>
-<span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://api.geoclear.io/api/suggest\
+<span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://geoclear.io/api/suggest\
   ?q=350+fifth&state=NY&limit=5"</span> \
   -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span>
 
 <span style="color:var(--dim)"># Bulk verify up to 1000 addresses</span>
-<span style="color:var(--sky)">curl</span> -X POST <span style="color:#86EFAC">"https://api.geoclear.io/api/address/bulk"</span> \
+<span style="color:var(--sky)">curl</span> -X POST <span style="color:#86EFAC">"https://geoclear.io/api/address/bulk"</span> \
   -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span> \
   -H <span style="color:#86EFAC">"Content-Type: application/json"</span> \
   -d <span style="color:#86EFAC">'{"addresses":[...]}'</span></pre>
@@ -1069,7 +1089,7 @@
 <span style="color:var(--sky)">const</span> <span style="color:var(--text)">GC_KEY</span> = process.env.<span style="color:#FCD34D">GC_API_KEY</span>;
 
 <span style="color:var(--sky)">async function</span> <span style="color:#C4B5FD">verifyAddress</span>(street, city, state) {
-  <span style="color:var(--sky)">const</span> url = <span style="color:#86EFAC">`https://api.geoclear.io/api/address</span>
+  <span style="color:var(--sky)">const</span> url = <span style="color:#86EFAC">`https://geoclear.io/api/address</span>
 <span style="color:#86EFAC">    ?street=${encodeURIComponent(street)}</span>
 <span style="color:#86EFAC">    &city=${encodeURIComponent(city)}</span>
 <span style="color:#86EFAC">    &state=${state}`</span>;
@@ -1093,7 +1113,7 @@ GC_KEY = os.environ[<span style="color:#86EFAC">"GC_API_KEY"</span>]
 
 <span style="color:var(--sky)">def</span> <span style="color:#C4B5FD">verify_address</span>(street, city, state):
     resp = requests.<span style="color:#C4B5FD">get</span>(
-        <span style="color:#86EFAC">"https://api.geoclear.io/api/address"</span>,
+        <span style="color:#86EFAC">"https://geoclear.io/api/address"</span>,
         params={
             <span style="color:#86EFAC">"street"</span>: street,
             <span style="color:#86EFAC">"city"</span>: city,
@@ -1318,7 +1338,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   <div class="footer-inner">
     <div class="footer-brand">
       <div class="footer-logo">
-        <div class="footer-logo-mark">G</div>
+        <div class="footer-logo-mark">
+          <svg width="18" height="23" viewBox="0 0 22 28" fill="none" aria-hidden="true">
+            <path d="M11 0C4.93 0 0 4.93 0 11C0 18.7 11 28 11 28C11 28 22 18.7 22 11C22 4.93 17.07 0 11 0Z" fill="#38BDF8"/>
+            <circle cx="11" cy="10.5" r="4.8" fill="#03071A"/>
+            <circle cx="11" cy="10.5" r="1.9" fill="#38BDF8"/>
+          </svg>
+        </div>
         GeoClear
       </div>
       <p class="footer-tagline">
