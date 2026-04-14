@@ -226,6 +226,16 @@ class KeyStore {
     return info.changes > 0;
   }
 
+  /** Change tier when Stripe subscription plan changes (upgrade or downgrade) */
+  changeSubscriptionTier(subscriptionId, newTier) {
+    const row = this.db.prepare(
+      `SELECT id, email, tier FROM api_keys WHERE stripe_subscription_id=? AND is_active=1`
+    ).get(subscriptionId);
+    if (!row) return null;
+    this.db.prepare(`UPDATE api_keys SET tier=? WHERE id=?`).run(newTier, row.id);
+    return { id: row.id, email: row.email, oldTier: row.tier, newTier };
+  }
+
   /** Find active key by email (used to prevent duplicate free signups) */
   findByEmail(email) {
     return this.db.prepare(

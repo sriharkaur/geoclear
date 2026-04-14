@@ -144,6 +144,24 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
     }
   }
 
+  if (event.type === 'customer.subscription.updated') {
+    const sub      = event.data.object;
+    const subId    = sub.id;
+    const priceId  = sub.items?.data?.[0]?.price?.id;
+    // Reverse-lookup tier from price ID
+    const newTier  = priceId ? Object.entries(STRIPE_PRICES).find(([, v]) => v === priceId)?.[0] : null;
+    if (newTier) {
+      const changed = keys.changeSubscriptionTier(subId, newTier);
+      if (changed) {
+        console.log(`[Stripe] Subscription ${subId} plan changed: ${changed.oldTier} → ${newTier} (${changed.email})`);
+      } else {
+        console.warn(`[Stripe] subscription.updated for ${subId} — no matching key found`);
+      }
+    } else {
+      console.warn(`[Stripe] subscription.updated: unrecognised price ${priceId}, skipping tier change`);
+    }
+  }
+
   if (event.type === 'customer.subscription.deleted') {
     const sub   = event.data.object;
     const subId = sub.id;
