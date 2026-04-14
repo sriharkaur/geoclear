@@ -474,11 +474,12 @@ app.get('/api/enrich', async (req, res) => {
   }
 });
 
-// Health check — uses cached stats (1hr TTL) to avoid blocking COUNT(*) on every call
+// Health check — never blocks. Returns cached count if warm, null if not yet computed.
+// COUNT(*) on 120M rows is expensive; /api/stats warms the cache lazily via first request.
 app.get('/api/health', (req, res) => {
-  if (!nad.isReady()) return res.json({ status: 'starting', addresses: 0, version: '1.0.0' });
-  const stats = cached('stats', () => nad.stats());
-  res.json({ status: 'ok', addresses: stats.addresses, version: '1.0.0' });
+  if (!nad.isReady()) return res.json({ status: 'starting', addresses: null, version: '1.0.0' });
+  const hit = cache.get('stats');
+  res.json({ status: 'ok', addresses: hit ? hit.val.addresses : null, version: '1.0.0' });
 });
 
 // ── Key management (portal routes) ───────────────────────────────
