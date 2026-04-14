@@ -1,6 +1,6 @@
 # GeoClear — Living Architecture
 > **Always current. Update this file every time a feature ships.**
-> Last updated: v1.0.0 (2026-04-14)
+> Last updated: v1.0.0 (2026-04-14, session 5)
 
 ---
 
@@ -8,13 +8,14 @@
 
 | Layer | Technology |
 |---|---|
-| Runtime | Node.js (no framework beyond Express) |
+| Runtime | Node.js 20 LTS (no framework beyond Express) |
 | Database | SQLite via better-sqlite3 (no ORM) |
 | Server | Express 4 |
 | Payments | Stripe (subscriptions + metered billing) |
-| Hosting | Render (web service + persistent disk at `/data`) |
-| DNS / CDN | Cloudflare |
-| Port | 4001 (local) / 443 (prod via Cloudflare) |
+| Hosting (prod) | Render Web Service `srv-d7ep7bfavr4c73d46gng` — `geoclear.io` |
+| Hosting (staging) | Render Web Service `srv-d7f6rh58nd3s73cve8dg` — `geoclear-staging.onrender.com` |
+| DNS / CDN | Cloudflare (DNS-only, not proxied) |
+| Port | 4001 (local) / 443 (prod) |
 
 ---
 
@@ -30,19 +31,54 @@
 | `schema.sql` | DB schema |
 | `init-db.js` | One-time DB initialization |
 | `download.js` | NAD + Overture data download pipeline |
-| `overture-import.js` | Overture Maps gap-fill importer |
+| `overture-import.js` | Overture Maps gap-fill importer (DuckDB parquet → SQLite); supports `--db=<path>` flag |
+| `create-dev-db.js` | Generates `data/dev.db` — 20K addrs/state sampled from nad.db; 572MB for local dev |
+| `sync-staging-to-prod.sh` | Documents and guides the staging → prod data promotion workflow |
 | `mcp-server.js` | MCP server interface for Claude integration |
-| `public/` | Static assets (landing page, demo widget) |
+| `public/` | Static assets (landing page, portal, status, explorer) |
 
 ---
 
 ## Data
 
-| Source | Coverage | Size | Location |
+| Source | Coverage | Rows | Location |
 |---|---|---|---|
-| NAD r22 | 120M+ US addresses, 47 states | 91GB | `/data/nad.db` |
-| Overture gap-fill | FL, MI, NJ, NV, NH | included in nad.db | same |
-| API keys + sessions | Live customer keys | small | `/data/keys.db` |
+| NAD r22 | ~47 states | 120,160,305 | prod `/data/nad.db` (91GB) |
+| Overture Maps (original gap-fill) | FL, MI, NJ, NV, NH | included in nad.db | prod `/data/nad.db` |
+| Overture Maps (full run) | FL, CA, MI, NJ, PA, MS, SC, GA, SD, HI, LA, NV, NH + | 64,900,000 | `data/overture-additions.db` (37GB) — upload to prod in progress; merge via `POST /v1/admin/merge` pending |
+| Dev sample | All 50 states, 20K/state | ~983,000 | `data/dev.db` (572MB) — local dev only |
+| API keys + sessions | Live customer keys | small | prod `/data/keys.db` |
+
+**After merge: ~185M total addresses** (120M NAD + 64.9M Overture, deduped by `nad_uuid`)
+
+---
+
+## Data Pipeline & Staging Workflow
+
+The staging service (`geoclear-staging.onrender.com`) exists solely as a data processing environment — no customers hit it. All heavy imports (Overture parquet → SQLite, future NAD updates) run there. Local machine is not involved in data operations.
+
+```
+New data source (e.g. Overture S3 parquet)
+  │
+  ▼  [run on staging Render Shell]
+node overture-import.js --db=/data/overture-additions.db
+  │  (DuckDB reads parquet from S3 → SQLite rows)
+  │
+  ▼  [chunked HTTP upload via /v1/admin/upload-chunk]
+prod /data/overture-additions.db
+  │
+  ▼  [POST /v1/admin/merge  body: {dbPath}]
+prod /data/nad.db  ← INSERT OR IGNORE in 10K-row batches (background)
+  │
+  ▼
+GET /api/stats  ← verify new row count
+```
+
+**For local development** (no 91GB database needed):
+```bash
+node create-dev-db.js        # one-time: samples 20K addrs/state → data/dev.db
+NAD_DB=data/dev.db node web-server.js
+```
 
 ---
 
@@ -98,6 +134,9 @@
 | POST | `/v1/admin/keys` | Issue a key manually (`{email, tier, name, notes}`) |
 | DELETE | `/v1/admin/keys/:id` | Revoke a key |
 | POST | `/v1/admin/metered/flush` | Report accumulated metered usage to Stripe |
+| POST | `/v1/admin/stream-upload` | Stream a file to `/data/<filename>` without body buffering. Header: `X-Upload-Filename`. For small-to-medium files. |
+| POST | `/v1/admin/upload-chunk` | Write one chunk at a byte offset — resumable upload for large files (37GB+). Headers: `X-Upload-Filename`, `X-Chunk-Offset`. |
+| POST | `/v1/admin/merge` | Merge all addresses from an attached SQLite DB into nad.db in background (10K-row batches, INSERT OR IGNORE). Body: `{ dbPath, source? }`. |
 
 ---
 
@@ -106,11 +145,9 @@
 | Event | Handler |
 |---|---|
 | `checkout.session.completed` | Upgrade existing key tier or issue new key; store `stripe_customer_id` + `stripe_subscription_id` |
+| `customer.subscription.updated` | Key tier synced: match `price.id` → tier lookup → update key row |
 | `customer.subscription.deleted` | Downgrade key to `free` tier |
-| `customer.subscription.updated` | Registered (handler TBD — for plan change detection) |
-| `invoice.payment_succeeded` | Registered (no handler — payment confirmation email not yet sent) |
-| `invoice.payment_failed` | Dunning email sent with link to update payment method |
-| `customer.subscription.updated` | Registered (no handler yet — plan-change detection pending) |
+| `invoice.payment_failed` | Dunning email sent with link to update payment method (up to 4 attempts) |
 
 **Metered billing flow:**
 1. Usage tracked in `metered_unreported` column per key
@@ -143,12 +180,13 @@ DELETE /v1/admin/keys/:id       → key revoked (is_active=0)
 
 ## Not Yet Built (see QUEUE.md for full backlog)
 
-- `customer.subscription.updated` handler (plan-change detection)
+- Overture full gap-fill merge to prod (64.9M rows ready — upload in progress)
 - Usage dashboard for customers (self-serve usage over time)
 - CSV upload → enriched CSV download
 - Bulk async processing for 10M+ record jobs (current bulk is sync, max 1K)
 - Address standardization (USPS format)
 - FCC broadband tier by address
-- Overture full gap-fill run (all states)
+- OpenAddresses import (~50M additional US addresses)
+- NAD r23 quarterly update (~June 2026)
 - SDK (Node.js, Python)
-- Status page
+- Docs page (`/docs`)
