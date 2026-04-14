@@ -536,6 +536,14 @@
     .tag-indigo { background: rgba(129,140,248,0.12); color: var(--indigo); }
     .tag-amber  { background: rgba(251,191,36,0.1);   color: var(--amber); }
     .tag-dim    { background: var(--surface2);         color: var(--muted); }
+    .result-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px;
+    }
+    .result-field { padding: 4px 12px 4px 0; }
+    .result-field:first-child { padding-left: 0; }
+    .result-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .result-value { font-size: 0.8rem; font-weight: 500; color: var(--fg); font-family: 'JetBrains Mono', monospace; }
     .demo-placeholder { text-align: center; color: var(--dim); font-size: 0.875rem; padding: 32px 0; }
 
     /* ─── PRICING ───────────────────────────────────────────────────────────── */
@@ -1508,11 +1516,26 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         const county = d.county ? `<span class="tag tag-sky">${d.county}</span>` : '';
         const fips   = d.fips   ? `<span class="tag tag-dim">FIPS ${d.fips}</span>` : '';
         const tz     = d.timezone ? `<span class="tag tag-dim">${d.timezone.replace('America/','')}</span>` : '';
-        const res    = d.residential === 'residential' ? `<span class="tag tag-indigo">Residential</span>` : '';
+        const res    = d.residential === 'residential' ? `<span class="tag tag-indigo">Residential</span>`
+                     : d.residential === 'commercial'  ? `<span class="tag tag-amber">Commercial</span>` : '';
         const conf   = d.verified ? `<span class="tag tag-green">✓ Verified ${d.confidence}%</span>` : '';
+        const lat    = d.latitude  != null ? d.latitude.toFixed(6)  : '—';
+        const lon    = d.longitude != null ? d.longitude.toFixed(6) : '—';
+        const place  = d.placement || '—';
+        const atype  = d.addr_type || '—';
+        const source = (d.nad_source || '').split(' ').slice(0,3).join(' ') || '—';
+        const updated = d.date_update ? d.date_update.split(' ')[0] : '—';
         return `<div class="result-item">
           <div class="result-addr">${addr}${city2 ? ', ' + city2 : ''}${st2 ? ' ' + st2 : ''}${zip2 ? ' ' + zip2 : ''}</div>
           <div class="tags">${conf}${county}${fips}${res}${tz}</div>
+          <div class="result-grid">
+            <div class="result-field"><div class="result-label">Latitude</div><div class="result-value">${lat}</div></div>
+            <div class="result-field"><div class="result-label">Longitude</div><div class="result-value">${lon}</div></div>
+            <div class="result-field"><div class="result-label">Placement</div><div class="result-value">${place}</div></div>
+            <div class="result-field"><div class="result-label">Address type</div><div class="result-value">${atype}</div></div>
+            <div class="result-field" style="margin-top:10px"><div class="result-label">Data source</div><div class="result-value">${source}</div></div>
+            <div class="result-field" style="margin-top:10px;grid-column:span 3"><div class="result-label">Last updated</div><div class="result-value">${updated}</div></div>
+          </div>
         </div>`;
       }).join('');
 
