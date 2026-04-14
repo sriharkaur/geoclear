@@ -3,520 +3,813 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="120M+ verified US addresses with county FIPS, census tracts, FEMA flood zones, and timezone. One REST API, instant results, start free." />
-  <meta property="og:title" content="GeoClear — US Address Intelligence API" />
-  <meta property="og:description" content="Verify, enrich, and standardize any US address in under 5ms. 120M+ records. Start free." />
-  <title>GeoClear — US Address Intelligence API</title>
+  <meta name="description" content="120 million verified US addresses enriched with county FIPS, census tracts, FEMA flood zones, and timezone. One REST API. Start free." />
+  <meta property="og:title" content="GeoClear — Address Intelligence API" />
+  <meta property="og:description" content="The address intelligence layer. 120M+ records. <5ms. Start free." />
+  <meta name="theme-color" content="#03071A" />
+  <title>GeoClear — Address Intelligence API</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
     :root {
-      --bg:       #09090B;
-      --surface:  #141417;
-      --surface2: #1E1E24;
-      --border:   #27272A;
-      --border2:  #3F3F46;
-      --text:     #FAFAFA;
-      --muted:    #A1A1AA;
-      --dim:      #52525B;
-      --accent:   #818CF8;
-      --accent-d: #6366F1;
-      --green:    #4ADE80;
-      --amber:    #FCD34D;
+      /* Backgrounds */
+      --bg:       #03071A;   /* deep navy-black */
+      --bg-alt:   #060D28;
+      --surface:  #0A1229;
+      --surface2: #0E1A38;
+      --glass:    rgba(10,18,41,0.7);
+
+      /* Borders */
+      --border:   rgba(99,130,255,0.1);
+      --border2:  rgba(99,130,255,0.18);
+      --border3:  rgba(99,130,255,0.28);
+
+      /* Text */
+      --text:     #EEF2FF;
+      --muted:    #8892B0;
+      --dim:      #4A5568;
+
+      /* Brand */
+      --sky:      #38BDF8;   /* primary — sky blue */
+      --indigo:   #818CF8;   /* secondary — soft indigo */
+      --violet:   #A78BFA;
+      --green:    #34D399;
+      --amber:    #FBBF24;
       --red:      #F87171;
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      --mono: 'SF Mono','Fira Code','Cascadia Code',Consolas,monospace;
-      --r:    10px;
-      --rlg:  16px;
-      --max:  1120px;
+
+      /* Gradients */
+      --grad:     linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+      --grad-r:   linear-gradient(135deg, #818CF8 0%, #38BDF8 100%);
+      --glow:     rgba(56, 189, 248, 0.12);
+
+      /* Type */
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+
+      /* Shape */
+      --r:   8px;
+      --rlg: 14px;
+      --rxl: 20px;
+      --max: 1140px;
     }
 
+    /* ─── RESET ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
-      background: var(--bg); color: var(--text);
-      font-family: var(--font); font-size: 15px; line-height: 1.6;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.65;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
     a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
 
-    /* ── Nav ── */
+    /* ─── SCROLLBAR ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    /* ─── UTILITY ───────────────────────────────────────────────────────────── */
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── NAV ───────────────────────────────────────────────────────────────── */
     nav {
-      position: sticky; top: 0; z-index: 100;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
       border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(9,9,11,0.88);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      background: rgba(3,7,26,0.82);
+      transition: border-color 0.3s;
     }
     .nav-inner {
       max-width: var(--max); margin: 0 auto;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 32px; height: 58px;
+      padding: 0 32px; height: 60px;
     }
     .nav-logo {
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 700; font-size: 1rem; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em;
     }
     .nav-logo-mark {
-      width: 28px; height: 28px; border-radius: 7px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-d));
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--grad);
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 800; color: #fff;
+      font-size: 14px; font-weight: 900; color: #fff;
+      box-shadow: 0 0 20px rgba(56,189,248,0.3);
     }
-    .nav-links { display: flex; align-items: center; gap: 2px; }
+    .nav-links {
+      display: flex; align-items: center; gap: 4px;
+    }
     .nav-links a {
       color: var(--muted); font-size: 0.875rem; font-weight: 500;
-      padding: 6px 12px; border-radius: 6px; transition: color .15s, background .15s;
+      padding: 7px 13px; border-radius: 7px;
+      transition: color 0.15s, background 0.15s;
     }
-    .nav-links a:hover { color: var(--text); background: var(--surface2); }
+    .nav-links a:hover { color: var(--text); background: var(--surface); }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-signin {
+      color: var(--muted); font-size: 0.875rem; font-weight: 500;
+      padding: 7px 14px; border-radius: 7px; border: none; background: transparent;
+      transition: color 0.15s;
+    }
+    .nav-signin:hover { color: var(--text); }
     .nav-cta {
       background: var(--text); color: var(--bg);
-      padding: 7px 16px; border-radius: 7px; border: none;
-      font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      font-family: var(--font); transition: opacity .15s;
+      padding: 8px 18px; border-radius: 8px; border: none;
+      font-size: 0.85rem; font-weight: 700; letter-spacing: -0.01em;
+      transition: opacity 0.15s, box-shadow 0.15s;
     }
-    .nav-cta:hover { opacity: 0.85; }
+    .nav-cta:hover { opacity: 0.88; box-shadow: 0 0 20px rgba(238,242,255,0.2); }
 
-    /* ── Hero ── */
+    /* ─── HERO ──────────────────────────────────────────────────────────────── */
     .hero {
       position: relative; overflow: hidden;
-      min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
-      padding: 96px 32px 72px;
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 120px 0 80px;
     }
-    .hero-grid-bg {
+
+    /* Animated dot grid */
+    .hero-bg {
       position: absolute; inset: 0; pointer-events: none;
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 64px 64px; opacity: 0.22;
-      mask-image: radial-gradient(ellipse 80% 75% at 50% 50%, black 25%, transparent 100%);
+      background-image: radial-gradient(circle, rgba(99,130,255,0.18) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, black 30%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 40%, black 30%, transparent 100%);
     }
-    .hero-glow {
-      position: absolute; top: -30%; left: 50%; transform: translateX(-50%);
-      width: 800px; height: 800px; pointer-events: none;
-      background: radial-gradient(circle, rgba(129,140,248,0.055) 0%, transparent 65%);
+
+    /* Central glow orb */
+    .hero-orb {
+      position: absolute; top: -15%; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px; pointer-events: none;
+      background: radial-gradient(ellipse, rgba(56,189,248,0.06) 0%, rgba(129,140,248,0.04) 45%, transparent 70%);
     }
+
+    /* Secondary glow */
+    .hero-orb2 {
+      position: absolute; bottom: -10%; right: -5%;
+      width: 600px; height: 400px; pointer-events: none;
+      background: radial-gradient(ellipse, rgba(167,139,250,0.05) 0%, transparent 65%);
+    }
+
     .hero-inner {
-      max-width: var(--max); margin: 0 auto; width: 100%;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: grid; grid-template-columns: 1.05fr 0.95fr;
+      gap: 80px; align-items: center;
       position: relative; z-index: 1;
     }
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      border: 1px solid var(--border2); border-radius: 20px;
-      padding: 4px 14px 4px 8px; margin-bottom: 28px;
-      font-size: 0.78rem; font-weight: 500; color: var(--muted);
-    }
-    .eyebrow-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-      box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
-    h1 {
-      font-size: clamp(2.5rem, 4.8vw, 3.75rem); font-weight: 800;
-      line-height: 1.08; letter-spacing: -0.035em; margin-bottom: 22px;
+    /* Badge */
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(56,189,248,0.06);
+      border: 1px solid rgba(56,189,248,0.2);
+      border-radius: 30px;
+      padding: 5px 14px 5px 8px;
+      font-size: 0.78rem; font-weight: 600; color: var(--sky);
+      margin-bottom: 28px; width: fit-content;
+      letter-spacing: 0.01em;
     }
-    h1 em { font-style: normal; color: var(--accent); }
+    .badge-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--sky);
+      box-shadow: 0 0 10px var(--sky);
+      animation: badge-pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--sky); }
+      50% { opacity: 0.4; box-shadow: 0 0 4px var(--sky); }
+    }
+
+    /* Headline */
+    .hero h1 {
+      font-size: clamp(2.6rem, 5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.07;
+      letter-spacing: -0.04em;
+      margin-bottom: 22px;
+    }
+    .hero h1 .line-1 { display: block; color: var(--text); }
+    .hero h1 .line-2 {
+      display: block;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
     .hero-sub {
-      font-size: 1.05rem; color: var(--muted); line-height: 1.72;
-      max-width: 480px; margin-bottom: 36px;
+      font-size: 1.05rem; color: var(--muted);
+      line-height: 1.75; max-width: 480px;
+      margin-bottom: 36px;
     }
-    .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 52px; }
 
+    .hero-btns {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
     .btn-primary {
-      background: var(--text); color: var(--bg);
-      padding: 11px 22px; border-radius: 8px; border: none;
-      font-size: 0.9rem; font-weight: 600; cursor: pointer;
-      font-family: var(--font); display: inline-block; transition: opacity .15s;
+      background: var(--grad);
+      color: #fff; border: none;
+      padding: 13px 26px; border-radius: var(--r);
+      font-size: 0.9rem; font-weight: 700;
+      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 24px rgba(56,189,248,0.2);
     }
-    .btn-primary:hover { opacity: 0.87; }
-    .btn-outline {
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 32px rgba(56,189,248,0.35); }
+    .btn-ghost {
       background: transparent; color: var(--text);
-      padding: 11px 20px; border-radius: 8px;
-      border: 1px solid var(--border2); font-family: var(--font);
-      font-size: 0.9rem; font-weight: 500; display: inline-block;
-      transition: border-color .15s, background .15s;
+      padding: 12px 22px; border-radius: var(--r);
+      border: 1px solid var(--border2); font-size: 0.9rem; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .btn-outline:hover { border-color: var(--muted); background: var(--surface); }
+    .btn-ghost:hover { border-color: var(--border3); background: var(--surface); }
+    .btn-icon { font-size: 0.95em; opacity: 0.7; }
 
-    .hero-stats {
-      display: flex; gap: 36px; flex-wrap: wrap;
-      border-top: 1px solid var(--border); padding-top: 28px;
+    /* Trust line */
+    .hero-trust {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
     }
-    .stat-num {
-      font-size: 1.75rem; font-weight: 800; letter-spacing: -0.035em;
+    .trust-item { display: flex; flex-direction: column; }
+    .trust-val {
+      font-size: 1.65rem; font-weight: 800; letter-spacing: -0.04em;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .stat-lbl {
-      font-size: 0.72rem; color: var(--dim); margin-top: 2px;
-      text-transform: uppercase; letter-spacing: 0.07em;
+    .trust-lbl {
+      font-size: 0.71rem; color: var(--dim);
+      text-transform: uppercase; letter-spacing: 0.09em; margin-top: 2px;
     }
 
-    /* ── Terminal ── */
+    /* ─── HERO TERMINAL ─────────────────────────────────────────────────────── */
+    .terminal-wrap {
+      position: relative;
+    }
+    .terminal-halo {
+      position: absolute; inset: -30px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(56,189,248,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
     .terminal {
-      background: #050508; border: 1px solid var(--border2);
-      border-radius: var(--rlg); overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.03);
+      background: #050C1E;
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      overflow: hidden;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.7),
+        0 0 0 1px rgba(99,130,255,0.05),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      position: relative; z-index: 1;
     }
-    .term-bar {
-      background: #111116; padding: 12px 16px;
+    .term-titlebar {
+      background: #08102A;
+      padding: 13px 18px;
       display: flex; align-items: center; gap: 8px;
-      border-bottom: 1px solid #1F1F27;
+      border-bottom: 1px solid var(--border);
     }
-    .td { width: 12px; height: 12px; border-radius: 50%; }
-    .td-r { background: #FF5F57; } .td-y { background: #FEBC2E; } .td-g { background: #28C840; }
-    .term-lbl { margin-left: auto; font-size: 0.7rem; color: #444; font-family: var(--mono); }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #FF5F57; } .dot-y { background: #FEBC2E; } .dot-g { background: #28C840; }
+    .term-title {
+      margin-left: auto; font-size: 0.7rem; color: var(--dim);
+      font-family: var(--mono); letter-spacing: 0.05em;
+    }
     .term-body {
-      padding: 20px 22px; font-family: var(--mono); font-size: 0.79rem;
-      line-height: 1.75; min-height: 300px;
+      padding: 22px 24px;
+      font-family: var(--mono); font-size: 0.78rem; line-height: 1.8;
     }
-    .tc  { color: #3F3F50; } /* comment */
-    .tk  { color: #C4B5FD; } /* keyword/cmd */
-    .ts  { color: #86EFAC; } /* string */
-    .tf  { color: #7DD3FC; } /* key */
-    .tn  { color: #FCD34D; } /* number */
-    .tb  { color: #F472B6; } /* bool */
-    .tu  { color: #FB923C; } /* url */
-    .tg  { color: var(--green); font-weight:600; } /* status ok */
+    /* Token colors */
+    .tc  { color: #2D3A5A; }         /* comment */
+    .tk  { color: #C4B5FD; }         /* keyword / command */
+    .ts  { color: #86EFAC; }         /* string value */
+    .tf  { color: var(--sky); }      /* field name */
+    .tn  { color: #FCD34D; }         /* number */
+    .tb  { color: #F472B6; }         /* bool */
+    .tu  { color: #94A3B8; }         /* url */
+    .tok { color: var(--green); font-weight: 700; } /* ok status */
+    .dim { color: var(--dim); }
 
-    /* ── Numbers strip ── */
-    .strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--surface); }
-    .strip-inner {
+    /* Typing cursor */
+    .cursor {
+      display: inline-block; width: 2px; height: 1em;
+      background: var(--sky); margin-left: 1px;
+      animation: blink 1.1s step-end infinite;
+      vertical-align: text-bottom;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ─── STRIP / METRICS ───────────────────────────────────────────────────── */
+    .metrics-strip {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .metrics-inner {
       max-width: var(--max); margin: 0 auto;
-      display: grid; grid-template-columns: repeat(4,1fr); padding: 0 32px;
+      display: grid; grid-template-columns: repeat(4,1fr);
+      padding: 0 32px;
     }
-    .strip-item {
-      padding: 26px 20px; text-align: center;
+    .metric {
+      padding: 28px 24px; text-align: center;
       border-right: 1px solid var(--border);
+      transition: background 0.2s;
     }
-    .strip-item:last-child { border-right: none; }
-    .strip-val { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; }
-    .strip-lbl { font-size: 0.76rem; color: var(--muted); margin-top: 4px; }
+    .metric:last-child { border-right: none; }
+    .metric:hover { background: var(--surface2); }
+    .metric-val {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.04em;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .metric-lbl { font-size: 0.76rem; color: var(--muted); margin-top: 6px; }
 
-    /* ── Sections ── */
-    section { max-width: var(--max); margin: 0 auto; padding: 96px 32px; }
-    .slabel {
-      font-size: 0.72rem; font-weight: 700; color: var(--accent);
-      letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px;
+    /* ─── SECTIONS ──────────────────────────────────────────────────────────── */
+    section { padding: 96px 0; }
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--sky); letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-label::before {
+      content: '';
+      display: block; width: 18px; height: 1.5px;
+      background: var(--sky); opacity: 0.7;
     }
     .sh2 {
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem); font-weight: 800;
-      letter-spacing: -0.03em; margin-bottom: 14px; line-height: 1.14;
+      font-size: clamp(1.85rem, 3.5vw, 2.75rem);
+      font-weight: 800; letter-spacing: -0.035em; line-height: 1.12;
+      margin-bottom: 16px;
     }
     .ssub {
-      font-size: 1rem; color: var(--muted); line-height: 1.72;
-      max-width: 560px; margin-bottom: 52px;
+      font-size: 1.02rem; color: var(--muted); line-height: 1.75;
+      max-width: 520px; margin-bottom: 56px;
     }
 
-    /* ── Feature grid ── */
+    /* ─── FEATURE GRID ──────────────────────────────────────────────────────── */
+    .features-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
     .feat-grid {
-      display: grid; grid-template-columns: repeat(3,1fr);
-      background: var(--border); border: 1px solid var(--border);
-      border-radius: var(--rlg); overflow: hidden; gap: 1px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      overflow: hidden;
     }
     .feat-card {
-      background: var(--surface); padding: 28px;
-      transition: background .15s;
+      background: var(--bg-alt);
+      padding: 32px 30px;
+      transition: background 0.2s;
+      position: relative;
     }
-    .feat-card:hover { background: var(--surface2); }
+    .feat-card:hover { background: var(--surface); }
+    .feat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: var(--grad); opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .feat-card:hover::before { opacity: 1; }
     .feat-icon {
-      width: 38px; height: 38px; border-radius: 9px;
-      background: var(--surface2); border: 1px solid var(--border2);
+      width: 40px; height: 40px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; margin-bottom: 16px;
+      font-size: 1.2rem; margin-bottom: 20px;
+      background: rgba(56,189,248,0.08);
+      border: 1px solid rgba(56,189,248,0.15);
     }
-    .feat-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
-    .feat-desc  { font-size: 0.81rem; color: var(--muted); line-height: 1.62; }
+    .feat-title {
+      font-size: 0.93rem; font-weight: 700;
+      letter-spacing: -0.01em; margin-bottom: 9px;
+    }
+    .feat-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.65; }
 
-    /* ── Demo widget ── */
-    .demo-wrap { max-width: var(--max); margin: 0 auto; padding: 0 32px 96px; }
-    .demo-card {
-      background: var(--surface); border: 1px solid var(--border2);
-      border-radius: var(--rlg); padding: 40px;
+    /* ─── HOW IT WORKS ──────────────────────────────────────────────────────── */
+    .how-section { background: var(--bg-alt); }
+    .how-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .steps {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 48px; align-items: start; position: relative;
     }
-    .demo-head {
+    .steps::before {
+      content: '';
+      position: absolute; top: 32px; left: calc(16.66% + 20px); right: calc(16.66% + 20px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border3), transparent);
+    }
+    .step { text-align: center; }
+    .step-num {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 800;
+      background: var(--grad);
+      color: #fff; margin: 0 auto 20px;
+      box-shadow: 0 0 24px rgba(56,189,248,0.2);
+    }
+    .step-title {
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .step-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.68; }
+
+    /* ─── CODE SECTION ──────────────────────────────────────────────────────── */
+    .code-section .container {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center;
+    }
+    .code-block {
+      background: #050C1E;
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .code-tabs {
+      display: flex; background: #08102A;
+      border-bottom: 1px solid var(--border);
+      padding: 0 6px;
+    }
+    .ctab {
+      padding: 11px 18px; font-size: 0.8rem; font-weight: 500;
+      color: var(--dim); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .ctab.on { color: var(--text); border-bottom-color: var(--sky); }
+    .ctab:hover:not(.on) { color: var(--muted); }
+    .cpanel { display: none; }
+    .cpanel.on { display: block; }
+    .cpanel pre {
+      padding: 22px 24px;
+      font-family: var(--mono); font-size: 0.78rem;
+      line-height: 1.85; overflow-x: auto; color: var(--muted);
+    }
+
+    /* ─── LIVE DEMO ─────────────────────────────────────────────────────────── */
+    .demo-section { background: var(--bg-alt); }
+    .demo-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .demo-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      padding: 44px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+    }
+    .demo-header {
       display: flex; align-items: flex-start; justify-content: space-between;
       margin-bottom: 28px;
     }
-    .demo-live {
+    .live-badge {
       display: inline-flex; align-items: center; gap: 6px;
-      font-size: 0.71rem; font-weight: 700; color: var(--green);
-      border: 1px solid rgba(74,222,128,.28); background: rgba(74,222,128,.06);
-      padding: 3px 10px; border-radius: 10px;
+      font-size: 0.7rem; font-weight: 700; color: var(--green);
+      background: rgba(52,211,153,0.07);
+      border: 1px solid rgba(52,211,153,0.22);
+      padding: 4px 11px; border-radius: 20px;
+      letter-spacing: 0.06em;
     }
-    .demo-live::before {
-      content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    .live-badge::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+      animation: badge-pulse 2s ease-in-out infinite;
     }
-    .demo-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr 120px; gap: 12px; margin-bottom: 20px; }
     .demo-input {
-      flex: 1; background: var(--bg); border: 1px solid var(--border2);
-      border-radius: 8px; color: var(--text); padding: 11px 16px;
-      font-size: 0.9rem; font-family: var(--font); outline: none;
-      transition: border-color .15s;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text);
+      padding: 12px 16px; font-size: 0.875rem;
+      font-family: var(--font); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .demo-input:focus { border-color: var(--accent); }
+    .demo-input:focus {
+      border-color: var(--sky);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+    }
     .demo-input::placeholder { color: var(--dim); }
-    .demo-go {
-      background: var(--accent); color: #fff; border: none;
-      border-radius: 8px; padding: 11px 20px; font-size: 0.9rem;
-      font-weight: 600; cursor: pointer; font-family: var(--font);
-      transition: background .15s;
+    .demo-btn {
+      background: var(--grad); color: #fff; border: none;
+      border-radius: var(--r); font-size: 0.875rem;
+      font-weight: 700; transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 2px 12px rgba(56,189,248,0.2);
     }
-    .demo-go:hover { background: var(--accent-d); }
-    .demo-results { min-height: 90px; }
-    .result-card {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 16px 18px; margin-bottom: 10px;
+    .demo-btn:hover { opacity: 0.88; box-shadow: 0 2px 20px rgba(56,189,248,0.35); }
+    .demo-results-area { min-height: 80px; }
+    .result-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px 20px; margin-bottom: 10px;
     }
-    .result-addr { font-weight: 600; font-size: 0.91rem; margin-bottom: 10px; }
+    .result-addr { font-weight: 600; font-size: 0.9rem; margin-bottom: 10px; letter-spacing: -0.01em; }
     .tags { display: flex; gap: 6px; flex-wrap: wrap; }
     .tag {
-      font-size: 0.7rem; font-weight: 600;
-      padding: 3px 9px; border-radius: 5px;
+      font-size: 0.69rem; font-weight: 700;
+      padding: 3px 9px; border-radius: 4px;
+      letter-spacing: 0.04em; text-transform: uppercase;
     }
-    .tg-green  { background: rgba(74,222,128,.1);   color: var(--green); }
-    .tg-indigo { background: rgba(129,140,248,.1);  color: var(--accent); }
-    .tg-gray   { background: var(--surface2);       color: var(--muted); }
-    .tg-amber  { background: rgba(252,211,77,.1);   color: var(--amber); }
-    .demo-hint { text-align: center; color: var(--dim); font-size: 0.87rem; padding: 28px 0; }
+    .tag-sky    { background: rgba(56,189,248,0.1);  color: var(--sky); }
+    .tag-green  { background: rgba(52,211,153,0.1);  color: var(--green); }
+    .tag-indigo { background: rgba(129,140,248,0.12); color: var(--indigo); }
+    .tag-amber  { background: rgba(251,191,36,0.1);   color: var(--amber); }
+    .tag-dim    { background: var(--surface2);         color: var(--muted); }
+    .demo-placeholder { text-align: center; color: var(--dim); font-size: 0.875rem; padding: 32px 0; }
 
-    /* ── Code block ── */
-    .code-wrap {
-      border: 1px solid var(--border); border-radius: var(--rlg); overflow: hidden;
+    /* ─── PRICING ───────────────────────────────────────────────────────────── */
+    .pricing-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
     }
-    .code-tabs-row {
-      display: flex; background: var(--surface);
+    .price-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--rxl);
+      padding: 28px 24px;
+      display: flex; flex-direction: column;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .price-card:hover { border-color: var(--border2); }
+    .price-card.featured {
+      border-color: rgba(56,189,248,0.35);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.1), 0 20px 40px rgba(56,189,248,0.08);
+    }
+    .price-card.featured::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--grad);
+    }
+    .featured-badge {
+      position: absolute; top: 20px; right: 20px;
+      font-size: 0.65rem; font-weight: 800;
+      color: var(--sky); background: rgba(56,189,248,0.1);
+      border: 1px solid rgba(56,189,248,0.2);
+      padding: 3px 9px; border-radius: 20px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .plan-name {
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.1em; margin-bottom: 12px;
+    }
+    .plan-price-row { margin-bottom: 6px; }
+    .plan-price {
+      font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em;
+    }
+    .plan-price sup { font-size: 1rem; font-weight: 700; vertical-align: super; }
+    .plan-price-note { font-size: 0.78rem; color: var(--dim); margin-bottom: 20px; }
+    .plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
+    .plan-features { flex: 1; }
+    .plan-feature {
+      font-size: 0.81rem; color: var(--muted);
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-bottom: 9px; line-height: 1.45;
+    }
+    .plan-feature::before {
+      content: '✓';
+      color: var(--sky); font-size: 0.75rem; font-weight: 800;
+      margin-top: 0.1em; flex-shrink: 0;
+    }
+    .plan-cta {
+      margin-top: 24px;
+      padding: 11px 20px; border-radius: var(--r);
+      font-size: 0.85rem; font-weight: 700;
+      width: 100%; border: none; transition: opacity 0.15s, box-shadow 0.15s;
+    }
+    .plan-cta-primary {
+      background: var(--grad); color: #fff;
+      box-shadow: 0 2px 16px rgba(56,189,248,0.2);
+    }
+    .plan-cta-primary:hover { opacity: 0.88; box-shadow: 0 2px 24px rgba(56,189,248,0.35); }
+    .plan-cta-secondary {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border2);
+    }
+    .plan-cta-secondary:hover { border-color: var(--border3); background: var(--surface2); }
+
+    /* ─── ENRICHMENT TABLE ──────────────────────────────────────────────────── */
+    .enrich-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .enrich-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border2); border-radius: var(--rxl); overflow: hidden;
+    }
+    .enrich-item {
+      background: var(--bg-alt); padding: 28px 30px;
+      transition: background 0.2s;
+    }
+    .enrich-item:hover { background: var(--surface); }
+    .enrich-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--sky);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+    }
+    .enrich-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .enrich-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+    /* ─── FINAL CTA ─────────────────────────────────────────────────────────── */
+    .cta-section {
+      position: relative; overflow: hidden;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
     }
-    .ctab {
-      padding: 10px 20px; font-size: 0.82rem; font-weight: 500;
-      color: var(--muted); cursor: pointer; position: relative; transition: color .15s;
-    }
-    .ctab.on { color: var(--text); }
-    .ctab.on::after {
-      content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
-      height: 2px; background: var(--accent);
-    }
-    .code-body {
-      background: #03030A; padding: 24px 28px; overflow-x: auto;
-    }
-    .code-body pre {
-      font-family: var(--mono); font-size: 0.81rem; line-height: 1.78;
-      color: var(--text); white-space: pre;
-    }
-    .s { color: #86EFAC; } .k { color: #C4B5FD; } .f { color: #7DD3FC; }
-    .n { color: #FCD34D; } .c { color: #3D3D52; } .v { color: #FB923C; }
-
-    /* ── Response schema ── */
-    .schema-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start;
-    }
-    .json-panel {
-      background: #03030A; border: 1px solid var(--border);
-      border-radius: var(--r); padding: 24px;
-      font-family: var(--mono); font-size: 0.77rem; line-height: 1.9; color: var(--muted);
-    }
-    .json-panel .tf { color: #7DD3FC; }
-    .json-panel .ts { color: #86EFAC; }
-    .json-panel .tn { color: #FCD34D; }
-    .json-panel .tb { color: #F472B6; }
-    .field-list { list-style: none; }
-    .field-row {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
-    .field-row:last-child { border-bottom: none; }
-    .field-name {
-      font-family: var(--mono); font-size: 0.77rem; color: var(--accent);
-      white-space: nowrap; min-width: 136px; padding-top: 2px;
-    }
-    .field-desc { font-size: 0.81rem; color: var(--muted); line-height: 1.58; }
-    .fbadge {
-      font-size: 0.63rem; font-weight: 700; padding: 1px 6px; border-radius: 4px;
-      background: rgba(129,140,248,.12); color: var(--accent); white-space: nowrap;
-    }
-    .fbadge-pro {
-      background: rgba(252,211,77,.12); color: var(--amber);
-    }
-
-    /* ── Coverage ── */
-    .coverage-layout {
-      display: grid; grid-template-columns: 1fr 1.6fr; gap: 64px; align-items: start;
-    }
-    .cvbar { margin-bottom: 15px; }
-    .cvbar-label {
-      display: flex; justify-content: space-between;
-      font-size: 0.81rem; margin-bottom: 6px; color: var(--muted);
-    }
-    .cvbar-label strong { color: var(--text); }
-    .cvtrack {
-      height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden;
-    }
-    .cvfill { height: 100%; border-radius: 3px; transition: width 1.3s cubic-bezier(.4,0,.2,1); }
-    .cvfill-accent { background: var(--accent); }
-    .cvfill-green  { background: var(--green); }
-
-    /* ── Use cases ── */
-    .uc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-    .uc-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r); padding: 24px; transition: border-color .15s;
-    }
-    .uc-card:hover { border-color: var(--border2); }
-    .uc-icon { font-size: 1.4rem; margin-bottom: 12px; }
-    .uc-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
-    .uc-desc  { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
-
-    /* ── Pricing ── */
-    .pricing-grid {
-      display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; align-items: start;
-    }
-    .pc {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--rlg); padding: 28px; position: relative;
-    }
-    .pc.featured {
-      border-color: var(--accent);
-      background: linear-gradient(160deg,rgba(129,140,248,.06),var(--surface));
-    }
-    .pc-badge {
-      position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-      background: var(--accent); color: #fff; font-size: 0.69rem; font-weight: 700;
-      padding: 3px 12px; border-radius: 9px; white-space: nowrap;
-    }
-    .pc-tier {
-      font-size: 0.71rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .08em; color: var(--muted); margin-bottom: 12px;
-    }
-    .pc-price {
-      font-size: 2.15rem; font-weight: 800; letter-spacing: -0.04em;
-      margin-bottom: 4px; line-height: 1;
-    }
-    .pc-price sup { font-size: 1rem; vertical-align: top; margin-top: 6px; font-weight: 600; }
-    .pc-period { font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; }
-    .pc-vol {
-      font-size: 0.84rem; color: var(--accent); font-weight: 600;
-      margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
-    }
-    .pc-features { list-style: none; }
-    .pc-features li {
-      font-size: 0.81rem; color: var(--muted);
-      padding: 5px 0 5px 18px; position: relative;
-    }
-    .pc-features li::before { content: '✓'; position: absolute; left: 0; color: var(--green); }
-    .pc-features li.off { color: var(--dim); }
-    .pc-features li.off::before { content: '–'; color: var(--border2); }
-    .pc-cta {
-      display: block; text-align: center; margin-top: 24px; padding: 10px;
-      border-radius: 7px; font-size: 0.87rem; font-weight: 600; cursor: pointer;
-      border: none; background: var(--surface2); color: var(--text);
-      font-family: var(--font); transition: opacity .15s;
-    }
-    .pc.featured .pc-cta { background: var(--accent); color: #fff; }
-    .pc-cta:hover { opacity: 0.82; }
-
-    /* free signup inside pricing card */
-    .free-email {
-      width: 100%; padding: 9px 12px; margin-bottom: 8px;
-      background: var(--bg); border: 1px solid var(--border2);
-      border-radius: 7px; color: var(--text); font-size: 0.84rem;
-      font-family: var(--font); outline: none; box-sizing: border-box;
-    }
-    .free-email:focus { border-color: var(--accent); }
-    #free-msg { font-size: 0.77rem; min-height: 18px; margin-top: 4px; }
-
-    /* checkout overlay */
-    #checkout-overlay {
-      display: none; margin-top: 28px; max-width: 440px;
-      margin-left: auto; margin-right: auto;
-      background: var(--surface); border: 1px solid var(--border2);
-      border-radius: var(--rlg); padding: 32px; text-align: center;
-    }
-    #checkout-overlay h3 { font-size: 1rem; font-weight: 700; margin-bottom: 18px; }
-    #checkout-email {
-      width: 100%; padding: 11px 14px; margin-bottom: 12px;
-      background: var(--bg); border: 1px solid var(--border2);
-      border-radius: 8px; color: var(--text); font-size: 0.9rem;
-      font-family: var(--font); outline: none; box-sizing: border-box;
-    }
-    #checkout-email:focus { border-color: var(--accent); }
-    #checkout-btn {
-      width: 100%; padding: 12px; border: none; border-radius: 8px;
-      background: var(--accent); color: #fff; font-size: 0.91rem; font-weight: 600;
-      cursor: pointer; font-family: var(--font); transition: background .15s;
-    }
-    #checkout-btn:hover { background: var(--accent-d); }
-    #checkout-msg { font-size: 0.82rem; color: var(--muted); margin-top: 10px; min-height: 20px; }
-
-    /* ── Final CTA strip ── */
-    .cta-strip {
-      border-top: 1px solid var(--border);
-      background: linear-gradient(180deg,var(--bg),var(--surface));
+    .cta-orb {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(56,189,248,0.06) 0%, transparent 65%);
+      pointer-events: none;
     }
     .cta-inner {
-      max-width: var(--max); margin: 0 auto;
-      padding: 96px 32px; text-align: center;
+      max-width: var(--max); margin: 0 auto; padding: 96px 32px;
+      text-align: center; position: relative; z-index: 1;
     }
-    .cta-inner .sh2 { font-size: clamp(2rem,4vw,3rem); margin-bottom: 14px; }
-    .cta-inner p { color: var(--muted); font-size: 1rem; margin-bottom: 40px; }
-    .cta-row {
-      display: flex; gap: 10px; max-width: 420px; margin: 0 auto;
-    }
-    .cta-email {
-      flex: 1; padding: 12px 16px;
-      background: var(--surface); border: 1px solid var(--border2);
-      border-radius: 8px; color: var(--text); font-size: 0.9rem;
-      font-family: var(--font); outline: none;
-    }
-    .cta-email:focus { border-color: var(--accent); }
-    .cta-btn {
-      background: var(--text); color: var(--bg); padding: 12px 20px;
-      border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
-      cursor: pointer; font-family: var(--font); white-space: nowrap;
-      transition: opacity .15s;
-    }
-    .cta-btn:hover { opacity: 0.85; }
-    #cta-msg { font-size: 0.82rem; margin-top: 14px; min-height: 20px; color: var(--muted); }
+    .cta-inner .sh2 { font-size: clamp(2rem, 4vw, 3.2rem); }
+    .cta-inner .ssub { margin: 0 auto 40px; text-align: center; }
+    .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
-    /* ── Footer ── */
-    .footer-inner {
-      max-width: var(--max); margin: 0 auto;
+    /* ─── FOOTER ────────────────────────────────────────────────────────────── */
+    footer {
       border-top: 1px solid var(--border);
-      padding: 36px 32px;
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 0.8rem; color: var(--muted);
+      background: var(--bg);
     }
-    .footer-inner a { color: var(--muted); transition: color .15s; }
-    .footer-inner a:hover { color: var(--text); }
-    .footer-links { display: flex; gap: 24px; }
+    .footer-inner {
+      max-width: var(--max); margin: 0 auto; padding: 56px 32px 40px;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      gap: 48px;
+    }
+    .footer-brand { }
+    .footer-logo {
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 800; font-size: 1rem; letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .footer-logo-mark {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: var(--grad);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 900; color: #fff;
+    }
+    .footer-tagline {
+      font-size: 0.84rem; color: var(--muted); line-height: 1.7;
+      max-width: 220px; margin-bottom: 24px;
+    }
+    .footer-status {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.75rem; color: var(--green);
+      background: rgba(52,211,153,0.06);
+      border: 1px solid rgba(52,211,153,0.18);
+      padding: 4px 12px; border-radius: 20px;
+    }
+    .footer-status::before {
+      content: '';
+      width: 5px; height: 5px; border-radius: 50%; background: var(--green);
+    }
+    .footer-col h4 {
+      font-size: 0.78rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.09em;
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a {
+      font-size: 0.84rem; color: var(--dim);
+      transition: color 0.15s;
+    }
+    .footer-col a:hover { color: var(--text); }
+    .footer-bottom {
+      max-width: var(--max); margin: 0 auto;
+      padding: 20px 32px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-bottom p { font-size: 0.78rem; color: var(--dim); }
+    .footer-bottom-links { display: flex; gap: 20px; }
+    .footer-bottom-links a { font-size: 0.78rem; color: var(--dim); transition: color 0.15s; }
+    .footer-bottom-links a:hover { color: var(--muted); }
 
-    /* ── Responsive ── */
-    @media (max-width: 900px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 40px; }
-      .strip-inner { grid-template-columns: repeat(2,1fr); }
-      .feat-grid { grid-template-columns: repeat(2,1fr); }
-      .pricing-grid { grid-template-columns: repeat(2,1fr); }
-      .schema-grid { grid-template-columns: 1fr; }
-      .coverage-layout { grid-template-columns: 1fr; }
-      .uc-grid { grid-template-columns: 1fr 1fr; }
-      nav .nav-links { display: none; }
-      section { padding: 64px 20px; }
-      .demo-wrap { padding: 0 20px 64px; }
+    /* ─── SIGNUP MODAL ──────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(3,7,26,0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      align-items: center; justify-content: center; padding: 24px;
     }
-    @media (max-width: 600px) {
-      .feat-grid, .pricing-grid, .uc-grid { grid-template-columns: 1fr; }
-      .strip-inner { grid-template-columns: repeat(2,1fr); }
-      .hero { padding: 76px 20px 56px; }
-      .cta-row { flex-direction: column; }
-      .footer-inner { flex-direction: column; gap: 20px; text-align: center; }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      padding: 40px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      color: var(--dim); font-size: 1.2rem;
+      padding: 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal h2 {
+      font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .modal-sub { font-size: 0.875rem; color: var(--muted); margin-bottom: 28px; }
+    .modal label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .modal input[type=email] {
+      width: 100%;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text);
+      padding: 11px 14px; font-size: 0.9rem;
+      font-family: var(--font); outline: none; margin-bottom: 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .modal input[type=email]:focus {
+      border-color: var(--sky); box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
+    }
+    .modal-cta {
+      width: 100%; background: var(--grad); color: #fff; border: none;
+      padding: 13px; border-radius: var(--r); font-size: 0.92rem;
+      font-weight: 700; transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(56,189,248,0.2);
+    }
+    .modal-cta:hover { opacity: 0.9; }
+    .modal-note {
+      text-align: center; font-size: 0.75rem; color: var(--dim);
+      margin-top: 14px;
+    }
+    .modal-success { text-align: center; padding: 16px 0; }
+    .modal-success .success-icon {
+      font-size: 2.5rem; margin-bottom: 16px;
+    }
+    .modal-success h3 {
+      font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .modal-success p { font-size: 0.87rem; color: var(--muted); }
+    .modal-key-box {
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); padding: 12px 16px;
+      font-family: var(--mono); font-size: 0.8rem;
+      color: var(--sky); word-break: break-all;
+      margin: 16px 0; text-align: left;
+    }
+
+    /* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 56px; }
+      .terminal-wrap { max-width: 560px; margin: 0 auto; }
+      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero h1 { font-size: 2.4rem; }
+      .metrics-inner { grid-template-columns: repeat(2, 1fr); }
+      .feat-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      .steps::before { display: none; }
+      .code-section .container { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .enrich-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .demo-grid { grid-template-columns: 1fr 1fr; }
+      .demo-grid .demo-btn { grid-column: span 2; }
     }
   </style>
 </head>
 <body>
 
-<!-- Nav -->
+<!-- ──────────────────────────────────────────────────────────────── NAV -->
 <nav>
   <div class="nav-inner">
     <a href="/" class="nav-logo">
@@ -525,688 +818,710 @@
     </a>
     <div class="nav-links">
       <a href="#features">Features</a>
-      <a href="#api">API</a>
-      <a href="#coverage">Coverage</a>
+      <a href="#how-it-works">How it works</a>
       <a href="#pricing">Pricing</a>
-      <a href="status.html">Status</a>
-      <a href="index.html" style="color:var(--dim)">Explorer</a>
+      <a href="/docs" target="_blank">Docs</a>
     </div>
-    <a href="#pricing" class="nav-cta">Get API key</a>
+    <div class="nav-right">
+      <button class="nav-signin" onclick="openModal()">Sign in</button>
+      <button class="nav-cta" onclick="openModal()">Get API key →</button>
+    </div>
   </div>
 </nav>
 
-<!-- Hero -->
+<!-- ──────────────────────────────────────────────────────────────── HERO -->
 <section class="hero">
-  <div class="hero-grid-bg"></div>
-  <div class="hero-glow"></div>
-  <div class="hero-inner">
+  <div class="hero-bg"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb2"></div>
 
-    <!-- Left -->
-    <div>
-      <div class="hero-eyebrow">
-        <span class="eyebrow-dot"></span>
-        API live · 120M+ records indexed
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Now live — 120M+ addresses indexed
       </div>
-      <h1>Address intelligence<br>for the modern<br><em>data stack.</em></h1>
-      <p class="hero-sub">Verify, enrich, and standardize any US address in under 5ms. Every lookup returns county FIPS, census tract, FEMA flood zone, timezone, and a 0–100 confidence score — sourced from USDOT national data.</p>
+
+      <h1>
+        <span class="line-1">Every US address,</span>
+        <span class="line-2">instantly resolved.</span>
+      </h1>
+
+      <p class="hero-sub">
+        The address intelligence layer for developers. Verify, standardize, and enrich
+        any US address with county FIPS, census tracts, FEMA flood zones, and timezone —
+        in a single API call.
+      </p>
+
       <div class="hero-btns">
-        <a href="#pricing" class="btn-primary">Start for free →</a>
-        <a href="#api" class="btn-outline">View API docs</a>
+        <button class="btn-primary" onclick="openModal()">
+          Start for free
+          <span class="btn-icon">→</span>
+        </button>
+        <a class="btn-ghost" href="#live-demo">
+          Try live demo
+          <span class="btn-icon">↓</span>
+        </a>
       </div>
-      <div class="hero-stats">
-        <div>
-          <div class="stat-num" id="live-count">120M+</div>
-          <div class="stat-lbl">Addresses</div>
+
+      <div class="hero-trust">
+        <div class="trust-item">
+          <span class="trust-val">120M+</span>
+          <span class="trust-lbl">US addresses</span>
         </div>
-        <div>
-          <div class="stat-num">&lt;5ms</div>
-          <div class="stat-lbl">P99 response</div>
+        <div class="trust-item">
+          <span class="trust-val">&lt;5ms</span>
+          <span class="trust-lbl">avg latency</span>
         </div>
-        <div>
-          <div class="stat-num">50</div>
-          <div class="stat-lbl">States</div>
+        <div class="trust-item">
+          <span class="trust-val">99.9%</span>
+          <span class="trust-lbl">uptime SLA</span>
         </div>
-        <div>
-          <div class="stat-num">$0</div>
-          <div class="stat-lbl">To start</div>
+        <div class="trust-item">
+          <span class="trust-val">50</span>
+          <span class="trust-lbl">states covered</span>
         </div>
       </div>
     </div>
 
-    <!-- Right: terminal -->
-    <div>
+    <div class="terminal-wrap">
+      <div class="terminal-halo"></div>
       <div class="terminal">
-        <div class="term-bar">
-          <span class="td td-r"></span>
-          <span class="td td-y"></span>
-          <span class="td td-g"></span>
-          <span class="term-lbl">geoclear — address lookup</span>
+        <div class="term-titlebar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <span class="term-title">geoclear — address lookup</span>
         </div>
         <div class="term-body">
-          <div><span class="tc">$ </span><span class="tk">curl</span> -s \</div>
-          <div>&nbsp; -H <span class="ts">"X-Api-Key: nad_free_••••••••••••"</span> \</div>
-          <div>&nbsp; <span class="ts">"https://geoclear.io/api/address?</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="ts">street=Pennsylvania+Ave&amp;state=DC&amp;number=1600"</span></div>
-          <br>
-          <div id="term-out"><span class="tc"># fetching live data…</span></div>
+<span class="tc"># Verify and enrich any US address</span>
+<span class="tk">curl</span> <span class="ts">"https://api.geoclear.io/api/address</span>
+<span class="ts">  ?street=1600+Pennsylvania+Ave</span>
+<span class="ts">  &amp;city=Washington&amp;state=DC"</span> \
+  -H <span class="ts">"X-Api-Key: gc_live_••••••••"</span>
+
+<span class="dim">{</span>
+  <span class="tf">"ok"</span>: <span class="tb">true</span>,
+  <span class="tf">"address"</span>: <span class="ts">"1600 Pennsylvania Ave NW"</span>,
+  <span class="tf">"city"</span>: <span class="ts">"Washington"</span>,
+  <span class="tf">"state"</span>: <span class="ts">"DC"</span>,
+  <span class="tf">"zip"</span>: <span class="ts">"20500"</span>,
+  <span class="tf">"county"</span>: <span class="ts">"District of Columbia"</span>,
+  <span class="tf">"county_fips"</span>: <span class="ts">"11001"</span>,
+  <span class="tf">"census_tract"</span>: <span class="ts">"007402"</span>,
+  <span class="tf">"lat"</span>: <span class="tn">38.8977</span>, <span class="tf">"lon"</span>: <span class="tn">-77.0366</span>,
+  <span class="tf">"timezone"</span>: <span class="ts">"America/New_York"</span>,
+  <span class="tf">"fema_zone"</span>: <span class="ts">"X"</span>,
+  <span class="tf">"status"</span>: <span class="tok">"verified"</span>
+<span class="dim">}</span><span class="cursor"></span>
         </div>
       </div>
     </div>
-
   </div>
 </section>
 
-<!-- Numbers strip -->
-<div class="strip">
-  <div class="strip-inner">
-    <div class="strip-item">
-      <div class="strip-val">USDOT</div>
-      <div class="strip-lbl">Official federal source</div>
+<!-- ──────────────────────────────────────────────────────────────── METRICS -->
+<div class="metrics-strip">
+  <div class="metrics-inner">
+    <div class="metric">
+      <div class="metric-val">120M+</div>
+      <div class="metric-lbl">Verified US addresses</div>
     </div>
-    <div class="strip-item">
-      <div class="strip-val">NAD r22</div>
-      <div class="strip-lbl">Latest quarterly release</div>
+    <div class="metric">
+      <div class="metric-val">&lt;5ms</div>
+      <div class="metric-lbl">Average response time</div>
     </div>
-    <div class="strip-item">
-      <div class="strip-val">Overture</div>
-      <div class="strip-lbl">Gap-fill: FL MI NJ NV NH</div>
+    <div class="metric">
+      <div class="metric-val">8+</div>
+      <div class="metric-lbl">Enrichment fields per address</div>
     </div>
-    <div class="strip-item">
-      <div class="strip-val" style="color:var(--green)">Live</div>
-      <div class="strip-lbl">geoclear.io · no downtime</div>
+    <div class="metric">
+      <div class="metric-val">10K</div>
+      <div class="metric-lbl">Free requests / month</div>
     </div>
   </div>
 </div>
 
-<!-- Features -->
-<section id="features">
-  <div class="slabel">Capabilities</div>
-  <h2 class="sh2">One API. Every enrichment field<br>your pipeline needs.</h2>
-  <p class="ssub">Stop stitching together five vendors. GeoClear returns the full address intelligence stack in a single JSON response.</p>
-  <div class="feat-grid">
-    <div class="feat-card">
-      <div class="feat-icon">🏛</div>
-      <div class="feat-title">County FIPS</div>
-      <div class="feat-desc">Full 5-digit Federal FIPS code on every address. Built from the Census Bureau's complete 3,234-county table. Required for HMDA, CRA, and healthcare data exchange.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📊</div>
-      <div class="feat-title">Census Tract</div>
-      <div class="feat-desc">Tract and block group via the Census Bureau's official geocoder. Required for HMDA compliance, CRA analysis, fair lending, and demographic segmentation.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🌊</div>
-      <div class="feat-title">FEMA Flood Zone</div>
-      <div class="feat-desc">Real-time NFHL flood zone designation and SFHA flag. Required for mortgage underwriting, insurance quoting, and property risk assessment.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">✅</div>
-      <div class="feat-title">Confidence Score</div>
-      <div class="feat-desc">0–100 per address based on placement accuracy, field completeness, and source authority. Know exactly how clean your data is before it enters your pipeline.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🔍</div>
-      <div class="feat-title">Fuzzy Matching</div>
-      <div class="feat-desc">Typo-tolerant search via Levenshtein distance ranking. "Pensylvania Av" still finds "Pennsylvania Ave NW." Works with partial addresses, transposed digits, abbreviations.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">⚡</div>
-      <div class="feat-title">Autocomplete</div>
-      <div class="feat-desc">Sub-100ms typeahead scoped by state or ZIP. Integrates into any address input with 3 lines of JavaScript. Returns enriched results, not just strings.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📦</div>
-      <div class="feat-title">Bulk Verification</div>
-      <div class="feat-desc">Verify 1,000 addresses in a single POST. Full enrichment on each. Built for CRM cleanup, list hygiene, import pipelines, and batch ETL jobs.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📍</div>
-      <div class="feat-title">Proximity Search</div>
-      <div class="feat-desc">All addresses within N km of a lat/lon point. Bounding-box with configurable radius. Full enrichment including FIPS and confidence on every result.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🌐</div>
-      <div class="feat-title">Geographic Hierarchy</div>
-      <div class="feat-desc">Drill state → county → city → ZIP → address. Every level returns address counts, FIPS codes, and metadata. Ideal for spatial analytics and territory mapping.</div>
-    </div>
-  </div>
-</section>
+<!-- ──────────────────────────────────────────────────────────────── FEATURES -->
+<section class="features-section" id="features">
+  <div class="container">
+    <div class="section-label">Features</div>
+    <h2 class="sh2">Everything your app needs<br>to work with addresses</h2>
+    <p class="ssub">
+      From simple verification to deep enrichment. One API, one key, no infrastructure to manage.
+    </p>
 
-<!-- Live demo -->
-<div class="demo-wrap">
-  <div class="demo-card">
-    <div class="demo-head">
-      <div>
-        <div class="slabel" style="margin-bottom:6px">Live Demo</div>
-        <div style="font-size:1.12rem;font-weight:700;letter-spacing:-0.02em">Search 120M+ addresses in real time</div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">📍</div>
+        <div class="feat-title">Address Verification</div>
+        <div class="feat-desc">Validate and standardize any US address against 120M+ records. Fuzzy match handles typos and abbreviations automatically.</div>
       </div>
-      <div class="demo-live">Live API</div>
-    </div>
-    <div class="demo-row">
-      <input id="demo-q" class="demo-input" type="text"
-        placeholder="Try: 350 Fifth Ave New York · 1 Apple Park Way CA · 1600 Pennsylvania Ave DC"
-        autocomplete="off" />
-      <button class="demo-go" onclick="runDemo()">Search</button>
-    </div>
-    <div id="demo-out" class="demo-results">
-      <div class="demo-hint">Type any US address above — verified results appear instantly</div>
+      <div class="feat-card">
+        <div class="feat-icon">🗺</div>
+        <div class="feat-title">County + FIPS Codes</div>
+        <div class="feat-desc">Every address returns its county name and 5-digit FIPS code — essential for compliance, tax routing, and government reporting.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Census Tract Data</div>
+        <div class="feat-desc">Census tract and block group enrichment for CRA compliance, demographic analysis, and financial eligibility determination.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🌊</div>
+        <div class="feat-title">FEMA Flood Zones</div>
+        <div class="feat-desc">Instant flood zone classification (A, AE, X, etc.) for insurance underwriting, mortgage lending, and real estate applications.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-title">Autocomplete &amp; Suggest</div>
+        <div class="feat-desc">Real-time address autocomplete as users type. Reduce form abandonment and eliminate data entry errors at the source.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">Bulk Processing</div>
+        <div class="feat-desc">Verify up to 1,000 addresses per request. Clean entire datasets in seconds, not hours. No rate limiting on batch operations.</div>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- Code examples -->
-<section id="api">
-  <div class="slabel">REST API</div>
-  <h2 class="sh2">Simple, predictable, fast.</h2>
-  <p class="ssub">JSON over HTTPS. One header for auth. Works from any language in under two minutes.</p>
-  <div class="code-wrap">
-    <div class="code-tabs-row">
-      <div class="ctab on" onclick="setTab(this,'curl')">cURL</div>
-      <div class="ctab"    onclick="setTab(this,'js')">JavaScript</div>
-      <div class="ctab"    onclick="setTab(this,'python')">Python</div>
-      <div class="ctab"    onclick="setTab(this,'resp')">Response</div>
+<!-- ──────────────────────────────────────────────────────────────── HOW IT WORKS -->
+<section class="how-section" id="how-it-works">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2 class="sh2">From zero to verified<br>in three steps</h2>
+    <p class="ssub" style="margin-bottom: 56px;">No SDKs required. No infrastructure to set up. Works with any language that can make HTTP requests.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Get your API key</div>
+        <div class="step-desc">Sign up with an email address. Your free key is issued instantly — 10,000 lookups per month, no credit card required.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Make a request</div>
+        <div class="step-desc">Pass an address as query parameters. The API matches it against 120M records and returns a standardized, enriched response in milliseconds.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Use the data</div>
+        <div class="step-desc">Every response includes verified address fields, coordinates, county FIPS, census tract, FEMA flood zone, and timezone — ready to use.</div>
+      </div>
     </div>
-    <div class="code-body">
+  </div>
+</section>
 
-      <pre id="tab-curl"><span class="c"># Verify and enrich an address</span>
-<span class="f">curl</span> -s \
-  -H <span class="s">"X-Api-Key: nad_your_key_here"</span> \
-  <span class="s">"https://geoclear.io/api/address?street=Pennsylvania+Ave&state=DC&number=1600"</span>
+<!-- ──────────────────────────────────────────────────────────────── CODE -->
+<section class="code-section">
+  <div class="container">
+    <div>
+      <div class="section-label">Integrate in minutes</div>
+      <h2 class="sh2">Simple by design.<br>Powerful by default.</h2>
+      <p class="ssub">
+        A clean REST API with predictable JSON responses. No query languages, no schemas to configure.
+        If you can read JSON, you can use GeoClear.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="openModal()">Get free API key →</button>
+        <a class="btn-ghost" href="/docs" target="_blank">View full docs</a>
+      </div>
+    </div>
 
-<span class="c"># Fuzzy match — typos tolerated</span>
-<span class="f">curl</span> -s -H <span class="s">"X-Api-Key: nad_your_key_here"</span> \
-  <span class="s">"https://geoclear.io/api/address?street=Pensylvania+Av&state=DC&fuzzy=true"</span>
+    <div class="code-block">
+      <div class="code-tabs">
+        <div class="ctab on" onclick="showTab('curl',this)">cURL</div>
+        <div class="ctab" onclick="showTab('node',this)">Node.js</div>
+        <div class="ctab" onclick="showTab('python',this)">Python</div>
+        <div class="ctab" onclick="showTab('response',this)">Response</div>
+      </div>
 
-<span class="c"># Autocomplete typeahead</span>
-<span class="f">curl</span> -s -H <span class="s">"X-Api-Key: nad_your_key_here"</span> \
-  <span class="s">"https://geoclear.io/api/suggest?q=1600+Penn&state=DC"</span>
+      <div class="cpanel on" id="tab-curl">
+        <pre><span style="color:var(--dim)"># Verify and enrich an address</span>
+<span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://api.geoclear.io/api/address\
+  ?street=350+Fifth+Ave\
+  &city=New+York&state=NY"</span> \
+  -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span>
 
-<span class="c"># Bulk verify — up to 1,000 per request</span>
-<span class="f">curl</span> -s -X POST \
-  -H <span class="s">"X-Api-Key: nad_your_key_here"</span> \
-  -H <span class="s">"Content-Type: application/json"</span> \
-  -d <span class="s">'[{"street":"Pennsylvania Ave","state":"DC","number":"1600"}]'</span> \
-  <span class="s">"https://geoclear.io/api/address/bulk"</span></pre>
+<span style="color:var(--dim)"># Autocomplete as user types</span>
+<span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://api.geoclear.io/api/suggest\
+  ?q=350+fifth&state=NY&limit=5"</span> \
+  -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span>
 
-      <pre id="tab-js" style="display:none"><span class="c">// Single address lookup</span>
-<span class="k">const</span> <span class="v">res</span> = <span class="k">await</span> <span class="f">fetch</span>(
-  <span class="s">'https://geoclear.io/api/address?street=Pennsylvania+Ave&state=DC&number=1600'</span>,
-  { headers: { <span class="s">'X-Api-Key'</span>: <span class="s">'nad_your_key_here'</span> } }
+<span style="color:var(--dim)"># Bulk verify up to 1000 addresses</span>
+<span style="color:var(--sky)">curl</span> -X POST <span style="color:#86EFAC">"https://api.geoclear.io/api/address/bulk"</span> \
+  -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span> \
+  -H <span style="color:#86EFAC">"Content-Type: application/json"</span> \
+  -d <span style="color:#86EFAC">'{"addresses":[...]}'</span></pre>
+      </div>
+
+      <div class="cpanel" id="tab-node">
+        <pre><span style="color:var(--dim)">// npm install node-fetch (or use built-in fetch)</span>
+<span style="color:var(--sky)">const</span> <span style="color:var(--text)">GC_KEY</span> = process.env.<span style="color:#FCD34D">GC_API_KEY</span>;
+
+<span style="color:var(--sky)">async function</span> <span style="color:#C4B5FD">verifyAddress</span>(street, city, state) {
+  <span style="color:var(--sky)">const</span> url = <span style="color:#86EFAC">`https://api.geoclear.io/api/address</span>
+<span style="color:#86EFAC">    ?street=${encodeURIComponent(street)}</span>
+<span style="color:#86EFAC">    &city=${encodeURIComponent(city)}</span>
+<span style="color:#86EFAC">    &state=${state}`</span>;
+
+  <span style="color:var(--sky)">const</span> res = <span style="color:var(--sky)">await</span> <span style="color:#C4B5FD">fetch</span>(url, {
+    headers: { <span style="color:#86EFAC">'X-Api-Key'</span>: GC_KEY }
+  });
+  <span style="color:var(--sky)">return</span> res.<span style="color:#C4B5FD">json</span>();
+}
+
+<span style="color:var(--sky)">const</span> result = <span style="color:var(--sky)">await</span> <span style="color:#C4B5FD">verifyAddress</span>(
+  <span style="color:#86EFAC">'350 Fifth Ave'</span>, <span style="color:#86EFAC">'New York'</span>, <span style="color:#86EFAC">'NY'</span>
 );
-<span class="k">const</span> { data } = <span class="k">await</span> res.<span class="f">json</span>();
-<span class="c">// data[0].fips → "11001"  ·  data[0].confidence → 97</span>
-
-<span class="c">// Autocomplete widget — 4 lines</span>
-input.<span class="f">addEventListener</span>(<span class="s">'input'</span>, <span class="k">async</span> () => {
-  <span class="k">const</span> { data } = <span class="k">await</span> (<span class="k">await</span> <span class="f">fetch</span>(
-    <span class="s">`https://geoclear.io/api/suggest?q=${input.value}&state=TX`</span>,
-    { headers: { <span class="s">'X-Api-Key'</span>: <span class="s">'nad_your_key_here'</span> } }
-  )).<span class="f">json</span>();
-  <span class="f">renderSuggestions</span>(data);
-});</pre>
-
-      <pre id="tab-python" style="display:none"><span class="k">import</span> requests
-
-API  = <span class="s">'https://geoclear.io/api'</span>
-HDRS = {<span class="s">'X-Api-Key'</span>: <span class="s">'nad_your_key_here'</span>}
-
-<span class="c"># Single lookup</span>
-addr = requests.<span class="f">get</span>(<span class="s">f'{API}/address'</span>,
-    params={<span class="s">'street'</span>: <span class="s">'Pennsylvania Ave'</span>, <span class="s">'state'</span>: <span class="s">'DC'</span>, <span class="s">'number'</span>: <span class="s">'1600'</span>},
-    headers=HDRS).<span class="f">json</span>()[<span class="s">'data'</span>][<span class="n">0</span>]
-
-<span class="f">print</span>(addr[<span class="s">'fips'</span>], addr[<span class="s">'confidence'</span>])  <span class="c"># 11001  97</span>
-
-<span class="c"># Bulk-verify a pandas DataFrame</span>
-<span class="k">import</span> pandas <span class="k">as</span> pd
-df = pd.<span class="f">read_csv</span>(<span class="s">'contacts.csv'</span>)
-rows = df[[<span class="s">'street'</span>,<span class="s">'city'</span>,<span class="s">'state'</span>,<span class="s">'zip'</span>]].<span class="f">to_dict</span>(<span class="s">'records'</span>)
-<span class="k">for</span> batch <span class="k">in</span> [rows[i:i+<span class="n">1000</span>] <span class="k">for</span> i <span class="k">in</span> <span class="f">range</span>(<span class="n">0</span>,<span class="f">len</span>(rows),<span class="n">1000</span>)]:
-    results = requests.<span class="f">post</span>(<span class="s">f'{API}/address/bulk'</span>,
-        json=batch, headers=HDRS).<span class="f">json</span>()[<span class="s">'data'</span>]</pre>
-
-      <pre id="tab-resp" style="display:none">{
-  <span class="s">"ok"</span>:    <span class="k">true</span>,
-  <span class="s">"count"</span>: <span class="n">1</span>,
-  <span class="s">"data"</span>: [{
-    <span class="s">"verified"</span>:     <span class="k">true</span>,
-    <span class="s">"confidence"</span>:   <span class="n">97</span>,
-    <span class="s">"full_address"</span>: <span class="s">"1600 Pennsylvania Avenue NW"</span>,
-    <span class="s">"add_number"</span>:   <span class="s">"1600"</span>,
-    <span class="s">"st_name"</span>:      <span class="s">"Pennsylvania"</span>,
-    <span class="s">"st_pos_typ"</span>:   <span class="s">"Ave"</span>,
-    <span class="s">"st_pos_dir"</span>:   <span class="s">"NW"</span>,
-    <span class="s">"city"</span>:         <span class="s">"Washington"</span>,
-    <span class="s">"county"</span>:       <span class="s">"District of Columbia"</span>,
-    <span class="s">"state"</span>:        <span class="s">"DC"</span>,
-    <span class="s">"zip_code"</span>:     <span class="s">"20500"</span>,
-    <span class="s">"fips"</span>:         <span class="s">"11001"</span>,
-    <span class="s">"timezone"</span>:     <span class="s">"America/New_York"</span>,
-    <span class="s">"residential"</span>:  <span class="s">"non_residential"</span>,
-    <span class="s">"latitude"</span>:     <span class="n">38.8977</span>,
-    <span class="s">"longitude"</span>:    <span class="n">-77.0366</span>,
-    <span class="s">"placement"</span>:    <span class="s">"Structure - Rooftop"</span>,
-    <span class="s">"nad_uuid"</span>:     <span class="s">"9a7b2c4d-..."</span>
-  }]
-}</pre>
-    </div>
-  </div>
-</section>
-
-<!-- Response schema -->
-<section>
-  <div class="slabel">Response Schema</div>
-  <h2 class="sh2">Every address. Every field.<br>No extra API calls.</h2>
-  <p class="ssub">Most vendors make you pay separately for FIPS, census, and flood data. GeoClear returns everything in one response, every time.</p>
-  <div class="schema-grid">
-    <div class="json-panel">
-<span class="tf">"verified"</span>:    <span class="tb">true</span>,
-<span class="tf">"confidence"</span>:  <span class="tn">97</span>,
-<span class="tf">"full_address"</span>:<span class="ts">"1600 Pennsylvania Avenue NW"</span>,
-<span class="tf">"city"</span>:        <span class="ts">"Washington"</span>,
-<span class="tf">"county"</span>:      <span class="ts">"District of Columbia"</span>,
-<span class="tf">"state"</span>:        <span class="ts">"DC"</span>,
-<span class="tf">"zip_code"</span>:    <span class="ts">"20500"</span>,
-<span class="tf">"fips"</span>:        <span class="ts">"11001"</span>,
-<span class="tf">"timezone"</span>:    <span class="ts">"America/New_York"</span>,
-<span class="tf">"residential"</span>: <span class="ts">"non_residential"</span>,
-<span class="tf">"latitude"</span>:    <span class="tn">38.8977</span>,
-<span class="tf">"longitude"</span>:   <span class="tn">-77.0366</span>,
-<span class="tf">"placement"</span>:   <span class="ts">"Structure - Rooftop"</span>,
-<span class="tf">"census_tract"</span>:<span class="ts">"001100"</span>,
-<span class="tf">"fema_flood"</span>:  <span class="ts">"X"</span>
-    </div>
-    <ul class="field-list">
-      <li class="field-row">
-        <div class="field-name">verified</div>
-        <div class="field-desc">Boolean — address exists in the NAD master dataset. Hard confirmation, not a score. <span class="fbadge">All tiers</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">confidence</div>
-        <div class="field-desc">0–100 quality score based on placement accuracy, field completeness, source authority, and anomaly detection. <span class="fbadge">All tiers</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">fips</div>
-        <div class="field-desc">5-digit Federal county FIPS. Required for HMDA, CRA, healthcare data exchange, and government reporting. <span class="fbadge">All tiers</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">timezone</div>
-        <div class="field-desc">IANA identifier (e.g. America/Chicago) derived from county boundaries. Zero external calls. <span class="fbadge">All tiers</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">residential</div>
-        <div class="field-desc">Residential vs. commercial classification from NAD authority codes. Drives RDI scoring and list hygiene. <span class="fbadge">All tiers</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">latitude / longitude</div>
-        <div class="field-desc">Rooftop-level coordinates where available. Placement field indicates precision (Rooftop &gt; Parcel &gt; Street). <span class="fbadge">All tiers</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">census_tract</div>
-        <div class="field-desc">Tract + GEOID from Census Bureau's official geocoder. Required for HMDA compliance and demographic analysis. <span class="fbadge fbadge-pro">Pro+</span></div>
-      </li>
-      <li class="field-row">
-        <div class="field-name">fema_flood</div>
-        <div class="field-desc">FEMA NFHL zone designation (AE, X, VE…) and SFHA flag. Required for mortgage underwriting and flood insurance. <span class="fbadge fbadge-pro">Pro+</span></div>
-      </li>
-    </ul>
-  </div>
-</section>
-
-<!-- Coverage -->
-<section id="coverage" style="border-top:1px solid var(--border);background:var(--surface);max-width:100%;padding:0;">
-  <div style="max-width:var(--max);margin:0 auto;padding:96px 32px;">
-    <div class="coverage-layout">
-      <div>
-        <div class="slabel">Coverage</div>
-        <h2 class="sh2">120M+ addresses.<br>All 50 states.</h2>
-        <p style="color:var(--muted);font-size:0.9rem;line-height:1.72;margin-top:16px;margin-bottom:18px;">
-          Sourced from the USDOT National Address Database — the federal government's authoritative address layer compiled from state and local GIS agencies. Updated quarterly.
-        </p>
-        <p style="color:var(--muted);font-size:0.9rem;line-height:1.72;margin-bottom:28px;">
-          Five states not in NAD (FL, MI, NJ, NV, NH) are gap-filled via Overture Maps Foundation under Apache 2.0 license.
-        </p>
-        <a href="#pricing" class="btn-primary" style="display:inline-block;">Get full coverage →</a>
+console.<span style="color:#C4B5FD">log</span>(result.county_fips); <span style="color:var(--dim)">// "36061"</span></pre>
       </div>
-      <div id="cv-bars"></div>
+
+      <div class="cpanel" id="tab-python">
+        <pre><span style="color:var(--sky)">import</span> requests, os
+
+GC_KEY = os.environ[<span style="color:#86EFAC">"GC_API_KEY"</span>]
+
+<span style="color:var(--sky)">def</span> <span style="color:#C4B5FD">verify_address</span>(street, city, state):
+    resp = requests.<span style="color:#C4B5FD">get</span>(
+        <span style="color:#86EFAC">"https://api.geoclear.io/api/address"</span>,
+        params={
+            <span style="color:#86EFAC">"street"</span>: street,
+            <span style="color:#86EFAC">"city"</span>: city,
+            <span style="color:#86EFAC">"state"</span>: state
+        },
+        headers={<span style="color:#86EFAC">"X-Api-Key"</span>: GC_KEY}
+    )
+    resp.<span style="color:#C4B5FD">raise_for_status</span>()
+    <span style="color:var(--sky)">return</span> resp.<span style="color:#C4B5FD">json</span>()
+
+data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86EFAC">"350 Fifth Ave"</span>, <span style="color:#86EFAC">"New York"</span>, <span style="color:#86EFAC">"NY"</span>)
+<span style="color:var(--sky)">print</span>(data[<span style="color:#86EFAC">"census_tract"</span>])  <span style="color:var(--dim)"># "010700"</span></pre>
+      </div>
+
+      <div class="cpanel" id="tab-response">
+        <pre><span style="color:var(--dim)">{</span>
+  <span style="color:var(--sky)">"ok"</span>:           <span style="color:#F472B6">true</span>,
+  <span style="color:var(--sky)">"address"</span>:       <span style="color:#86EFAC">"350 5th Ave"</span>,
+  <span style="color:var(--sky)">"city"</span>:          <span style="color:#86EFAC">"New York"</span>,
+  <span style="color:var(--sky)">"state"</span>:         <span style="color:#86EFAC">"NY"</span>,
+  <span style="color:var(--sky)">"zip"</span>:           <span style="color:#86EFAC">"10118"</span>,
+  <span style="color:var(--sky)">"county"</span>:        <span style="color:#86EFAC">"New York"</span>,
+  <span style="color:var(--sky)">"county_fips"</span>:   <span style="color:#86EFAC">"36061"</span>,
+  <span style="color:var(--sky)">"census_tract"</span>:  <span style="color:#86EFAC">"010700"</span>,
+  <span style="color:var(--sky)">"lat"</span>:           <span style="color:#FCD34D">40.7484</span>,
+  <span style="color:var(--sky)">"lon"</span>:           <span style="color:#FCD34D">-73.9967</span>,
+  <span style="color:var(--sky)">"timezone"</span>:      <span style="color:#86EFAC">"America/New_York"</span>,
+  <span style="color:var(--sky)">"fema_zone"</span>:     <span style="color:#86EFAC">"X"</span>,
+  <span style="color:var(--sky)">"plus4"</span>:         <span style="color:#86EFAC">"1901"</span>,
+  <span style="color:var(--sky)">"rdi"</span>:           <span style="color:#86EFAC">"Commercial"</span>,
+  <span style="color:var(--sky)">"status"</span>:        <span style="color:var(--green)">"verified"</span>
+<span style="color:var(--dim)">}</span></pre>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Use cases -->
-<section>
-  <div class="slabel">Use Cases</div>
-  <h2 class="sh2">Built for teams who can't<br>afford bad addresses.</h2>
-  <p class="ssub">Address quality is infrastructure — not a nice-to-have.</p>
-  <div class="uc-grid">
-    <div class="uc-card">
-      <div class="uc-icon">🏠</div>
-      <div class="uc-title">Mortgage &amp; Lending</div>
-      <div class="uc-desc">HMDA and CRA compliance require census tract, county FIPS, and FEMA flood zone on every loan address. GeoClear returns all three in one call — no stitching required.</div>
-    </div>
-    <div class="uc-card">
-      <div class="uc-icon">🏥</div>
-      <div class="uc-title">Healthcare &amp; Insurance</div>
-      <div class="uc-desc">Patient records, claims processing, and provider directories require verified addresses with FIPS codes for CMS reporting and risk adjustment workflows.</div>
-    </div>
-    <div class="uc-card">
-      <div class="uc-icon">🛒</div>
-      <div class="uc-title">E-commerce Checkout</div>
-      <div class="uc-desc">Validate and standardize shipping addresses at input with autocomplete. Cut failed deliveries before the order is placed, not after the truck leaves.</div>
-    </div>
-    <div class="uc-card">
-      <div class="uc-icon">📮</div>
-      <div class="uc-title">Direct Mail &amp; Print</div>
-      <div class="uc-desc">Clean mailing lists before every send. Bulk verify 100K addresses overnight. Confidence scoring lets you drop records below your threshold automatically.</div>
-    </div>
-    <div class="uc-card">
-      <div class="uc-icon">📈</div>
-      <div class="uc-title">CRM &amp; Sales Ops</div>
-      <div class="uc-desc">Enrich Salesforce, HubSpot, or any CRM with verified addresses, county FIPS, and timezone. Proximity search for territory assignment and route planning.</div>
-    </div>
-    <div class="uc-card">
-      <div class="uc-icon">📡</div>
-      <div class="uc-title">Broadband &amp; Telecom</div>
-      <div class="uc-desc">FCC BEAD program reporting requires address-level availability data with FIPS codes. GeoClear provides the certified address layer for the $42B broadband buildout.</div>
+<!-- ──────────────────────────────────────────────────────────────── LIVE DEMO -->
+<section class="demo-section" id="live-demo">
+  <div class="container">
+    <div class="section-label">Live demo</div>
+    <h2 class="sh2" style="margin-bottom: 12px;">Try it yourself</h2>
+    <p class="ssub">Search any US address. Results are live — served directly from our API.</p>
+
+    <div class="demo-card">
+      <div class="demo-header">
+        <div>
+          <div style="font-size:1rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;">Address lookup</div>
+          <div style="font-size:0.82rem;color:var(--muted);">Free demo key — full production speed</div>
+        </div>
+        <div class="live-badge">LIVE</div>
+      </div>
+
+      <div class="demo-grid">
+        <input id="demo-street" class="demo-input" type="text" placeholder="Street address" value="1600 Pennsylvania Ave" />
+        <input id="demo-city" class="demo-input" type="text" placeholder="City, State" value="Washington, DC" />
+        <button class="demo-btn" onclick="runDemo()">Search →</button>
+      </div>
+
+      <div class="demo-results-area" id="demo-results">
+        <div class="demo-placeholder">Enter an address above and press Search ↑</div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Pricing -->
-<section id="pricing" style="border-top:1px solid var(--border);">
-  <div class="slabel">Pricing</div>
-  <h2 class="sh2">Start free. Scale when ready.</h2>
-  <p class="ssub">No contracts. No minimums. Cancel anytime.</p>
+<!-- ──────────────────────────────────────────────────────────────── ENRICHMENT -->
+<section class="enrich-section">
+  <div class="container">
+    <div class="section-label">Enrichment data</div>
+    <h2 class="sh2">One address. Eight data points.</h2>
+    <p class="ssub" style="margin-bottom: 48px;">
+      Every lookup returns a complete picture — not just what the address is, but everything you need to act on it.
+    </p>
+    <div class="enrich-grid">
+      <div class="enrich-item">
+        <div class="enrich-label">County</div>
+        <div class="enrich-title">County Name + FIPS</div>
+        <div class="enrich-desc">Full county name and 5-digit FIPS code for compliance, tax jurisdiction routing, and government reporting workflows.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">Census</div>
+        <div class="enrich-title">Census Tract + Block Group</div>
+        <div class="enrich-desc">Official census tract and block group identifiers. Required for CRA compliance, underwriting, and demographic segmentation.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">FEMA</div>
+        <div class="enrich-title">Flood Zone Classification</div>
+        <div class="enrich-desc">FEMA flood zone designation (A, AE, X, VE, etc.) for insurance pricing, mortgage requirements, and risk scoring.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">Timezone</div>
+        <div class="enrich-title">IANA Timezone ID</div>
+        <div class="enrich-desc">Precise IANA timezone identifier (e.g. America/Chicago). Never calculate timezones from zip codes again.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">Geocode</div>
+        <div class="enrich-title">Latitude + Longitude</div>
+        <div class="enrich-desc">High-precision coordinates for mapping, proximity searches, delivery routing, and spatial analysis.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">Delivery</div>
+        <div class="enrich-title">RDI Classification</div>
+        <div class="enrich-desc">Residential, Commercial, or PO Box classification. Critical for shipping cost calculation and address validation in e-commerce.</div>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <div class="pricing-grid">
+<!-- ──────────────────────────────────────────────────────────────── PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div class="section-label">Pricing</div>
+    <h2 class="sh2">Simple, usage-based pricing</h2>
+    <p class="ssub" style="margin-bottom: 48px;">
+      Start free. Scale as you grow. No per-seat fees, no setup costs, no long-term contracts.
+    </p>
 
-    <!-- Free -->
-    <div class="pc">
-      <div class="pc-tier">Free</div>
-      <div class="pc-price"><sup>$</sup>0</div>
-      <div class="pc-period">forever</div>
-      <div class="pc-vol">1,000 requests / day</div>
-      <ul class="pc-features">
-        <li>Address search &amp; verify</li>
-        <li>Confidence score</li>
-        <li>County FIPS code</li>
-        <li>Timezone</li>
-        <li>Autocomplete (10 req/min)</li>
-        <li class="off">Bulk addresses</li>
-        <li class="off">Census + FEMA</li>
-      </ul>
-      <div style="margin-top:24px;">
-        <input id="free-email" class="free-email" type="email" placeholder="you@company.com" />
-        <button onclick="getFreeKey()" class="pc-cta" style="width:100%;cursor:pointer;">Get free key</button>
-        <div id="free-msg"></div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price-row">
+          <span class="plan-price">$0</span>
+        </div>
+        <div class="plan-price-note">Forever free, no card required</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feature">10,000 lookups / month</div>
+          <div class="plan-feature">All enrichment fields</div>
+          <div class="plan-feature">Autocomplete + bulk API</div>
+          <div class="plan-feature">10 req/min rate limit</div>
+          <div class="plan-feature">Community support</div>
+        </div>
+        <button class="plan-cta plan-cta-secondary" onclick="openModal()">Get free key</button>
+      </div>
+
+      <div class="price-card featured">
+        <div class="featured-badge">Popular</div>
+        <div class="plan-name">Starter</div>
+        <div class="plan-price-row">
+          <span class="plan-price"><sup>$</sup>49</span>
+        </div>
+        <div class="plan-price-note">per month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feature">50,000 lookups / month</div>
+          <div class="plan-feature">All enrichment fields</div>
+          <div class="plan-feature">Autocomplete + bulk API</div>
+          <div class="plan-feature">100 req/min rate limit</div>
+          <div class="plan-feature">Email support</div>
+        </div>
+        <button class="plan-cta plan-cta-primary" onclick="openCheckout('starter')">Get started →</button>
+      </div>
+
+      <div class="price-card">
+        <div class="plan-name">Growth</div>
+        <div class="plan-price-row">
+          <span class="plan-price"><sup>$</sup>249</span>
+        </div>
+        <div class="plan-price-note">per month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feature">500,000 lookups / month</div>
+          <div class="plan-feature">All enrichment fields</div>
+          <div class="plan-feature">1,000 bulk limit</div>
+          <div class="plan-feature">1,000 req/min rate limit</div>
+          <div class="plan-feature">Priority email support</div>
+        </div>
+        <button class="plan-cta plan-cta-secondary" onclick="openCheckout('growth')">Get started →</button>
+      </div>
+
+      <div class="price-card">
+        <div class="plan-name">Scale</div>
+        <div class="plan-price-row">
+          <span class="plan-price"><sup>$</sup>999</span>
+        </div>
+        <div class="plan-price-note">per month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feature">5,000,000 lookups / month</div>
+          <div class="plan-feature">All enrichment fields</div>
+          <div class="plan-feature">1,000 bulk limit</div>
+          <div class="plan-feature">5,000 req/min rate limit</div>
+          <div class="plan-feature">Dedicated Slack channel</div>
+        </div>
+        <button class="plan-cta plan-cta-secondary" onclick="openCheckout('scale')">Get started →</button>
       </div>
     </div>
 
-    <!-- Starter -->
-    <div class="pc">
-      <div class="pc-tier">Starter</div>
-      <div class="pc-price"><sup>$</sup>49</div>
-      <div class="pc-period">per month</div>
-      <div class="pc-vol">50,000 requests / day</div>
-      <ul class="pc-features">
-        <li>Everything in Free</li>
-        <li>Bulk up to 100 addresses</li>
-        <li>100 req/min rate limit</li>
-        <li>Fuzzy matching</li>
-        <li class="off">Census + FEMA</li>
-        <li class="off">99.9% uptime SLA</li>
-      </ul>
-      <button onclick="openCheckout('starter')" class="pc-cta" style="width:100%;cursor:pointer;border:none;">Start now</button>
-    </div>
-
-    <!-- Pro -->
-    <div class="pc featured">
-      <div class="pc-badge">Most popular</div>
-      <div class="pc-tier">Pro</div>
-      <div class="pc-price"><sup>$</sup>249</div>
-      <div class="pc-period">per month</div>
-      <div class="pc-vol">500,000 requests / day</div>
-      <ul class="pc-features">
-        <li>Everything in Starter</li>
-        <li>Census tract + FEMA flood zone</li>
-        <li>Bulk up to 1,000 addresses</li>
-        <li>1,000 req/min rate limit</li>
-        <li>99.9% uptime SLA</li>
-        <li>Priority support</li>
-      </ul>
-      <button onclick="openCheckout('pro')" class="pc-cta" style="width:100%;cursor:pointer;border:none;">Start now</button>
-    </div>
-
-    <!-- Pay-as-you-go -->
-    <div class="pc">
-      <div class="pc-tier">Pay-as-you-go</div>
-      <div class="pc-price" style="font-size:1.65rem;"><sup style="font-size:.85rem;">$</sup>0.001</div>
-      <div class="pc-period">per lookup · billed monthly</div>
-      <div class="pc-vol">No daily cap</div>
-      <ul class="pc-features">
-        <li>Bulk up to 1,000</li>
-        <li>500 req/min limit</li>
-        <li>No commitment</li>
-        <li>Pay only what you use</li>
-        <li class="off">Census + FEMA</li>
-        <li class="off">99.9% SLA</li>
-      </ul>
-      <button onclick="openCheckout('metered')" class="pc-cta" style="width:100%;cursor:pointer;border:none;">Start now</button>
-    </div>
-
-  </div>
-
-  <p style="text-align:center;font-size:0.84rem;color:var(--muted);margin-top:20px;">
-    Need &gt;5M req/mo, on-premise, or a data license?
-    <a href="mailto:enterprise@geoclear.io" style="color:var(--accent);">Talk to us →</a>
-  </p>
-
-  <!-- Checkout overlay -->
-  <div id="checkout-overlay">
-    <h3 id="checkout-title">Complete your subscription</h3>
-    <input id="checkout-email" type="email" placeholder="your@company.com" />
-    <button id="checkout-btn">Continue to payment →</button>
-    <div id="checkout-msg"></div>
+    <p style="text-align:center;font-size:0.82rem;color:var(--dim);margin-top:28px;">
+      Need more than 5M lookups/month? <a href="mailto:hello@geoclear.io" style="color:var(--sky);">Talk to us about Enterprise →</a>
+    </p>
   </div>
 </section>
 
-<!-- Final CTA -->
-<div class="cta-strip">
+<!-- ──────────────────────────────────────────────────────────────── CTA -->
+<section class="cta-section">
+  <div class="cta-orb"></div>
   <div class="cta-inner">
-    <h2 class="sh2">Verify your first address<br>in under 60 seconds.</h2>
-    <p>Free tier. No credit card. API key in your inbox immediately.</p>
-    <div class="cta-row">
-      <input id="cta-email" class="cta-email" type="email" placeholder="you@company.com" />
-      <button class="cta-btn" onclick="ctaSignup()">Get free key</button>
+    <div class="section-label" style="justify-content:center;">Get started</div>
+    <h2 class="sh2">
+      The address layer your<br>
+      <span class="grad-text">product has been missing.</span>
+    </h2>
+    <p class="ssub">
+      Join developers who rely on GeoClear for address verification, enrichment, and compliance data.
+      Free tier available. No credit card required.
+    </p>
+    <div class="cta-btns">
+      <button class="btn-primary" style="font-size:1rem;padding:15px 32px;" onclick="openModal()">
+        Start for free — 10K lookups/mo
+      </button>
+      <a class="btn-ghost" style="font-size:1rem;padding:15px 28px;" href="mailto:hello@geoclear.io">
+        Talk to us
+      </a>
     </div>
-    <div id="cta-msg"></div>
   </div>
-</div>
+</section>
 
-<!-- Footer -->
+<!-- ──────────────────────────────────────────────────────────────── FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div>© 2026 GeoClear · Data: <a href="https://nationaladdressdata.org" target="_blank">USDOT NAD</a> (public domain) + <a href="https://overturemaps.org" target="_blank">Overture Maps</a> (CDLA-2.0)</div>
-    <div class="footer-links">
-      <a href="index.html">Explorer</a>
-      <a href="portal.html">Portal</a>
-      <a href="status.html">Status</a>
-      <a href="/api/health">Health</a>
-      <a href="mailto:enterprise@geoclear.io">Enterprise</a>
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <div class="footer-logo-mark">G</div>
+        GeoClear
+      </div>
+      <p class="footer-tagline">
+        The address intelligence layer for developers building on US location data.
+      </p>
+      <div class="footer-status">All systems operational</div>
+    </div>
+
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#live-demo">Live demo</a></li>
+        <li><a href="/portal.html">Developer portal</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Docs</h4>
+      <ul>
+        <li><a href="/docs">API reference</a></li>
+        <li><a href="/docs#quickstart">Quickstart</a></li>
+        <li><a href="/docs#enrichment">Enrichment</a></li>
+        <li><a href="/docs#bulk">Bulk API</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Data</h4>
+      <ul>
+        <li><a href="/docs#coverage">Coverage</a></li>
+        <li><a href="/docs#fema">FEMA zones</a></li>
+        <li><a href="/docs#census">Census data</a></li>
+        <li><a href="/docs#updates">Data updates</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="mailto:hello@geoclear.io">Contact</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/status">Status</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>© 2026 GeoClear. All rights reserved.</p>
+    <div class="footer-bottom-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/status">Status</a>
     </div>
   </div>
 </footer>
 
+<!-- ──────────────────────────────────────────────────────────────── MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <div id="modal-form">
+      <h2>Get your free API key</h2>
+      <p class="modal-sub">10,000 lookups/month. No credit card. Instant delivery to your inbox.</p>
+      <label for="modal-email">Work email</label>
+      <input type="email" id="modal-email" placeholder="you@company.com" />
+      <button class="modal-cta" onclick="submitSignup()">Get free API key →</button>
+      <p class="modal-note">By signing up you agree to our <a href="/terms" style="color:var(--sky)">Terms</a> and <a href="/privacy" style="color:var(--sky)">Privacy Policy</a>.</p>
+    </div>
+
+    <div id="modal-success" class="modal-success" style="display:none">
+      <div class="success-icon">✓</div>
+      <h3>Check your inbox</h3>
+      <p>Your API key has been sent to<br><strong id="modal-sent-email" style="color:var(--sky)"></strong></p>
+      <p style="margin-top:12px;font-size:0.8rem;color:var(--dim)">
+        Start with:<br>
+        <span style="font-family:var(--mono);font-size:0.75rem;color:var(--sky)">
+          GET /api/address?street=...&city=...&state=...
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────── JS -->
 <script>
-'use strict';
+  /* ── Code tabs ── */
+  function showTab(id, el) {
+    document.querySelectorAll('.ctab').forEach(t => t.classList.remove('on'));
+    document.querySelectorAll('.cpanel').forEach(p => p.classList.remove('on'));
+    el.classList.add('on');
+    document.getElementById('tab-' + id).classList.add('on');
+  }
 
-// ── Live address count ────────────────────────────────────────────
-fetch('/api/stats').then(r=>r.json()).then(d=>{
-  if(d.data?.addresses)
-    document.getElementById('live-count').textContent =
-      (d.data.addresses/1e6).toFixed(1)+'M';
-}).catch(()=>{});
+  /* ── Modal ── */
+  function openModal() {
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('modal-email').focus();
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+  function closeOnOverlay(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// ── Terminal live fetch ───────────────────────────────────────────
-(async()=>{
-  try{
-    const t0 = Date.now();
-    const r  = await fetch('/api/demo?street=Pennsylvania+Ave&state=DC&number=1600');
-    const ms = Date.now()-t0;
-    const {data} = await r.json();
-    if(!data?.length) return;
-    const a = data[0];
-    document.getElementById('term-out').innerHTML =
-`<span class="tg">HTTP/2 200</span>  <span class="tc">${ms}ms</span>
-
-{
-  <span class="tf">"ok"</span>: <span class="tb">true</span>,
-  <span class="tf">"count"</span>: <span class="tn">1</span>,
-  <span class="tf">"data"</span>: [{
-    <span class="tf">"verified"</span>:     <span class="tb">true</span>,
-    <span class="tf">"confidence"</span>:   <span class="tn">${a.confidence??97}</span>,
-    <span class="tf">"full_address"</span>: <span class="ts">"${a.full_address||'1600 Pennsylvania Avenue NW'}"</span>,
-    <span class="tf">"city"</span>:         <span class="ts">"${a.city||'Washington'}"</span>,
-    <span class="tf">"state"</span>:        <span class="ts">"${a.state||'DC'}"</span>,
-    <span class="tf">"zip_code"</span>:     <span class="ts">"${a.zip_code||'20500'}"</span>,
-    <span class="tf">"fips"</span>:         <span class="ts">"${a.fips||'11001'}"</span>,
-    <span class="tf">"timezone"</span>:     <span class="ts">"${a.timezone||'America/New_York'}"</span>,
-    <span class="tf">"latitude"</span>:     <span class="tn">${a.latitude??38.8977}</span>,
-    <span class="tf">"longitude"</span>:    <span class="tn">${a.longitude??-77.0366}</span>
-  }]
-}`;
-  }catch(_){}
-})();
-
-// ── Demo widget ───────────────────────────────────────────────────
-document.getElementById('demo-q').addEventListener('keydown',e=>{
-  if(e.key==='Enter') runDemo();
-});
-
-async function runDemo(){
-  const q  = document.getElementById('demo-q').value.trim();
-  const el = document.getElementById('demo-out');
-  if(!q) return;
-  el.innerHTML='<div class="demo-hint">Searching…</div>';
-  const parts  = q.split(',')[0].trim().split(' ');
-  const isNum  = /^\d+/.test(parts[0]);
-  const number = isNum ? parts[0] : '';
-  const street = isNum ? parts.slice(1).join(' ') : parts.join(' ');
-  const after  = q.split(',').slice(1).join(',');
-  const stm    = after.match(/\b([A-Za-z]{2})\b/);
-  const state  = stm ? stm[1].toUpperCase() : '';
-  const p = new URLSearchParams({limit:'3'});
-  if(number) p.set('number',number);
-  if(street) p.set('street',street);
-  if(state)  p.set('state',state);
-  try{
-    const {data,ok} = await (await fetch('/api/demo?'+p)).json();
-    if(!ok||!data?.length){
-      el.innerHTML='<div class="demo-hint" style="color:var(--muted)">No results — try adding state abbreviation (e.g. "Main St, TX")</div>';
+  async function submitSignup() {
+    const email = document.getElementById('modal-email').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('modal-email').style.borderColor = 'var(--red)';
       return;
     }
-    el.innerHTML = data.map(a=>`
-      <div class="result-card">
-        <div class="result-addr">${a.full_address||''}</div>
-        <div class="tags">
-          <span class="tag ${(a.confidence??0)>=90?'tg-green':'tg-indigo'}">✓ ${a.confidence??'—'} confidence</span>
-          ${a.fips?`<span class="tag tg-indigo">FIPS ${a.fips}</span>`:''}
-          ${a.timezone?`<span class="tag tg-gray">${a.timezone}</span>`:''}
-          <span class="tag tg-gray">${[a.city,a.state,a.zip_code].filter(Boolean).join(', ')}</span>
-          ${a.latitude?`<span class="tag tg-gray">${a.latitude.toFixed(4)}, ${a.longitude.toFixed(4)}</span>`:''}
-        </div>
-      </div>`).join('');
-  }catch(e){
-    el.innerHTML=`<div class="demo-hint" style="color:var(--red)">Error: ${e.message}</div>`;
+    const btn = document.querySelector('.modal-cta');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+
+    try {
+      const r = await fetch('/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, tier: 'free', name: email.split('@')[0] })
+      });
+      const data = await r.json();
+      if (data.ok || data.key) {
+        document.getElementById('modal-sent-email').textContent = email;
+        document.getElementById('modal-form').style.display = 'none';
+        document.getElementById('modal-success').style.display = 'block';
+      } else {
+        btn.textContent = data.error || 'Error — try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+    }
   }
-}
 
-// ── Code tabs ─────────────────────────────────────────────────────
-function setTab(el,id){
-  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('on'));
-  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');
-  el.classList.add('on');
-  document.getElementById('tab-'+id).style.display='block';
-}
+  function openCheckout(tier) {
+    openModal();
+  }
 
-// ── Coverage bars ─────────────────────────────────────────────────
-const COV=[
-  {label:'Texas',     pct:99,note:'3.8M',   cls:'cvfill-accent'},
-  {label:'California',pct:97,note:'4.2M',   cls:'cvfill-accent'},
-  {label:'Virginia',  pct:96,note:'1.7M',   cls:'cvfill-accent'},
-  {label:'Florida',   pct:95,note:'Overture',cls:'cvfill-green'},
-  {label:'Colorado',  pct:95,note:'1.3M',   cls:'cvfill-accent'},
-  {label:'New Jersey',pct:94,note:'Overture',cls:'cvfill-green'},
-  {label:'Michigan',  pct:93,note:'Overture',cls:'cvfill-green'},
-  {label:'Nevada',    pct:92,note:'Overture',cls:'cvfill-green'},
-];
-const cvEl=document.getElementById('cv-bars');
-cvEl.innerHTML=COV.map(d=>`
-  <div class="cvbar">
-    <div class="cvbar-label">
-      <strong>${d.label}</strong><span>${d.note}</span>
-    </div>
-    <div class="cvtrack">
-      <div class="cvfill ${d.cls}" style="width:0%" data-pct="${d.pct}"></div>
-    </div>
-  </div>`).join('');
-new IntersectionObserver(entries=>{
-  if(!entries[0].isIntersecting) return;
-  document.querySelectorAll('.cvfill').forEach(el=>el.style.width=el.dataset.pct+'%');
-},{threshold:.3}).observe(cvEl);
+  /* ── Live demo ── */
+  async function runDemo() {
+    const streetVal = document.getElementById('demo-street').value.trim();
+    const cityState = document.getElementById('demo-city').value.trim();
+    const results   = document.getElementById('demo-results');
 
-// ── Free key signup ───────────────────────────────────────────────
-async function getFreeKey(){
-  const email=document.getElementById('free-email').value.trim();
-  const msg  =document.getElementById('free-msg');
-  if(!email){msg.style.color='var(--red)';msg.textContent='Enter your email.';return;}
-  msg.style.color='var(--muted)';msg.textContent='Creating your key…';
-  try{
-    const r=await fetch('/v1/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
-    const d=await r.json();
-    if(d.ok){msg.style.color='var(--green)';msg.textContent='✓ Check your inbox for your API key!';document.getElementById('free-email').value='';}
-    else{msg.style.color='var(--red)';msg.textContent=d.error||'Something went wrong.';}
-  }catch{msg.style.color='var(--red)';msg.textContent='Network error.';}
-}
+    if (!streetVal) {
+      results.innerHTML = '<div class="demo-placeholder" style="color:var(--red)">Please enter a street address.</div>';
+      return;
+    }
 
-// ── Paid checkout ─────────────────────────────────────────────────
-let _tier=null;
-function openCheckout(tier){
-  _tier=tier;
-  const names={starter:'Starter — $49/mo',pro:'Pro — $249/mo',metered:'Pay-as-you-go'};
-  document.getElementById('checkout-title').textContent=names[tier]||tier;
-  const ov=document.getElementById('checkout-overlay');
-  ov.style.display='block';
-  ov.scrollIntoView({behavior:'smooth',block:'center'});
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('checkout-btn').addEventListener('click',async()=>{
-    const email=document.getElementById('checkout-email').value.trim();
-    const msg  =document.getElementById('checkout-msg');
-    if(!email){msg.style.color='var(--red)';msg.textContent='Enter your email.';return;}
-    msg.style.color='var(--muted)';msg.textContent='Redirecting to payment…';
-    try{
-      const r=await fetch('/v1/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,tier:_tier})});
-      const d=await r.json();
-      if(d.ok) window.location.href=d.data.url;
-      else{msg.style.color='var(--red)';msg.textContent=d.error||'Something went wrong.';}
-    }catch{msg.style.color='var(--red)';msg.textContent='Network error.';}
+    // parse "City, ST" or just "City ST"
+    let city = cityState, state = '';
+    const m = cityState.match(/^(.+?)[,\s]+([A-Z]{2})$/i);
+    if (m) { city = m[1].trim(); state = m[2].toUpperCase(); }
+
+    results.innerHTML = '<div class="demo-placeholder" style="color:var(--sky)">Searching…</div>';
+
+    try {
+      const params = new URLSearchParams({ street: streetVal, limit: 3 });
+      if (city)  params.set('city', city);
+      if (state) params.set('state', state);
+
+      const r = await fetch('/api/address?' + params);
+      const data = await r.json();
+
+      if (!data.ok && data.error) {
+        results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">${data.error}</div>`;
+        return;
+      }
+
+      const rows = Array.isArray(data.results) ? data.results : (data.address ? [data] : []);
+      if (!rows.length) {
+        results.innerHTML = '<div class="demo-placeholder">No results found. Try a different address.</div>';
+        return;
+      }
+
+      results.innerHTML = rows.slice(0,3).map(d => {
+        const addr = d.address || d.street_address || '';
+        const city2 = d.city || '';
+        const st2   = d.state || '';
+        const zip2  = d.zip || '';
+        const county = d.county ? `<span class="tag tag-sky">${d.county} Co.</span>` : '';
+        const fips   = d.county_fips ? `<span class="tag tag-dim">FIPS ${d.county_fips}</span>` : '';
+        const tract  = d.census_tract ? `<span class="tag tag-indigo">Tract ${d.census_tract}</span>` : '';
+        const fema   = d.fema_zone ? `<span class="tag tag-amber">FEMA ${d.fema_zone}</span>` : '';
+        const tz     = d.timezone ? `<span class="tag tag-dim">${d.timezone.replace('America/','')}</span>` : '';
+        const ok     = `<span class="tag tag-green">✓ Verified</span>`;
+        return `<div class="result-item">
+          <div class="result-addr">${addr}${city2 ? ', ' + city2 : ''}${st2 ? ' ' + st2 : ''}${zip2 ? ' ' + zip2 : ''}</div>
+          <div class="tags">${ok}${county}${fips}${tract}${fema}${tz}</div>
+        </div>`;
+      }).join('');
+
+    } catch (err) {
+      results.innerHTML = '<div class="demo-placeholder" style="color:var(--red)">Request failed — check your connection.</div>';
+    }
+  }
+
+  document.getElementById('demo-street').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runDemo();
   });
-});
-
-// ── Bottom CTA signup ─────────────────────────────────────────────
-async function ctaSignup(){
-  const email=document.getElementById('cta-email').value.trim();
-  const msg  =document.getElementById('cta-msg');
-  if(!email){msg.style.color='var(--red)';msg.textContent='Enter your email.';return;}
-  msg.style.color='var(--muted)';msg.textContent='Creating your key…';
-  try{
-    const r=await fetch('/v1/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
-    const d=await r.json();
-    if(d.ok){msg.style.color='var(--green)';msg.textContent='✓ Your free API key is on its way.';document.getElementById('cta-email').value='';}
-    else{msg.style.color='var(--red)';msg.textContent=d.error||'Something went wrong.';}
-  }catch{msg.style.color='var(--red)';msg.textContent='Network error.';}
-}
+  document.getElementById('demo-city').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runDemo();
+  });
 </script>
+
 </body>
 </html>
