@@ -1,7 +1,7 @@
 # GeoClear — Feature Inventory
 > **Single source of truth for everything built.**
 > Update this file every time a feature ships. Mirrors RELEASES.md chronologically but organized by feature area for quick lookup.
-> Last updated: 2026-04-14
+> Last updated: 2026-04-14 (session 2)
 
 ---
 
@@ -151,10 +151,12 @@ All require `X-Admin-Secret` header.
 
 | Page | Path | Description |
 |------|------|-------------|
-| Landing page + demo | `/` → `public/index.html` | Hero, demo widget, pricing, signup CTA |
+| Landing page + demo | `/` → `public/landing.html` | Hero, demo widget, pricing, signup CTA |
 | Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel |
 | Status | `/status.html` | UptimeRobot embed |
 | API explorer | `/explorer` | Interactive API docs |
+| Privacy Policy | `/privacy` | Data collection, retention, third-party services |
+| Terms of Service | `/terms` | Acceptable use, billing, liability, governing law |
 
 ---
 

@@ -13,6 +13,7 @@
 - Stripe **live mode** fully wired: `sk_live_...`, `whsec_live_...`, live price IDs for Starter / Growth / Pay-as-you-go
 - Metered billing live: `STRIPE_METER_ID` + `STRIPE_PRICE_METERED` set to live Stripe Billing Meter (`mtr_61UVWpc...`, event `geoclear_lookup`)
 - Fix: metered tier checkout session omits `quantity` (required by Stripe for metered prices)
+- `GET /privacy` and `GET /terms` — Privacy Policy and Terms of Service pages
 
 ---
 

@@ -816,9 +816,15 @@ app.use('/api', (req, res) => {
   res.status(404).json({ ok: false, error: `Unknown API endpoint: ${req.method} ${req.path}` });
 });
 
-// Serve landing page for root; explorer for /explorer
+// Serve landing page for root; explorer for /explorer; legal pages
 app.get('/explorer', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
+app.get('/terms', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'terms.html'));
 });
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));

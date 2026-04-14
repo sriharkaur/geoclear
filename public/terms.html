@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — GeoClear</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #03071A;
+      --surface: #0A1229;
+      --border:  rgba(99,130,255,0.12);
+      --text:    #EEF2FF;
+      --muted:   #8892B0;
+      --sky:     #38BDF8;
+      --font:    'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --max:     720px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    a { color: var(--sky); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav {
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    nav .logo { font-weight: 700; font-size: 17px; color: var(--text); }
+    nav .logo span { color: var(--sky); }
+    nav a.back { color: var(--muted); font-size: 14px; }
+    nav a.back:hover { color: var(--text); text-decoration: none; }
+
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 64px 24px 100px; }
+
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .meta { color: var(--muted); font-size: 13px; margin-bottom: 48px; }
+
+    h2 { font-size: 16px; font-weight: 600; margin: 40px 0 12px; color: var(--text); }
+    p  { color: var(--muted); margin-bottom: 14px; }
+    ul { color: var(--muted); padding-left: 20px; margin-bottom: 14px; }
+    ul li { margin-bottom: 6px; }
+
+    footer { text-align: center; color: var(--muted); font-size: 13px; padding: 32px 24px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">Geo<span>Clear</span></span>
+  <a class="back" href="/">← Back to home</a>
+</nav>
+
+<div class="wrap">
+  <h1>Terms of Service</h1>
+  <p class="meta">Last updated: April 14, 2026</p>
+
+  <p>These Terms of Service ("Terms") govern your use of the GeoClear API and website (geoclear.io) operated by GeoClear ("we", "us"). By accessing or using the service you agree to these Terms.</p>
+
+  <h2>1. The Service</h2>
+  <p>GeoClear provides a US address intelligence API that returns verified address data, enrichment fields (FIPS, census tract, flood zone, timezone), and related geographic data derived from public sources including the National Address Database (NAD) and Overture Maps.</p>
+
+  <h2>2. API Keys & Access</h2>
+  <ul>
+    <li>Each API key is tied to one account email and may not be shared publicly or embedded in client-side code accessible to end users.</li>
+    <li>You are responsible for all usage under your API key.</li>
+    <li>We may revoke keys that are used abusively, shared publicly, or used in violation of these Terms.</li>
+  </ul>
+
+  <h2>3. Acceptable Use</h2>
+  <p>You may use the GeoClear API for any lawful commercial or personal purpose. You may not:</p>
+  <ul>
+    <li>Resell or sublicense raw API access as a competing address data service without a written agreement</li>
+    <li>Use the service to build or augment a competing address database product</li>
+    <li>Attempt to reverse-engineer, scrape in bulk, or extract the underlying NAD dataset beyond normal API use</li>
+    <li>Circumvent rate limits or quotas by rotating keys, IP addresses, or other means</li>
+    <li>Use the service for any illegal purpose or in violation of applicable law</li>
+  </ul>
+
+  <h2>4. Rate Limits & Quotas</h2>
+  <p>Each tier has a daily request quota and per-minute rate limit enforced on your API key. Exceeding these returns a <code>429</code> response. Persistent abuse may result in key suspension.</p>
+
+  <h2>5. Billing</h2>
+  <ul>
+    <li>Paid plans are billed monthly via Stripe. All fees are in USD.</li>
+    <li>Subscriptions auto-renew unless cancelled before the renewal date.</li>
+    <li>Metered (pay-as-you-go) usage is billed monthly based on actual lookup volume reported to Stripe.</li>
+    <li>No refunds are issued for partial months or unused lookups except where required by law.</li>
+  </ul>
+
+  <h2>6. Data Accuracy</h2>
+  <p>Address data is derived from publicly available government sources (NAD, Overture Maps, Census Bureau, FEMA). We make no warranty that data is complete, current, or fit for any particular purpose including mortgage underwriting, regulatory compliance, or emergency services. Always verify critical address decisions independently.</p>
+
+  <h2>7. Uptime & SLA</h2>
+  <p>We target high availability but do not guarantee a specific uptime percentage at this time. A formal SLA will be introduced at the Enterprise tier. Scheduled maintenance will be communicated in advance where possible.</p>
+
+  <h2>8. Intellectual Property</h2>
+  <p>The GeoClear API, software, and documentation are our proprietary property. The underlying address data originates from public-domain government sources. You retain ownership of any data you submit to the API.</p>
+
+  <h2>9. Limitation of Liability</h2>
+  <p>To the maximum extent permitted by law, GeoClear's total liability for any claim arising from use of the service is limited to the amount you paid us in the 3 months preceding the claim. We are not liable for indirect, incidental, or consequential damages.</p>
+
+  <h2>10. Termination</h2>
+  <p>Either party may terminate at any time. You may cancel your subscription via the portal. We may suspend or terminate access immediately for violation of these Terms. On termination, your API key is deactivated and your account data may be deleted after 30 days.</p>
+
+  <h2>11. Changes to Terms</h2>
+  <p>We may update these Terms. Material changes will be notified by email at least 14 days in advance. Continued use after the effective date constitutes acceptance.</p>
+
+  <h2>12. Governing Law</h2>
+  <p>These Terms are governed by the laws of the State of Delaware, USA, without regard to conflict of law principles.</p>
+
+  <h2>13. Contact</h2>
+  <p>Questions? Email <a href="mailto:legal@geoclear.io">legal@geoclear.io</a>.</p>
+</div>
+
+<footer>
+  &copy; 2026 GeoClear &nbsp;·&nbsp; <a href="/privacy">Privacy</a> &nbsp;·&nbsp; <a href="/terms">Terms</a>
+</footer>
+
+</body>
+</html>
