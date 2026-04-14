@@ -6,15 +6,38 @@ _Last updated: 2026-04-13_
 
 ## 🚀 LAUNCH BLOCKERS (do these first)
 
-- [ ] Set `NAD_ADMIN_SECRET` env var — replace hardcoded `nad_admin_localdev`
+> **Keys available in `~/.zshrc`** — read that file at session start to get:
+> `RENDER_API_KEY`, `CLOUDFLARE_API_KEY`, `STRIPE_SECRET_KEY`, `ANTHROPIC_API_KEY` etc.
+> Use Playwright (browser) for Render/Cloudflare dashboards — never paste keys into chat.
+
+### Render Deployment
+- [ ] Read `RENDER_API_KEY` from `~/.zshrc` → use Render API or browser to create Web Service for geoclear
+- [ ] Push geoclear repo to GitHub first (Render pulls from GitHub)
+- [ ] On Render: New Web Service → connect GitHub repo → set build/start commands:
+  - Build: `npm install`
+  - Start: `node web-server.js`
+- [ ] Add Render persistent disk → mount path `/data` → update `data/` path in code if needed
+- [ ] Set all env vars on Render dashboard:
+  - `NAD_ADMIN_SECRET` — generate: `openssl rand -hex 32`
+  - `STRIPE_SECRET_KEY` — from Stripe dashboard
+  - `STRIPE_WEBHOOK_SECRET` — from Stripe webhook setup
+  - `STRIPE_PRICE_STARTER` — Price ID for $49/mo product
+  - `STRIPE_PRICE_PRO` — Price ID for $249/mo product
+  - `NAD_BASE_URL=https://geoclear.io`
+  - `NAD_ALLOWED_ORIGINS=https://geoclear.io`
+
+### Stripe Setup
 - [ ] Create Stripe products: **Starter $49/mo** + **Pro $249/mo** → copy Price IDs
-- [ ] Create Stripe webhook → `POST /v1/webhook/stripe` → event: `checkout.session.completed`
-- [ ] Set env vars: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `NAD_BASE_URL`, `NAD_ALLOWED_ORIGINS`
-- [ ] Push geoclear repo to GitHub
-- [ ] Deploy to Render → Web Service, mount persistent disk for `data/`
-- [ ] Point `geoclear.io` → Render service URL (add A/CNAME in Cloudflare)
-- [ ] Smoke test live API: `/health`, `/v1/stats`, `/v1/address?street=...`
-- [ ] Enable SSL on Render (auto via Cloudflare or Render TLS)
+- [ ] Create Stripe webhook → URL: `https://geoclear.io/v1/webhook/stripe` → event: `checkout.session.completed`
+
+### DNS (Cloudflare — already managing geoclear.io)
+- [ ] After Render deploy: copy the `.onrender.com` service URL
+- [ ] In Cloudflare DNS for geoclear.io → add CNAME: `@` → `<service>.onrender.com` (proxied ✅)
+- [ ] Cloudflare handles SSL automatically (orange cloud proxied = TLS)
+
+### Verify
+- [ ] Smoke test: `curl https://geoclear.io/health`
+- [ ] Test lookup: `curl "https://geoclear.io/v1/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC"`
 
 ---
 
