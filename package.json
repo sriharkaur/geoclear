@@ -1,0 +1,20 @@
+{
+  "name": "geoclear",
+  "version": "1.0.0",
+  "description": "GeoClear — US Address Intelligence API",
+  "main": "web-server.js",
+  "scripts": {
+    "start": "node web-server.js",
+    "init-db": "node init-db.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.6.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "lru-cache": "^10.4.3",
+    "stripe": "^16.2.0"
+  }
+}
