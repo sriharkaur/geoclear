@@ -4,54 +4,36 @@ _Last updated: 2026-04-13_
 
 ---
 
-## 🚀 LAUNCH BLOCKERS (do these first)
+## 🚀 LAUNCH BLOCKERS — ALL DONE ✅
 
-> **Keys available in `~/.zshrc`** — read that file at session start to get:
-> `RENDER_API_KEY`, `CLOUDFLARE_API_KEY`, `STRIPE_SECRET_KEY`, `ANTHROPIC_API_KEY` etc.
-> Use Playwright (browser) for Render/Cloudflare dashboards — never paste keys into chat.
+- [x] Render Web Service deployed (`srv-d7ep7bfavr4c73d46gng`) ✅
+- [x] GitHub repo: `sriharkaur/geoclear` — Render auto-deploys on push ✅
+- [x] Persistent disk at `/data` — nad.db (91GB, 120M addresses) ✅
+- [x] All env vars set on Render ✅
+- [x] Cloudflare CNAME `geoclear.io → geoclear.onrender.com` ✅
+- [x] SSL via Render custom domain ✅
+- [x] Smoke test passing: `https://geoclear.io/api/health` ✅
 
-### Render Deployment
-- [ ] Read `RENDER_API_KEY` from `~/.zshrc` → use Render API or browser to create Web Service for geoclear
-- [ ] Push geoclear repo to GitHub first (Render pulls from GitHub)
-- [ ] On Render: New Web Service → connect GitHub repo → set build/start commands:
-  - Build: `npm install`
-  - Start: `node web-server.js`
-- [ ] Add Render persistent disk → mount path `/data` → update `data/` path in code if needed
-- [ ] Set all env vars on Render dashboard:
-  - `NAD_ADMIN_SECRET` — generate: `openssl rand -hex 32`
-  - `STRIPE_SECRET_KEY` — from Stripe dashboard
-  - `STRIPE_WEBHOOK_SECRET` — from Stripe webhook setup
-  - `STRIPE_PRICE_STARTER` — Price ID for $49/mo product
-  - `STRIPE_PRICE_PRO` — Price ID for $249/mo product
-  - `NAD_BASE_URL=https://geoclear.io`
-  - `NAD_ALLOWED_ORIGINS=https://geoclear.io`
-
-### Stripe Setup
-- [x] Create Stripe products: **Starter $49/mo** + **Pro $249/mo** → Price IDs in `.zshrc` ✅
-- [x] Create Stripe webhook → URL: `https://geoclear.io/v1/webhook/stripe` → events wired ✅
+### Stripe Setup — ALL DONE ✅
+- [x] Live Stripe secret key, webhook secret, price IDs set in Render ✅
+- [x] Live webhook registered: `https://geoclear.io/v1/webhook/stripe` ✅
+- [x] Metered billing live: `STRIPE_METER_ID` + `STRIPE_PRICE_METERED` (live meter) ✅
 - [x] Free tier self-serve signup (`POST /v1/signup`) ✅
-- [x] Handle `customer.subscription.deleted` webhook → downgrade key to free on cancel ✅
-- [x] Handle upgrade flow → existing key upgraded in place, no duplicate key issued ✅
-
-### DNS (Cloudflare — already managing geoclear.io)
-- [ ] After Render deploy: copy the `.onrender.com` service URL
-- [ ] In Cloudflare DNS for geoclear.io → add CNAME: `@` → `<service>.onrender.com` (proxied ✅)
-- [ ] Cloudflare handles SSL automatically (orange cloud proxied = TLS)
-
-### Verify
-- [ ] Smoke test: `curl https://geoclear.io/health`
-- [ ] Test lookup: `curl "https://geoclear.io/v1/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC"`
+- [x] `customer.subscription.deleted` → downgrade to free ✅
+- [x] `invoice.payment_failed` → dunning email sent ✅
+- [x] Upgrade-in-place — existing key upgraded, no duplicate issued ✅
+- [ ] `customer.subscription.updated` handler (plan-change detection) — **PENDING**
 
 ---
 
-## T0 — DATA & CORE (product not sellable without these)
+## T0 — DATA & CORE
 
-- [x] Overture Maps integration — FL, MI, NJ, NV, NH gap fill ✅
+- [x] Overture Maps gap-fill — FL, MI, NJ, NV, NH ✅
 - [x] `inc_muni` vs `post_city` bug fixed ✅
-- [ ] **Overture gap-fill full run** — `overture-import.js` exists; run locally against nad.db, then rsync delta to Render. Goal: 120M → ~130–135M addresses. Cover rural/county gaps NAD misses.
+- [x] Address confidence score 0–100 on every response (`confidenceScore()` in enrich.js) ✅
+- [x] Fuzzy / typo matching — `?fuzzy=true` on `/api/address` (`findAddressFuzzy` in query.js) ✅
+- [ ] **Overture gap-fill full run** — `overture-import.js` exists; run locally against nad.db, then rsync delta to Render. Goal: 120M → ~130–135M addresses.
 - [ ] Fill remaining state gaps via state GIS portals (GA, CA partial)
-- [ ] Address confidence score (0–100) on every response
-- [ ] Fuzzy / typo matching (Levenshtein / phonetic) — "Pensilvania Ave" works
 - [ ] Address disambiguation — rank candidates when multiple "123 Main St" exist
 - [ ] Coverage declaration per response — which states have full/partial/no coverage
 
@@ -59,29 +41,30 @@ _Last updated: 2026-04-13_
 
 ## T1 — REVENUE UNLOCKING (first paying customers)
 
-### Data Enrichment
-- [ ] Census tract + block code per address (required for HMDA/mortgage)
-- [ ] County FIPS code (required for all gov/healthcare data exchange)
-- [ ] FEMA flood zone per address (required for mortgage underwriting)
-- [ ] RDI — residential vs commercial flag
-- [ ] Time zone by address
+### Data Enrichment — DONE ✅
+- [x] Census tract + block group — via Census Bureau Geocoder API (`/api/enrich`) ✅
+- [x] County FIPS code — `countyFips()` in enrich.js, on every `/api/address` response ✅
+- [x] FEMA flood zone — via FEMA NFHL API (`/api/enrich`) ✅
+- [x] RDI — `residentialFlag()` in enrich.js, on every `/api/address` response ✅
+- [x] Timezone — `timezone()` in enrich.js, on every `/api/address` response ✅
 - [ ] FCC broadband tier by address ($42B BEAD program demand)
 
-### API Completeness
-- [ ] Autocomplete / typeahead endpoint (`GET /v1/autocomplete`)
-- [ ] Reverse geocoding (`GET /v1/reverse?lat=&lon=`)
+### API Completeness — MOSTLY DONE
+- [x] Autocomplete / typeahead — `GET /api/suggest` ✅
+- [x] Proximity / reverse geocoding — `GET /api/near` + `GET /api/enrich` ✅
+- [x] Bulk address verify — `POST /api/address/bulk` (max 1,000) ✅
 - [ ] Address standardization (normalize to USPS format)
-- [ ] Bulk async processing + webhooks (for 10M+ record jobs)
+- [ ] Bulk async + webhooks (for 10M+ record jobs — current bulk is sync, max 1K)
 - [ ] CSV upload → enriched CSV download (web UI, no-code users)
 
-### Infrastructure
-- [ ] **PRIORITY — Wire metered flush cron on Render** — `POST /v1/admin/metered/flush` must fire daily or metered customers' usage is never reported to Stripe and revenue is lost. Use Render Cron Jobs in the dashboard: schedule `curl -X POST https://geoclear.io/v1/admin/metered/flush -H "X-Admin-Secret: $NAD_ADMIN_SECRET"` daily at midnight UTC.
-- [ ] API key management portal (self-serve signup → get key in <60s)
-- [x] Per-lookup metered billing: `metered` tier in keys.js, Stripe usage records, flush via `POST /v1/admin/metered/flush` ✅
-- [ ] Usage dashboard for API customers
-- [ ] Rate limit tiers per API key (Starter vs Growth vs Enterprise)
+### Infrastructure — MOSTLY DONE
+- [x] Metered flush cron — self-scheduling `setTimeout` at midnight UTC in server process ✅
+- [x] Per-lookup metered billing — `metered` tier, Stripe Billing Meter, flush endpoint ✅
+- [x] Rate limit tiers per API key — `req_per_min` + `req_per_day` enforced per-key ✅
+- [x] API key portal — `public/portal.html` (signup, upgrade, key display) ✅
+- [x] Landing page with live demo widget — `public/index.html` ✅
+- [ ] Usage dashboard for API customers (show their own usage over time)
 - [ ] Status page (UptimeRobot — free tier fine to start)
-- [ ] Landing page with live demo widget
 
 ---
 

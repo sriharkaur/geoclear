@@ -1,8 +1,13 @@
 # GeoClear — Claude Code Project Instructions
 
 > **US Address Intelligence API** — 120M+ addresses, real-time enrichment, Stripe-billed SaaS.
-> Version 1.0.0 | Port 4001 | Stack: Node.js + SQLite (better-sqlite3) + Express
+> Version 1.0.0 (2026-04-14) | Port 4001 | Stack: Node.js + SQLite (better-sqlite3) + Express
 > North star: $100K MRR in 12 months
+>
+> **PRODUCTION STATUS (2026-04-14)**: LIVE at geoclear.io and geoclear.onrender.com
+> Render service: `srv-d7ep7bfavr4c73d46gng` | nad.db: 91GB, 120M addresses on `/data`
+> Stripe: LIVE mode — sk_live, whsec_live, live price IDs (Starter/Growth/Pay-as-you-go/Scale)
+> DNS: Cloudflare CNAME DNS-only → geoclear.onrender.com
 
 ---
 
@@ -63,13 +68,17 @@ node init-db.js                       # Init DB schema (one-time)
 npm start                             # Alias for node web-server.js
 
 # Health check
-curl http://localhost:4001/health
+curl http://localhost:4001/api/health
 
 # Address lookup
-curl "http://localhost:4001/v1/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC"
+curl "http://localhost:4001/api/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC"
 
 # Admin (local only)
-curl -H "X-Admin-Secret: nad_admin_localdev" http://localhost:4001/admin/stats
+curl -H "X-Admin-Secret: nad_admin_localdev" "http://localhost:4001/v1/admin/keys/stats"
+
+# Production smoke test
+curl https://geoclear.io/api/health
+curl https://geoclear.onrender.com/api/health
 ```
 
 ---

@@ -1,6 +1,6 @@
 # GeoClear — Living Architecture
 > **Always current. Update this file every time a feature ships.**
-> Last updated: v0.1.0 (2026-04-13)
+> Last updated: v1.0.0 (2026-04-14)
 
 ---
 
@@ -40,7 +40,7 @@
 
 | Source | Coverage | Size | Location |
 |---|---|---|---|
-| NAD r22 | 120M+ US addresses, 47 states | ~85GB | `/data/nad.db` |
+| NAD r22 | 120M+ US addresses, 47 states | 91GB | `/data/nad.db` |
 | Overture gap-fill | FL, MI, NJ, NV, NH | included in nad.db | same |
 | API keys + sessions | Live customer keys | small | `/data/keys.db` |
 
@@ -108,14 +108,15 @@
 | `checkout.session.completed` | Upgrade existing key tier or issue new key; store `stripe_customer_id` + `stripe_subscription_id` |
 | `customer.subscription.deleted` | Downgrade key to `free` tier |
 | `customer.subscription.updated` | Registered (handler TBD — for plan change detection) |
-| `invoice.payment_succeeded` | Registered (no handler yet — for payment confirmation emails) |
-| `invoice.payment_failed` | Registered (no handler yet — for dunning) |
+| `invoice.payment_succeeded` | Registered (no handler — payment confirmation email not yet sent) |
+| `invoice.payment_failed` | Dunning email sent with link to update payment method |
+| `customer.subscription.updated` | Registered (no handler yet — plan-change detection pending) |
 
 **Metered billing flow:**
 1. Usage tracked in `metered_unreported` column per key
 2. `POST /v1/admin/metered/flush` fires `billing.meterEvents` to Stripe in bulk
 3. Stripe aggregates and bills customer at month end
-4. Flush should be called daily via cron (not yet wired on Render)
+4. Flush runs daily via self-scheduling `setTimeout` at midnight UTC inside the server process
 
 ---
 
@@ -142,10 +143,12 @@ DELETE /v1/admin/keys/:id       → key revoked (is_active=0)
 
 ## Not Yet Built (see QUEUE.md for full backlog)
 
-- Subscription upgrade/downgrade UI (user-facing portal)
-- Metered flush cron on Render
-- `customer.subscription.updated` handler (plan changes)
-- `invoice.payment_failed` handler (dunning / key suspension)
-- Email delivery of API keys post-signup
-- Usage dashboard for customers
+- `customer.subscription.updated` handler (plan-change detection)
+- Usage dashboard for customers (self-serve usage over time)
+- CSV upload → enriched CSV download
+- Bulk async processing for 10M+ record jobs (current bulk is sync, max 1K)
+- Address standardization (USPS format)
+- FCC broadband tier by address
+- Overture full gap-fill run (all states)
 - SDK (Node.js, Python)
+- Status page
