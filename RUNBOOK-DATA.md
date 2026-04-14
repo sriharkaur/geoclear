@@ -1,6 +1,6 @@
 # GeoClear — Data Operations Runbook
 
-> **Operations on the 85GB `nad.db` SQLite file.**
+> **Operations on the 91GB `nad.db` SQLite file.**
 > Read this before any data transfer, update, or migration.
 
 ---
@@ -51,16 +51,41 @@ ssh -o ProxyCommand=none -i ~/.ssh/id_ed25519 \
 
 Use when: first deploy, disk replacement, disaster recovery.
 
+> **WARNING**: `rsync --append` stalls at high completion (~90%) because old server-side rsync processes pile up.
+> Use the **python3 pipe method** below for the final stretch (or the whole transfer if rsync stalls).
+
+**Step 1 — Start with rsync (fast for first 80%):**
 ```bash
-rsync -avz --progress --partial \
+rsync -av --progress --partial \
   -e "ssh -o ProxyCommand=none -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
   /Users/shaileshbhujbal/Projects/geoclear/data/nad.db \
-  srv-d7ep7bfavr4c73d46gng@ssh.virginia.render.com:/data/nad.db
+  srv-d7ep7bfavr4c73d46gng@ssh.virginia.render.com:/data/nad.db \
+  > /tmp/rsync-nad-progress.log 2>&1 &
 ```
 
-- Duration: ~35–45 minutes (85GB at 35–45 MB/s)
-- `--partial` resumes interrupted transfers — safe to Ctrl-C and re-run
-- Monitor progress: `cat /tmp/rsync-nad-progress.log` (if redirected)
+**Step 2 — If rsync stalls, kill all remote rsync procs and resume with python3 pipe:**
+```bash
+# Kill stale remote processes first
+ssh -o ProxyCommand=none -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+  srv-d7ep7bfavr4c73d46gng@ssh.virginia.render.com \
+  "pkill -9 -x rsync; ls -la /data/nad.db"
+
+# Get REMOTE_SIZE from ls output above, then:
+REMOTE_SIZE=<bytes shown by ls>
+python3 -c "
+import sys
+with open('/Users/shaileshbhujbal/Projects/geoclear/data/nad.db', 'rb') as f:
+    f.seek($REMOTE_SIZE)
+    while True:
+        chunk = f.read(1048576)
+        if not chunk: break
+        sys.stdout.buffer.write(chunk)
+" | ssh -o ProxyCommand=none -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+  srv-d7ep7bfavr4c73d46gng@ssh.virginia.render.com "cat >> /data/nad.db"
+```
+
+- Duration: ~40–60 minutes total (91GB)
+- Monitor remote file growth: `ssh ... "ls -la /data/nad.db"` every few minutes
 
 **After transfer, redeploy:**
 ```bash
@@ -78,8 +103,8 @@ ssh -o ProxyCommand=none -i ~/.ssh/id_ed25519 \
   srv-d7ep7bfavr4c73d46gng@ssh.virginia.render.com \
   "ls -lh /data/"
 
-curl https://geoclear.onrender.com/health
-curl "https://geoclear.onrender.com/v1/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC"
+curl https://geoclear.onrender.com/api/health
+curl "https://geoclear.onrender.com/api/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC"
 ```
 
 ---
@@ -134,11 +159,11 @@ rsync -avz --checksum --partial --progress \
 | SSH host | `ssh.virginia.render.com` |
 | SSH user | `srv-d7ep7bfavr4c73d46gng` |
 | Disk mount | `/data` |
-| nad.db size | ~85GB |
+| nad.db size | ~91GB (91,679,145,984 bytes as of 2026-04-14) |
 | Local source | `/Users/shaileshbhujbal/Projects/geoclear/data/nad.db` |
 | SSH key | `~/.ssh/id_ed25519` (registered as `macbook-local`) |
 | ProxyCommand | Must use `-o ProxyCommand=none` (NemoClaw proxy blocks external SSH) |
 
 ---
 
-_Last updated: 2026-04-13_
+_Last updated: 2026-04-14_

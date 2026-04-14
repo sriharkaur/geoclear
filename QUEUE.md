@@ -80,6 +80,7 @@ _Last updated: 2026-04-14 (session 5)_
 - [x] Status page — UptimeRobot + `/api/status` proxy + `/status.html` ✅
 - [x] OpenAPI spec — `openapi.yaml` at repo root (OAS 3.0, all public endpoints) ✅
 - [ ] Usage dashboard for API customers (self-serve usage over time)
+- [ ] **API usage analytics** — (a) add `latency_ms` + `tier` columns to `usage_log`; (b) build `GET /v1/admin/analytics` returning 30-day breakdown (requests/day by tier, top keys by volume, error rate); (c) wire Stripe dashboard for revenue metrics — no external tool needed at this stage
 
 ### Launch Announcement — Pre-HN Gates
 - [ ] **Docs page** `/docs` — full endpoint reference with curl + Node.js examples. Blocker for HN post.

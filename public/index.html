@@ -276,7 +276,7 @@
   </a>
   <div class="header-stats">
     <div class="stat-pill"><span id="hdr-addresses">96.9M</span> addresses</div>
-    <div class="stat-pill"><span id="hdr-states">47</span> states</div>
+    <div class="stat-pill">50 states + DC</div>
     <div class="stat-pill"><span id="hdr-counties">2,240</span> counties</div>
     <div class="stat-pill">Q1-2026</div>
   </div>
@@ -1022,7 +1022,7 @@ async function loadStats() {
 
     // Header
     document.getElementById('hdr-addresses').textContent = ((s.addresses||0)/1e6).toFixed(1) + 'M';
-    document.getElementById('hdr-states').textContent    = s.states || '47';
+    // states pill is static "50 states + DC" — no dynamic update needed
     document.getElementById('hdr-counties').textContent  = (s.counties||0).toLocaleString();
 
     // Top states

@@ -1,0 +1,433 @@
+openapi: 3.0.3
+info:
+  title: GeoClear Address Intelligence API
+  description: |
+    US address verification and enrichment API built on 120M+ USDOT National Address Database records.
+
+    **Returns in a single call:** verified address, coordinates, neighborhood, county FIPS, census tract, FEMA flood zone, timezone, residential flag, and confidence score.
+
+    **10x cheaper than SmartyStreets.** No contract. Instant API key. Free 10,000 lookups.
+
+    ## Authentication
+    Pass your API key via the `X-Api-Key` header or `?key=` query parameter.
+
+    ## Rate Limits
+    | Tier | Requests/min | Requests/day |
+    |---|---|---|
+    | Free | 10 | 1,000 |
+    | Starter ($49/mo) | 100 | 50,000 |
+    | Growth ($249/mo) | 1,000 | 500,000 |
+    | Scale ($999/mo) | 9,999 | Unlimited |
+  version: 1.0.0
+  contact:
+    name: GeoClear Support
+    url: https://geoclear.io
+  license:
+    name: Commercial
+
+servers:
+  - url: https://geoclear.io
+    description: Production
+
+security:
+  - ApiKeyHeader: []
+  - ApiKeyQuery: []
+
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+    ApiKeyQuery:
+      type: apiKey
+      in: query
+      name: key
+
+  schemas:
+    Address:
+      type: object
+      properties:
+        id:          { type: integer }
+        nad_uuid:    { type: string, description: "Stable USDOT NAD record identifier" }
+        full_address: { type: string, example: "1600 Pennsylvania Ave NW, Washington, DC 20500" }
+        add_number:  { type: string, example: "1600" }
+        st_pre_dir:  { type: string, example: "NW" }
+        st_name:     { type: string, example: "Pennsylvania" }
+        st_pos_typ:  { type: string, example: "Ave" }
+        st_pos_dir:  { type: string }
+        unit:        { type: string, nullable: true }
+        inc_muni:    { type: string, example: "Washington", description: "Incorporated municipality" }
+        post_city:   { type: string, example: "Washington", description: "Postal city" }
+        county:      { type: string, example: "District of Columbia" }
+        state:       { type: string, example: "DC" }
+        zip_code:    { type: string, example: "20500" }
+        plus4:       { type: string, nullable: true }
+        latitude:    { type: number, format: float, example: 38.8977 }
+        longitude:   { type: number, format: float, example: -77.0365 }
+        addr_type:   { type: string, example: "Building" }
+        addr_class:  { type: string, example: "Numbered Thoroughfare Address" }
+        placement:   { type: string, example: "Rooftop" }
+        county_fips: { type: string, example: "11001", description: "5-digit county FIPS code" }
+        timezone:    { type: string, example: "America/New_York" }
+        residential: { type: boolean }
+        confidence:  { type: integer, minimum: 0, maximum: 100, example: 95 }
+
+    EnrichmentResult:
+      type: object
+      properties:
+        census:
+          type: object
+          properties:
+            tract:       { type: string, example: "010100" }
+            block_group: { type: string, example: "1" }
+            block:       { type: string }
+            geoid:       { type: string, example: "110010101001" }
+            vintage:     { type: string }
+        fema:
+          type: object
+          properties:
+            flood_zone: { type: string, example: "X", description: "FEMA NFHL flood zone designation" }
+            panel:      { type: string }
+            effective:  { type: string, format: date }
+        coordinates:
+          type: object
+          properties:
+            latitude:  { type: number }
+            longitude: { type: number }
+
+    Error:
+      type: object
+      properties:
+        ok:    { type: boolean, example: false }
+        error: { type: string, example: "Invalid or revoked API key." }
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      description: Returns service status and address count. No auth required.
+      security: []
+      tags: [Status]
+      responses:
+        "200":
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:    { type: string, example: "ok" }
+                  addresses: { type: integer, example: 120160305 }
+                  version:   { type: string, example: "1.0.0" }
+
+  /api/stats:
+    get:
+      summary: Coverage statistics
+      description: Returns counts of states, counties, cities, ZIP codes, and addresses in the database. No auth required.
+      security: []
+      tags: [Status]
+      responses:
+        "200":
+          description: Coverage stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      countries:  { type: integer }
+                      states:     { type: integer }
+                      counties:   { type: integer }
+                      cities:     { type: integer }
+                      zip_codes:  { type: integer }
+                      addresses:  { type: integer, example: 120160305 }
+
+  /api/address:
+    get:
+      summary: Address lookup and verification
+      description: |
+        Verify and enrich a US address. Returns the matching address(es) with coordinates, neighborhood, county FIPS, timezone, residential flag, and confidence score.
+
+        Use `?fuzzy=true` for typo-tolerant matching ("Pensilvania Ave" finds "Pennsylvania Ave").
+      tags: [Address]
+      parameters:
+        - name: street
+          in: query
+          description: Street name (e.g. "Pennsylvania Ave")
+          schema: { type: string }
+        - name: number
+          in: query
+          description: House/building number (e.g. "1600")
+          schema: { type: string }
+        - name: city
+          in: query
+          description: City name
+          schema: { type: string }
+        - name: state
+          in: query
+          description: 2-letter state code (e.g. "DC")
+          schema: { type: string }
+        - name: zip
+          in: query
+          description: ZIP code
+          schema: { type: string }
+        - name: fuzzy
+          in: query
+          description: Enable typo-tolerant matching
+          schema: { type: boolean, default: false }
+        - name: limit
+          in: query
+          description: Max results (default 20, max 100)
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        "200":
+          description: Address results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:   { type: boolean }
+                  data: { type: array, items: { $ref: "#/components/schemas/Address" } }
+        "401":
+          description: Invalid API key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/suggest:
+    get:
+      summary: Address autocomplete / typeahead
+      description: Returns up to 20 address suggestions matching the given prefix. Designed for live-as-you-type UX.
+      tags: [Address]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Address prefix (min 2 characters)
+          schema: { type: string, example: "1600 Penn" }
+        - name: state
+          in: query
+          description: Scope to a specific state
+          schema: { type: string }
+        - name: zip
+          in: query
+          description: Scope to a specific ZIP code
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10, maximum: 20 }
+      responses:
+        "200":
+          description: Autocomplete suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:   { type: boolean }
+                  data: { type: array, items: { $ref: "#/components/schemas/Address" } }
+
+  /api/address/bulk:
+    post:
+      summary: Bulk address verification (up to 1,000)
+      description: Verify and enrich up to 1,000 addresses in a single synchronous request.
+      tags: [Address]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [addresses]
+              properties:
+                addresses:
+                  type: array
+                  maxItems: 1000
+                  items:
+                    type: object
+                    properties:
+                      street: { type: string }
+                      number: { type: string }
+                      city:   { type: string }
+                      state:  { type: string }
+                      zip:    { type: string }
+      responses:
+        "200":
+          description: Bulk results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:      { type: boolean }
+                  results: { type: array, items: { $ref: "#/components/schemas/Address" } }
+
+  /api/near:
+    get:
+      summary: Proximity search
+      description: Returns addresses within a given radius of a lat/lon coordinate.
+      tags: [Address]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number, example: 38.8977 }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number, example: -77.0365 }
+        - name: radius_km
+          in: query
+          description: Search radius in kilometers (default 1.0)
+          schema: { type: number, default: 1.0 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 500 }
+      responses:
+        "200":
+          description: Nearby addresses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:   { type: boolean }
+                  data: { type: array, items: { $ref: "#/components/schemas/Address" } }
+
+  /api/enrich:
+    get:
+      summary: Point enrichment (census tract + FEMA flood zone)
+      description: |
+        Returns census tract, block group, and FEMA flood zone for a lat/lon coordinate or NAD UUID.
+        Calls Census Bureau Geocoder API + FEMA NFHL API.
+      tags: [Enrichment]
+      parameters:
+        - name: lat
+          in: query
+          description: Latitude (use with lon)
+          schema: { type: number }
+        - name: lon
+          in: query
+          description: Longitude (use with lat)
+          schema: { type: number }
+        - name: nad_uuid
+          in: query
+          description: NAD record UUID (alternative to lat/lon)
+          schema: { type: string }
+      responses:
+        "200":
+          description: Enrichment data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:   { type: boolean }
+                  data: { $ref: "#/components/schemas/EnrichmentResult" }
+
+  /api/zip/{zip}:
+    get:
+      summary: ZIP code lookup
+      description: Returns metadata and address count for a ZIP code.
+      tags: [Geography]
+      parameters:
+        - name: zip
+          in: path
+          required: true
+          schema: { type: string, example: "20500" }
+      responses:
+        "200":
+          description: ZIP metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:   { type: boolean }
+                  data: { type: object }
+
+  /api/state/{code}:
+    get:
+      summary: State summary
+      description: Returns address count, county count, city count, and ZIP count for a state.
+      tags: [Geography]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: 2-letter state code
+          schema: { type: string, example: "TX" }
+      responses:
+        "200":
+          description: State summary
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/me:
+    get:
+      summary: API key status
+      description: Returns your key's tier, rate limits, and usage today / all time.
+      tags: [Account]
+      responses:
+        "200":
+          description: Key status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      tier:          { type: string, example: "starter" }
+                      req_per_min:   { type: integer, example: 100 }
+                      req_per_day:   { type: integer, example: 50000 }
+                      usage_today:   { type: integer }
+                      usage_total:   { type: integer }
+                      is_active:     { type: boolean }
+
+  /v1/signup:
+    post:
+      summary: Free tier API key signup
+      description: Issue a free API key (10,000 lookups/month). No credit card required.
+      security: []
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: API key issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:  { type: boolean }
+                  key: { type: string, example: "gc_free_abc123..." }
+
+tags:
+  - name: Address
+    description: Address verification, autocomplete, bulk, and proximity
+  - name: Enrichment
+    description: Census tract, FEMA flood zone, and point enrichment
+  - name: Geography
+    description: ZIP, state, county, and city lookups
+  - name: Account
+    description: API key management and usage
+  - name: Status
+    description: Health and coverage statistics

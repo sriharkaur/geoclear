@@ -43,24 +43,39 @@ const path     = require('path');
 const fs       = require('fs');
 const Database = require('better-sqlite3');
 
-const NAD_DB  = path.join(__dirname, 'data', 'nad.db');
+const argv2   = process.argv.slice(2);
+const dbArg   = argv2.find(a => a.startsWith('--db='))?.split('=')[1]
+             ?? (argv2.indexOf('--db') >= 0 ? argv2[argv2.indexOf('--db')+1] : null);
+const NAD_DB  = dbArg ?? path.join(__dirname, 'data', 'nad.db');
 const TMP_DIR = path.join(__dirname, 'data', 'overture_tmp');
 
 // ── State bounding boxes (for targeted downloads) ──────────────────
 const STATE_BBOX = {
+  // Priority 1 — zero or near-zero coverage
   FL: '-87.63,24.39,-79.97,31.0',
   MI: '-90.42,41.7,-82.1,48.3',
   NJ: '-75.56,38.9,-73.88,41.36',
   NV: '-120.0,35.0,-114.0,42.0',
   NH: '-72.56,42.7,-70.7,45.3',
-  // Secondary gaps (low coverage)
+  HI: '-160.25,18.9,-154.8,22.24',
+  MS: '-91.65,30.17,-88.1,35.0',
+  GA: '-85.61,30.36,-80.84,35.0',
+  SC: '-83.35,32.05,-78.55,35.22',
+  SD: '-104.06,42.48,-96.44,45.95',
+  // Priority 2 — major gaps
   ID: '-117.24,41.99,-111.04,49.0',
   WY: '-111.05,40.99,-104.05,45.01',
   MT: '-116.05,44.35,-104.04,49.0',
+  LA: '-94.04,28.93,-89.0,33.02',
+  PA: '-80.52,39.72,-74.69,42.27',
+  CA: '-124.41,32.53,-114.13,42.01',
+  // Priority 3 — moderate gaps
+  AK: '-168.0,54.5,-129.99,71.53',
+  VT: '-73.44,42.73,-71.46,45.02',
 };
 
 // Gap states to process when no --state flag given
-const GAP_STATES = ['FL', 'MI', 'NJ', 'NV', 'NH'];
+const GAP_STATES = ['FL','MI','NJ','NV','NH','HI','MS','GA','SC','SD','ID','WY','MT','LA','PA','CA'];
 
 // Overture Maps S3 path (latest release — 2026-02-18.0)
 // Files are flat .zstd.parquet (not hive-partitioned subdirs)
@@ -206,9 +221,16 @@ log(`Overture source: ${OVERTURE_S3}`);
 log(`NAD target: ${NAD_DB}`);
 
 if (!fs.existsSync(NAD_DB)) {
-  console.error(`NAD database not found at ${NAD_DB}`);
-  console.error(`Run: node nad/download.js  (to import the NAD dataset first)`);
-  process.exit(1);
+  if (dbArg) {
+    // Custom DB path — auto-create schema
+    log(`Creating new DB at ${NAD_DB}…`);
+    const { execFileSync } = require('child_process');
+    execFileSync(process.execPath, [path.join(__dirname, 'init-db.js'), '--db', NAD_DB]);
+  } else {
+    console.error(`NAD database not found at ${NAD_DB}`);
+    console.error(`Run: node init-db.js  (to create an empty DB first)`);
+    process.exit(1);
+  }
 }
 
 ensureDir(TMP_DIR);

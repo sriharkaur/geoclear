@@ -95,65 +95,175 @@ Us:     verified ✓, lat/lon ✓, neighborhood: "Flatiron District" ✓, county
 
 ---
 
-## 30-Day Go-To-Market Plan
+## Launch Announcement Strategy
+_Updated 2026-04-14. Product is live at geoclear.io v1.0.0, 120M addresses, full billing._
 
-### Week 1 — Ship (Days 1–7)
+### Pre-Announcement Gates (complete before any public post)
 
-- [ ] Deploy REST API on Render.com ($25/mo)
-- [ ] Add API key auth + rate limiting (express-rate-limit)
-- [ ] Integrate Stripe metered billing
-- [ ] Build landing page (single page, no fluff):
-  - Hero: "96M US Addresses. $1/1K lookups. Returns neighborhood."
-  - Live demo widget
-  - Pricing table
-  - Instant API key signup (email only)
-- [ ] Set up status page (uptimerobot.com — free)
-- [ ] Set up docs (readme.io or simple markdown)
+| Gate | Status | Owner |
+|---|---|---|
+| `/docs` page — full endpoint reference, curl + Node.js examples | ❌ Pending | |
+| Status page wired to UptimeRobot (real uptime, not fake bars) | ❌ Pending | |
+| Landing page demo widget — works with zero auth | ✅ Verified 2026-04-14 | |
+| Error messages human-readable | ✅ Verified ("Invalid or revoked API key.") | |
 
-### Week 2 — First Customers (Days 8–14)
+**Do not post to HN or Product Hunt until docs and status page are live.**
 
-**Target segment: PropTech / Mortgage SaaS**
-*(Warm path — riTara is already in this space)*
+---
 
-- [ ] Identify 20 mortgage tech companies (LOS vendors, POS platforms, title software)
-- [ ] Personal outreach email:
+### Week 1 — Warm Outreach Before Public Launch (most important)
+
+Get first paying customer BEFORE going public. Announcements are one-time spikes; a paying customer is signal, case study, and referral source.
+
+Send 15 personal emails to PropTech / Mortgage SaaS contacts:
+- LOS vendors: Encompass, BytePro, Calyx
+- POS platforms: Maxwell, BeSmartee, Blend
+- Title / Closing: Qualia, Snapdocs
+
+**Email template (personalize each one):**
 
 ```
-Subject: Free 10K address lookups — returns neighborhood (SmartyStreets doesn't)
+Subject: Free 10K address lookups — returns neighborhood + FEMA zone (SmartyStreets doesn't)
 
 Hi [Name],
 
-We built an address validation API on top of the USDOT National Address Database 
-(96M records). It's 10x cheaper than SmartyStreets and returns neighborhood-level 
-data in every response.
+We just launched geoclear.io — a US address API built on 120M USDOT records.
+$1/1K lookups, no contract. Returns census tract, FEMA flood zone, county FIPS,
+timezone, and neighborhood in one call.
 
-Free 10,000 lookups to try it. No credit card.
+Here's a live key with 10K free lookups, no card required: [key]
 
-[API Key] — try it now:
-curl "https://api.addressiq.com/v1/address?number=100&street=Main+St&state=TX&key=YOUR_KEY"
+Try it:
+curl "https://geoclear.io/api/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC&key=[key]"
+
+15 minutes to show you how it maps to your validation flow?
 
 — Shailesh
 ```
 
+**Rules:** Include a working API key in every email. Reduce friction to zero. Goal: 3 paying customers before public launch.
+
+---
+
+### Week 2 — Hacker News Show HN
+
+**When:** Tuesday or Wednesday, 9am PT. Not Monday, not Friday.
+
+**Title:**
+> Show HN: GeoClear — US address API on 120M public records, $1/1K vs. SmartyStreets' $10
+
+**First comment (write before posting — this is the real pitch):**
+- Why: SmartyStreets charges $10/1K for data USDOT publishes free
+- What it returns others don't: neighborhood, FEMA zone, census tract, county FIPS in one call
+- Stack: Node.js, SQLite, 91GB on persistent disk. p50 < 10ms.
+- Pricing: free 10K, $49/mo for 50K, $249/mo for 500K. No contract.
+- Honest limitation: 120M records NAD r22, not USPS CASS certified yet
+
+**Be in comments for 3 straight hours. Reply to every comment within 10 minutes.**
+
+Attack vectors to prepare for:
+- "SQLite won't scale" → "reads 120M rows < 10ms, here's /api/health showing live latency"
+- "NAD data is inaccurate" → "USDOT quarterly updates, same source incumbents use"
+- "SmartyStreets has DPV" → "CASS certification in roadmap, not blocking our target use cases"
+
+**Same day — Product Hunt:**
+- Headline: "120M US Addresses. Returns Neighborhood + FEMA Zone. $1/1K lookups."
+- Tagline: "The address API incumbents don't want you to know about."
+- Get 5-10 upvotes in the first hour (ask Week 1 warm contacts)
+
+---
+
+### Week 3 — Build in Public
+
+**Indie Hackers post:** Real numbers, honest trajectory. Frame: "Built a competitor to SmartyStreets. Here's what happened in the first 7 days." IH rewards transparency over polish.
+
+**Twitter/X thread (10-15 tweets):**
+1. The problem (SmartyStreets pricing)
+2. The insight (public domain data, priced like gold)
+3. Architecture (SQLite at 91GB, why it works)
+4. Pricing decision
+5. First customer story
+6. Link + free tier
+
+---
+
+### Week 4 — LinkedIn (PropTech/Mortgage B2B Buyers)
+
+Different frame than HN — B2B buyer, not developer:
+
+> "Mortgage companies pay $8-15 per 1,000 address validations. We built the same capability for $1. Here's how 120M public records became a SaaS business."
+
+Tag relevant PropTech/mortgage industry accounts. The mortgage tech community on LinkedIn is small and interconnected.
+
+---
+
+### Passive Channels (set up before HN, then forget)
+
+| Channel | Action | Status |
+|---|---|---|
+| RapidAPI marketplace | List API — `openapi.yaml` generated at repo root | ❌ Pending |
+| G2 / Capterra | "Address Verification Software" category — listing content below | ❌ Pending |
+| SEO | Target: "address verification API", "SmartyStreets alternative", "US address validation API" | ❌ Pending |
+
+**RapidAPI listing steps:**
+1. rapidapi.com → Provider Hub → Add New API
+2. Upload `openapi.yaml` from repo root (generated — covers all public endpoints)
+3. Set pricing: Basic (free, 100 req/day), Pro ($49/mo, matches Starter tier)
+4. API base URL: `https://geoclear.io`
+5. Auth: header `X-Api-Key`
+
+**G2 listing content:**
+- Category: Address Verification Software
+- Tagline: "120M US Addresses. Returns Neighborhood, FEMA Zone, Census Tract in One Call."
+- Description: "GeoClear is a US address intelligence API built on the USDOT National Address Database (120M+ records). Verify, standardize, and enrich US addresses with neighborhood names, county FIPS codes, census tract data, FEMA flood zones, and timezone — all in a single API call. 10x cheaper than SmartyStreets. No contract. Instant API key. Free 10,000 lookups to start."
+- Pricing: starts at $0 (free), $49/mo Starter
+
+---
+
+### The VC Frame — What Actually Matters (90-day metrics)
+
+| Metric | Target | Why |
+|---|---|---|
+| Time to first paid customer | < 2 weeks | PMF signal |
+| Net revenue retention (Month 3) | > 110% | API businesses live on expansion |
+| Developer CAC (time to paid) | Track from Week 1 | Tells you which channel works |
+| MRR Week 4 | $3K+ (3 paying customers) | Validates price point |
+
+**The announcement is in service of the first metric only. Everything else is distraction until 10 paying customers.**
+
+---
+
+## Original 30-Day Plan (pre-launch reference)
+
+### Week 1 — Ship ✅ DONE
+
+- [x] Deploy REST API on Render.com ✅
+- [x] API key auth + rate limiting ✅
+- [x] Stripe metered billing ✅
+- [x] Landing page with live demo widget ✅
+- [ ] Status page (UptimeRobot) — still pending
+- [ ] Docs page — still pending
+
+### Week 2 — First Customers (in progress)
+
+**Target segment: PropTech / Mortgage SaaS**
+
+- [ ] Send 15 personal outreach emails (template above)
 - [ ] Offer white-glove integration for first 3 customers
-- [ ] Goal: 3 paying customers by end of Week 2
+- [ ] Goal: 3 paying customers before public HN post
 
-### Week 3 — Add Killer Features (Days 15–21)
+### Week 3 — Distribution
 
-- [ ] **Bulk endpoint** (POST /v1/address/bulk) — CSV upload → enriched CSV download
-- [ ] **Webhook support** — async processing for large batches
-- [ ] **Address autocomplete** — typeahead as you type (replaces Google Places for US)
-- [ ] **Reverse geocode** — lat/lon → full address + neighborhood
-- [ ] Add to RapidAPI marketplace (passive inbound channel)
-- [ ] Post on Hacker News: "Show HN: Address API built on public DOT data — 10x cheaper"
+- [ ] RapidAPI marketplace listing
+- [ ] Hacker News Show HN
+- [ ] Product Hunt same day
 
-### Week 4 — Scale Distribution (Days 22–30)
+### Week 4 — Scale Distribution
 
-- [ ] Affiliate partner with 1 mortgage software vendor (rev share)
-- [ ] List on G2, Capterra under "Address Verification Software"
-- [ ] Reach out to 5 no-code/low-code platforms (Bubble, Webflow, Zapier)
-- [ ] Launch Zapier integration ("Verify and enrich US address")
-- [ ] SEO: target "address verification API", "US address validation", "address geocoding API"
+- [ ] G2 / Capterra listing
+- [ ] LinkedIn post (PropTech/Mortgage angle)
+- [ ] Indie Hackers build-in-public post
+- [ ] SEO: "address verification API", "US address validation", "address geocoding API"
 
 ---
 

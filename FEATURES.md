@@ -166,6 +166,10 @@ All require `X-Admin-Secret` header.
 |------|------|-------------|
 | Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, pricing grid, free signup modal. Route: `/` → `landing.html`, `/explorer` → `index.html` |
 | Trust layer | landing page | Sri Yantra ghost watermark (5% opacity, screen blend); data sources strip (USDOT NAD r22, Overture Maps, Census TIGER/Line, FEMA NFHL); Stripe secured badge + cancel-anytime note under pricing; 99.9% uptime badge → `/status` |
+| Scroll fade-up animations | landing page | IntersectionObserver-driven fade+translateY on all sections; 75ms stagger on grid cards (feat-grid, steps, enrich-grid, pricing-grid) |
+| Animated metric counters | landing page | 120M+ / 8+ / 10K count up from 0 on scroll-into-view; `<5ms` uses prefix token; 1.4s duration at 60fps |
+| Use-case industry switcher | landing page — code section | 5 pills (General / Insurance / Fintech / E-commerce / Logistics); clicking fades and swaps h2 + description to persona-specific copy; no page reload |
+| Pricing volume calculator | landing page — pricing section | Range slider 1K–5M+ lookups/month; auto-highlights matching price card with glow border; shows plan name, price, and included volume in real time |
 | Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel |
 | Status | `/status.html` | Real UptimeRobot data via `/api/status` proxy — uptime table (1d/7d/30d/90d), live response time, external dep checks (Census, FEMA) |
 | API explorer | `/explorer` | Interactive API docs |
