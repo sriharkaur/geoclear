@@ -191,16 +191,20 @@ Say **"data runbook"** → I will read `RUNBOOK-DATA.md` and walk you through th
 
 ## 10. VERSIONING DISCIPLINE
 
-Every time a feature ships:
-1. **Update `ARCHITECTURE.md`** — add new endpoint, tier change, or integration to the relevant section
-2. **Add to `RELEASES.md` → Unreleased** — one bullet per shipped item
+Every time a feature ships (use `/feature` skill — it enforces this automatically):
+1. **Update `FEATURES.md`** — canonical inventory of everything built; add to the right section, remove from "Not yet built"
+2. **Update `RELEASES.md` → Unreleased** — one bullet per shipped item
+3. **Update `ARCHITECTURE.md`** — add new endpoint or tier change to the relevant table
+4. **Update `QUEUE.md`** — check off the completed item with ✅
 
-When cutting a release (say "cut release X.Y.Z"):
+When cutting a release (use `/release vX.Y.Z` — it enforces this automatically):
 1. Move everything under `## Unreleased` in `RELEASES.md` into a new `## vX.Y.Z — YYYY-MM-DD` section
 2. Update `ARCHITECTURE.md` header (`Last updated: vX.Y.Z`)
 3. Update version in `CLAUDE.md` header
+4. Update `FEATURES.md` header (`Last updated:`)
 
 Reference files:
-- `ARCHITECTURE.md` — what is built right now
-- `RELEASES.md` — what shipped in each version
-- `QUEUE.md` — what is to be built
+- `FEATURES.md` — **primary** — complete inventory of every feature built, organized by area
+- `ARCHITECTURE.md` — tech stack, all endpoints, tier table, Stripe event table
+- `RELEASES.md` — chronological version history
+- `QUEUE.md` — what is pending

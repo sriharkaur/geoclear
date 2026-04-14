@@ -1,6 +1,6 @@
 # /release — Cut a GeoClear release
 
-Cut a new version, update RELEASES.md and ARCHITECTURE.md.
+Cut a new version, update all tracking docs.
 
 ## Steps
 
@@ -20,7 +20,11 @@ Cut a new version, update RELEASES.md and ARCHITECTURE.md.
 
 6. **Update `CLAUDE.md`** header:
    - Change `Version A.B.C` to `Version X.Y.Z`
+   - Update `Stripe: ...` status line if billing config changed
 
-7. **Report** what was included in the release — list the bullets that moved from Unreleased.
+7. **Update `FEATURES.md`** header:
+   - Change `Last updated: ...` to today's date
+
+8. **Report** what was included in the release — list the bullets that moved from Unreleased.
 
 Do not commit, push, or tag git unless the user explicitly asks.
