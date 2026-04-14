@@ -658,19 +658,6 @@ app.use((err, req, res, next) => {  // eslint-disable-line no-unused-vars
   res.status(500).json({ ok: false, error: 'Internal server error' });
 });
 
-// ── Warmup: force SQLite to open nad.db before accepting traffic ──
-// Opening a 90GB file defers the first page read until first query,
-// causing a timeout spike on health checks post-redeploy. A cheap
-// synchronous query here pays that cost at startup instead.
-if (nad.isReady()) {
-  try {
-    nad.db.prepare('SELECT 1 FROM addresses LIMIT 1').get();
-    console.log('[startup] nad.db warmed up');
-  } catch (e) {
-    console.warn('[startup] warmup query failed:', e.message);
-  }
-}
-
 // ── Start ─────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   const dbReady  = nad.isReady();
