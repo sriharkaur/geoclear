@@ -11,6 +11,23 @@
 
 ---
 
+## CRITICAL BEHAVIOR RULE — Session Start Protocol
+
+**Every new session MUST begin by reading these three files before writing a single line of code:**
+
+1. **`FEATURES.md`** — everything already built. If something is in there, do not rebuild it.
+2. **`QUEUE.md`** — what is pending, in progress, and done. Pick up from where the last session left off.
+3. **`ARCHITECTURE.md`** — all existing endpoints, data sources, tiers, and the data pipeline flow.
+
+**Then, before starting work:**
+- Check if the requested feature already exists in `FEATURES.md`. If it does, say so and ask for clarification instead of duplicating.
+- Check if there is an in-progress item in `QUEUE.md` (look for "IN PROGRESS"). Resume that first unless redirected.
+- Decide branch strategy (see Branch Strategy rule below) before touching any file.
+
+**The goal:** no session should ever rebuild something that already exists or start fresh without context.
+
+---
+
 ## CRITICAL BEHAVIOR RULE — Auto-Update Docs After Every Change
 
 **After implementing any feature, fix, or infrastructure change — without being asked — always:**
