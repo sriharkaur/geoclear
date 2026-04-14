@@ -177,6 +177,32 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
 
 app.use(express.json());
 
+// ── Admin stream-upload (must be before body parsers consume stream) ──
+// POST /v1/admin/stream-upload  headers: X-Admin-Secret, X-Upload-Filename
+// Streams request body to /data/<filename> without buffering in memory.
+// Use for large DB files (e.g. 37GB overture-additions.db).
+app.post('/v1/admin/stream-upload', (req, res) => {
+  const secret   = req.headers['x-admin-secret'];
+  const filename = req.headers['x-upload-filename'];
+  if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!filename || filename.includes('/') || filename.includes('..'))
+    return res.status(400).json({ ok: false, error: 'Invalid X-Upload-Filename header' });
+  const fs   = require('fs');
+  const dest = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), filename);
+  const out  = fs.createWriteStream(dest);
+  let bytes  = 0;
+  req.on('data', chunk => { bytes += chunk.length; });
+  req.pipe(out);
+  out.on('finish', () => {
+    console.log(`[stream-upload] ${filename}: ${(bytes/1e9).toFixed(2)}GB written to ${dest}`);
+    res.json({ ok: true, path: dest, bytes });
+  });
+  out.on('error', e => {
+    console.error('[stream-upload] error:', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  });
+});
+
 // ── Security headers + CORS ───────────────────────────────────────
 // Set NAD_ALLOWED_ORIGINS=https://yourdomain.com in production to restrict CORS.
 // Leave unset (or empty) in dev to allow all origins.
