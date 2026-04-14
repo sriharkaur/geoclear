@@ -714,6 +714,66 @@ app.post('/v1/admin/merge', adminAuth, (req, res) => {
   }
 });
 
+// POST /v1/admin/import-tsv-gz
+// Accepts a gzip-compressed TSV stream; decompresses and bulk-inserts into nad.db.
+// Columns (tab-separated, no header):
+//   nad_uuid, add_number, st_name, unit, post_city, inc_muni, state, zip_code,
+//   latitude, longitude, addr_type, placement, nad_source, full_address, date_update, date_imported
+// Admin-only. Run in background — check /api/stats for row count after completion.
+app.post('/v1/admin/import-tsv-gz', (req, res) => {
+  const secret = req.headers['x-admin-secret'];
+  if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'DB not ready.' });
+
+  const zlib      = require('zlib');
+  const readline  = require('readline');
+  const gunzip    = zlib.createGunzip();
+  const rl        = readline.createInterface({ input: gunzip, crlfDelay: Infinity });
+
+  const COLS = ['nad_uuid','add_number','st_name','unit','post_city','inc_muni','state',
+    'zip_code','latitude','longitude','addr_type','placement','nad_source',
+    'full_address','date_update','date_imported'];
+
+  const stmt = nad.db.prepare(`INSERT OR IGNORE INTO addresses
+    (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
+     latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
+    VALUES (${COLS.map(() => '?').join(',')})`);
+  const insertBatch = nad.db.transaction(rows => {
+    let n = 0;
+    for (const r of rows) { stmt.run(...r); n++; }
+    return n;
+  });
+
+  let inserted = 0, lineCount = 0, batch = [];
+  const BATCH = 10000;
+
+  nad.db.pragma('synchronous = NORMAL');
+
+  res.json({ ok: true, message: 'Import started in background. Check /api/stats for progress.' });
+
+  req.pipe(gunzip);
+
+  rl.on('line', line => {
+    if (!line.trim()) return;
+    const parts = line.split('\t');
+    if (parts.length < COLS.length) return;
+    batch.push(parts.slice(0, COLS.length).map(v => v === '' ? null : v));
+    lineCount++;
+    if (batch.length >= BATCH) {
+      inserted += insertBatch(batch);
+      batch = [];
+      if (lineCount % 1000000 === 0)
+        console.log(`[import-tsv-gz] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted`);
+    }
+  });
+  rl.on('close', () => {
+    if (batch.length) inserted += insertBatch(batch);
+    nad.db.pragma('synchronous = FULL');
+    console.log(`[import-tsv-gz] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows inserted`);
+  });
+  gunzip.on('error', e => console.error('[import-tsv-gz] gunzip error:', e.message));
+});
+
 // DELETE /v1/admin/data-file  body: { filename }
 // Deletes a file from /data/<filename>. Use to clean up partial uploads.
 app.delete('/v1/admin/data-file', adminAuth, (req, res) => {
