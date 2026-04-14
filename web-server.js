@@ -28,7 +28,9 @@ const { KeyStore }    = require('./keys.js');
 const argv  = process.argv.slice(2);
 const PORT  = parseInt(
   argv.find(a => a.startsWith('--port='))?.split('=')[1] ??
-  (argv.indexOf('--port') >= 0 ? argv[argv.indexOf('--port')+1] : '4001')
+  (argv.indexOf('--port') >= 0 ? argv[argv.indexOf('--port')+1] : null) ??
+  process.env.PORT ??
+  '4001'
 );
 
 // ── DB + Cache ───────────────────────────────────────────────────
