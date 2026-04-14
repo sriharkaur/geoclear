@@ -26,6 +26,47 @@
 
 ---
 
+## CRITICAL BEHAVIOR RULE — Staging-First for All Data Operations
+
+**Never run heavy data imports, large file transfers, or database mutations directly on prod or locally.**
+
+The staging service (`geoclear-staging.onrender.com`, `srv-d7f6rh58nd3s73cve8dg`) is the data processing environment.
+
+**The data pipeline is always:**
+```
+New source (S3 parquet / NAD / OpenAddresses)
+  → Run import on staging Render Shell
+  → Verify row counts on staging
+  → Upload to prod /data via POST /v1/admin/upload-chunk (chunked, resumable)
+  → Merge into prod nad.db via POST /v1/admin/merge
+  → Verify via GET /api/stats
+```
+
+**Rules:**
+1. **Never run `overture-import.js` or any large download locally** — staging has the 100GB disk; your Mac does not.
+2. **Never rsync nad.db from local to prod** — always go through staging → upload-chunk → merge.
+3. **Never overwrite prod nad.db directly** — only additive merges via INSERT OR IGNORE.
+4. **For local dev**, use `data/dev.db` (572MB, 20K addrs/state). Generate with `node create-dev-db.js`. Set `NAD_DB=data/dev.db`.
+5. **Staging autoDeploy is OFF** — code updates go to prod automatically; staging only gets a deploy when triggered manually (data work only).
+
+---
+
+## CRITICAL BEHAVIOR RULE — Branch Strategy
+
+**Every new session: assess the scope before touching code.**
+
+| Change type | Git strategy |
+|-------------|-------------|
+| Single-file fix, docs update, config tweak | Push directly to `main` |
+| Multi-file feature, new endpoint, schema change | `git checkout -b feat/<name>` → work → `git merge main` when complete |
+| Data operation (import, merge) | No branch needed — data never goes in git |
+
+**Why:** `git push main` auto-deploys to prod. Half-done multi-file work going live with real customers is bad. A branch costs one extra git step; a bad prod deploy costs customer trust.
+
+**NOT** doing full worktrees (OptionFlow-style) — that's for large monorepos with concurrent workstreams. GeoClear is a single-service project; simple branches are the right size.
+
+---
+
 ## CRITICAL BEHAVIOR RULE — No Fabrication
 
 **NEVER make up, estimate, or guess facts presented as if real.** This includes:
@@ -66,9 +107,9 @@ If you don't know: **"I don't know — let me look that up."** The user makes re
 | `public/` | Static assets (landing page, demo widget) |
 | `docs/` | `api-guide.md`, `user-guide.md`, `systems-guide.md` |
 
-**Data**: `data/` is a **real directory** (moved from Syntheticdata — project is now self-contained).
-Contains `nad.db` (85GB, 120M addresses), `keys.db` (live API keys), `NAD_r22.txt`.
-Neither `nad.db` nor `keys.db` are in git — transferred to Render via rsync. See `RUNBOOK-DATA.md`.
+**Data (local)**: `data/` contains `dev.db` (572MB, local dev only) and `keys.db` (live customer keys — never rsync to Render). Full `nad.db` (91GB) lives on prod Render disk only. All heavy imports run on staging. See Staging-First rule above.
+
+**Data (prod)**: `/data/nad.db` (91GB, 120M+ addresses). `/data/keys.db` (live API keys). Never in git.
 
 **Port**: 4001 (local). Production: `geoclear.io` via Render → Cloudflare.
 
@@ -100,7 +141,12 @@ curl https://geoclear.onrender.com/api/health
 
 ## 3. DEVELOPMENT WORKFLOW
 
-When adding a feature:
+**Session start checklist:**
+1. Check scope — single-file or multi-file? See Branch Strategy rule above.
+2. If multi-file: `git checkout -b feat/<name>` before writing any code.
+3. Read `QUEUE.md` to see what's pending and what's in progress.
+
+**When adding a feature:**
 1. **Read the relevant source files first** — do not guess existing APIs or patterns
 2. **Schema changes** → update `schema.sql` AND document what migration is needed
 3. **New endpoints** → add to `web-server.js`, follow existing auth middleware patterns
@@ -108,6 +154,9 @@ When adding a feature:
 5. **API key scoping** → use `KeyStore` — never bypass key auth for new routes
 6. **Test manually** before declaring done: `curl` the endpoint, check the response shape
 7. **Commit format**: `<type>: <description>` (feat, fix, docs, refactor, test, chore)
+8. **If on a feature branch**: merge to main only when the feature is complete and smoke-tested — not mid-work.
+
+**For data operations** — always use staging, never local. See Staging-First rule above.
 
 ---
 
@@ -151,14 +200,21 @@ Local defaults are set in `web-server.js` (e.g., `process.env.NAD_ADMIN_SECRET |
 
 QUEUE.md has the detailed deployment checklist (GitHub push → Render → DNS → smoke test).
 
-### Data Operations — When to run RUNBOOK-DATA.md
+### Render Services
+
+| Service | ID | URL | Purpose |
+|---------|----|-----|---------|
+| Prod | `srv-d7ep7bfavr4c73d46gng` | `geoclear.io` | Live API — auto-deploys on `git push main` |
+| Staging | `srv-d7f6rh58nd3s73cve8dg` | `geoclear-staging.onrender.com` | Data imports only — autoDeploy OFF, 100GB disk |
+
+### Data Operations — Staging Pipeline
 
 | Trigger | Action |
 |---------|--------|
-| New Render service / disk re-created | Full rsync — `RUNBOOK-DATA.md` § Initial Full Transfer |
-| NAD quarterly release (~every 3 months) | Delta rsync — `RUNBOOK-DATA.md` § Quarterly Delta Update |
-| Overture gap-fill import completed locally | Delta rsync — same as above |
-| Disaster recovery (disk lost/corrupt) | Full rsync — same as Initial Full Transfer |
+| New NAD quarterly release (~every 3 months) | Run import on staging Render Shell → upload-chunk to prod → merge |
+| Overture / OpenAddresses new data | Run `overture-import.js --db=/data/overture-additions.db` on staging → upload-chunk → merge |
+| Disaster recovery (prod disk lost) | Re-run full import on staging → upload-chunk → merge |
+| Local dev setup | `node create-dev-db.js` → `NAD_DB=data/dev.db node web-server.js` |
 
 Say **"data runbook"** → I will read `RUNBOOK-DATA.md` and walk you through the right section.
 
@@ -201,6 +257,8 @@ Say **"data runbook"** → I will read `RUNBOOK-DATA.md` and walk you through th
 | "architecture" | Read `ARCHITECTURE.md` — full current feature list, all endpoints, tiers |
 | "releases" | Read `RELEASES.md` — full version history and release notes |
 | "cut release X.Y.Z" | Move Unreleased → versioned section in `RELEASES.md`, update `ARCHITECTURE.md` header |
+| "data pipeline" / "data ops" | Read `ARCHITECTURE.md` § Data Pipeline; follow Staging-First rule |
+| "import X data" | Always: staging Render Shell → verify → upload-chunk → merge → verify prod stats |
 
 ---
 
