@@ -746,11 +746,18 @@ app.post('/v1/admin/import-tsv-gz', (req, res) => {
 
   let inserted = 0, lineCount = 0, batch = [];
   const BATCH = 10000;
+  const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+  const CACHE_PATH = path.join(DATA_DIR, 'overture.tsv.gz');
+  const fs = require('fs');
 
   nad.db.pragma('synchronous = NORMAL');
 
   res.json({ ok: true, message: 'Import started in background. Check /api/stats for progress.' });
 
+  // Tee the stream: save to disk AND pipe to gunzip simultaneously.
+  // If import is interrupted, POST /v1/admin/import-tsv-gz-cached re-runs from saved file.
+  const tee = fs.createWriteStream(CACHE_PATH);
+  req.pipe(tee);
   req.pipe(gunzip);
 
   rl.on('line', line => {
@@ -772,6 +779,49 @@ app.post('/v1/admin/import-tsv-gz', (req, res) => {
     console.log(`[import-tsv-gz] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows inserted`);
   });
   gunzip.on('error', e => console.error('[import-tsv-gz] gunzip error:', e.message));
+});
+
+// POST /v1/admin/import-tsv-gz-cached — re-run import from saved /data/overture.tsv.gz
+// Use this if the server restarted mid-import and the file is already on disk.
+app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'DB not ready.' });
+  const fs        = require('fs');
+  const zlib      = require('zlib');
+  const readline  = require('readline');
+  const DATA_DIR  = process.env.DATA_DIR || path.join(__dirname, 'data');
+  const CACHE_PATH = path.join(DATA_DIR, 'overture.tsv.gz');
+  if (!fs.existsSync(CACHE_PATH)) return err(res, `No cached file at ${CACHE_PATH}. Upload first.`);
+
+  const COLS = ['nad_uuid','add_number','st_name','unit','post_city','inc_muni','state',
+    'zip_code','latitude','longitude','addr_type','placement','nad_source',
+    'full_address','date_update','date_imported'];
+  const stmt = nad.db.prepare(`INSERT OR IGNORE INTO addresses
+    (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
+     latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
+    VALUES (${COLS.map(() => '?').join(',')})`);
+  const insertBatch = nad.db.transaction(rows => { let n=0; for (const r of rows) { stmt.run(...r); n++; } return n; });
+
+  res.json({ ok: true, message: `Re-running import from ${CACHE_PATH}. Check /api/stats.` });
+
+  nad.db.pragma('synchronous = NORMAL');
+  let inserted = 0, lineCount = 0, batch = [];
+  const BATCH = 10000;
+  const gunzip = zlib.createGunzip();
+  const rl = readline.createInterface({ input: gunzip, crlfDelay: Infinity });
+  fs.createReadStream(CACHE_PATH).pipe(gunzip);
+  rl.on('line', line => {
+    if (!line.trim()) return;
+    const parts = line.split('\t');
+    if (parts.length < COLS.length) return;
+    batch.push(parts.slice(0, COLS.length).map(v => v === '' ? null : v));
+    if (++lineCount % 1000000 === 0) console.log(`[import-cached] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted`);
+    if (batch.length >= BATCH) { inserted += insertBatch(batch); batch = []; }
+  });
+  rl.on('close', () => {
+    if (batch.length) inserted += insertBatch(batch);
+    nad.db.pragma('synchronous = FULL');
+    console.log(`[import-cached] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows`);
+  });
 });
 
 // DELETE /v1/admin/data-file  body: { filename }
