@@ -1483,19 +1483,44 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     results.innerHTML = '<div class="demo-placeholder" style="color:var(--sky)">Searching…</div>';
 
     try {
-      // Split "1600 Pennsylvania Ave" → number=1600, street=Pennsylvania
+      // Split "1600 Pennsylvania Ave" → number=1600, street=Pennsylvania (st_name only)
       let streetName = streetVal, houseNumber = '';
       const numMatch = streetVal.match(/^(\d+[-\d]*)\s+(.+)$/);
-      if (numMatch) { houseNumber = numMatch[1]; streetName = numMatch[2].replace(/\s+(st|ave|blvd|dr|rd|ln|ct|pl|way|circle|cir|terr?|ter|pkwy|hwy|fwy|loop|row|sq|aly|run|path|pass|pike|trl|trail|xing)\.?$/i, '').trim(); }
+      if (numMatch) {
+        houseNumber = numMatch[1];
+        streetName = numMatch[2]
+          .replace(/\s+(street|avenue|boulevard|drive|road|lane|court|place|way|circle|terrace|parkway|highway|freeway|loop|square|alley|trail|crossing|st|ave|blvd|dr|rd|ln|ct|pl|cir|terr?|ter|pkwy|hwy|fwy|sq|aly|trl|xing)\.?$/i, '')
+          .trim();
+      }
 
-      const params = new URLSearchParams({ limit: 3 });
-      params.set('street', streetName);
-      if (houseNumber) params.set('number', houseNumber);
-      if (city)  params.set('city', city);
-      if (state) params.set('state', state);
+      // Helper: fetch with given params, return data or null
+      const tryFetch = async (p) => {
+        const r = await fetch('/api/demo?' + p);
+        if (!r.ok && r.status !== 404) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      };
 
-      const r = await fetch('/api/demo?' + params);
-      const data = await r.json();
+      // Pass 1: full match (number + street + city + state)
+      const p1 = new URLSearchParams({ limit: 3, street: streetName });
+      if (houseNumber) p1.set('number', houseNumber);
+      if (city)  p1.set('city', city);
+      if (state) p1.set('state', state);
+      let data = await tryFetch(p1);
+
+      // Pass 2: drop city, keep state — catches postal city / inc_muni mismatches
+      if ((!data.ok || !data.data?.length) && state) {
+        const p2 = new URLSearchParams({ limit: 3, street: streetName });
+        if (houseNumber) p2.set('number', houseNumber);
+        p2.set('state', state);
+        data = await tryFetch(p2);
+      }
+
+      // Pass 3: state only, no city — last resort for rural addresses
+      if ((!data.ok || !data.data?.length) && (state || houseNumber)) {
+        const p3 = new URLSearchParams({ limit: 5, street: streetName });
+        if (houseNumber) p3.set('number', houseNumber);
+        data = await tryFetch(p3);
+      }
 
       if (!data.ok && data.error) {
         results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">${data.error}</div>`;
@@ -1540,8 +1565,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </div>`;
       }).join('');
 
-    } catch (err) {
-      results.innerHTML = '<div class="demo-placeholder" style="color:var(--red)">Request failed — check your connection.</div>';
+    } catch (e) {
+      results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Request failed — ${e.message || 'check your connection'}. <a href="" onclick="event.preventDefault();runDemo()" style="color:var(--sky);text-decoration:underline">Retry</a></div>`;
     }
   }
 
