@@ -542,6 +542,56 @@ app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
   ok(res, await runMeteredFlush());
 });
 
+// ── Staging → Prod merge ──────────────────────────────────────────
+// POST /v1/admin/merge  body: { source: 'nad_source value', dbPath: '/data/overture-additions.db' }
+// Merges all addresses from an attached DB into this instance's nad.db.
+// Admin-only. Use from Render shell or staging service to promote new data.
+app.post('/v1/admin/merge', adminAuth, (req, res) => {
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'DB not ready.' });
+  const { dbPath, source } = req.body || {};
+  if (!dbPath) return err(res, 'dbPath required (path to SQLite file on this disk).');
+  const fs = require('fs');
+  if (!fs.existsSync(dbPath)) return err(res, `File not found: ${dbPath}`);
+  try {
+    const srcDb = require('better-sqlite3')(dbPath, { readonly: true });
+    const where = source ? `WHERE nad_source = '${source.replace(/'/g,"''")}'` : '';
+    const rows  = srcDb.prepare(`SELECT COUNT(*) as n FROM addresses ${where}`).get();
+    const total = rows.n;
+    srcDb.close();
+
+    // Run merge in background — can take minutes for large files
+    res.json({ ok: true, message: `Merge started: ${total.toLocaleString()} source rows. Check /api/stats in ~5min.` });
+
+    setImmediate(() => {
+      try {
+        const src = require('better-sqlite3')(dbPath, { readonly: true });
+        nad.db.pragma('synchronous = NORMAL');
+        const stmt = nad.db.prepare(`INSERT OR IGNORE INTO addresses
+          (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
+           latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
+          SELECT nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
+           latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported
+          FROM addresses ${where} LIMIT 10000 OFFSET ?`);
+        const BATCH = 10000;
+        let offset = 0, inserted = 0;
+        const go = nad.db.transaction((off) => { const r = stmt.run(off); return r.changes; });
+        while (true) {
+          const changes = go(offset);
+          inserted += changes;
+          offset += BATCH;
+          if (changes === 0) break;
+        }
+        src.close();
+        console.log(`[merge] Done: ${inserted.toLocaleString()} new rows from ${dbPath}`);
+      } catch (e) {
+        console.error('[merge] Failed:', e.message);
+      }
+    });
+  } catch (e) {
+    err(res, `Merge failed: ${e.message}`);
+  }
+});
+
 // Open demo endpoint — no API key, IP rate-limited (10 req/hr)
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
