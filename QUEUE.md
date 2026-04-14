@@ -48,6 +48,7 @@ _Last updated: 2026-04-13_
 
 - [x] Overture Maps integration — FL, MI, NJ, NV, NH gap fill ✅
 - [x] `inc_muni` vs `post_city` bug fixed ✅
+- [ ] **Overture gap-fill full run** — `overture-import.js` exists; run locally against nad.db, then rsync delta to Render. Goal: 120M → ~130–135M addresses. Cover rural/county gaps NAD misses.
 - [ ] Fill remaining state gaps via state GIS portals (GA, CA partial)
 - [ ] Address confidence score (0–100) on every response
 - [ ] Fuzzy / typo matching (Levenshtein / phonetic) — "Pensilvania Ave" works
@@ -74,6 +75,7 @@ _Last updated: 2026-04-13_
 - [ ] CSV upload → enriched CSV download (web UI, no-code users)
 
 ### Infrastructure
+- [ ] **PRIORITY — Wire metered flush cron on Render** — `POST /v1/admin/metered/flush` must fire daily or metered customers' usage is never reported to Stripe and revenue is lost. Use Render Cron Jobs in the dashboard: schedule `curl -X POST https://geoclear.io/v1/admin/metered/flush -H "X-Admin-Secret: $NAD_ADMIN_SECRET"` daily at midnight UTC.
 - [ ] API key management portal (self-serve signup → get key in <60s)
 - [x] Per-lookup metered billing: `metered` tier in keys.js, Stripe usage records, flush via `POST /v1/admin/metered/flush` ✅
 - [ ] Usage dashboard for API customers
