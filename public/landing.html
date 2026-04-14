@@ -252,6 +252,53 @@
       text-transform: uppercase; letter-spacing: 0.09em; margin-top: 2px;
     }
 
+    /* ─── HERO YANTRA ──────────────────────────────────────────────────────── */
+    .hero-yantra {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 680px; height: 680px;
+      object-fit: contain;
+      filter: grayscale(100%) brightness(0.6) opacity(0.05);
+      pointer-events: none; user-select: none;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+
+    /* ─── DATA SOURCES STRIP ────────────────────────────────────────────────── */
+    .sources-strip {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+    }
+    .sources-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .sources-label {
+      font-size: 0.68rem; font-weight: 600; color: var(--dim);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .sources-divider {
+      width: 1px; height: 14px; background: var(--border); flex-shrink: 0;
+    }
+    .source-items {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .source-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .source-badge:hover { border-color: var(--border2); color: var(--text); }
+    .source-badge svg { flex-shrink: 0; opacity: 0.6; }
+
     /* ─── HERO TERMINAL ─────────────────────────────────────────────────────── */
     .terminal-wrap {
       position: relative;
@@ -828,6 +875,7 @@
   <div class="hero-bg"></div>
   <div class="hero-orb"></div>
   <div class="hero-orb2"></div>
+  <img class="hero-yantra" src="/yantra.webp" alt="" aria-hidden="true" draggable="false" />
 
   <div class="hero-inner">
     <div class="hero-text">
@@ -913,6 +961,46 @@
     </div>
   </div>
 </section>
+
+<!-- ──────────────────────────────────────────────────────────────── SOURCES -->
+<div class="sources-strip">
+  <div class="sources-inner">
+    <span class="sources-label">Data from</span>
+    <div class="sources-divider"></div>
+    <div class="source-items">
+      <span class="source-badge">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="6.5" cy="6.5" r="5.5"/>
+          <path d="M6.5 1v11M1 6.5h11" stroke-width="1" opacity="0.5"/>
+          <path d="M2 3.5C3.5 5 5 5.5 6.5 5.5S9.5 5 11 3.5M2 9.5C3.5 8 5 7.5 6.5 7.5S9.5 8 11 9.5" stroke-width="1" opacity="0.5"/>
+        </svg>
+        USDOT National Address Database r22
+      </span>
+      <span class="source-badge">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="6.5,1 12,4.5 12,9.5 6.5,12 1,9.5 1,4.5"/>
+          <circle cx="6.5" cy="6.5" r="2"/>
+        </svg>
+        Overture Maps (Apache 2.0)
+      </span>
+      <span class="source-badge">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1.5" y="1.5" width="10" height="10" rx="1.5"/>
+          <path d="M1.5 5.5h10M5.5 1.5v10" stroke-width="1" opacity="0.5"/>
+        </svg>
+        US Census Bureau TIGER/Line
+      </span>
+      <span class="source-badge">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.5 8C3 6 4.5 9.5 6.5 7.5C8.5 5.5 10 9 11.5 7"/>
+          <path d="M1.5 11h10" stroke-width="1" opacity="0.4"/>
+          <path d="M6.5 1v3M4 2.5l1.5 1.5M9 2.5L7.5 4" stroke-width="1" opacity="0.5"/>
+        </svg>
+        FEMA NFHL Flood Zones
+      </span>
+    </div>
+  </div>
+</div>
 
 <!-- ──────────────────────────────────────────────────────────────── METRICS -->
 <div class="metrics-strip">
