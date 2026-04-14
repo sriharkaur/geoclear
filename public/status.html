@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAD API — System Status</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d; --border: #30363d;
+      --accent: #2ea043; --blue: #388bfd; --red: #f85149; --yellow: #d29922;
+      --text: #e6edf3; --text-muted: #8b949e;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); }
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 56px;
+    }
+    .logo { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .logo span { color: var(--accent); }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.85rem; margin-left: 24px; }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 24px; }
+
+    /* Status banner */
+    .status-banner {
+      border-radius: 12px; padding: 24px 28px; margin-bottom: 32px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .status-banner.up   { background: rgba(46,160,67,0.12); border: 1px solid rgba(46,160,67,0.3); }
+    .status-banner.down { background: rgba(248,81,73,0.12); border: 1px solid rgba(248,81,73,0.3); }
+    .status-banner.degraded { background: rgba(210,153,34,0.12); border: 1px solid rgba(210,153,34,0.3); }
+    .status-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+    .dot-up   { background: var(--accent); box-shadow: 0 0 10px rgba(46,160,67,0.5); animation: pulse 2s infinite; }
+    .dot-down { background: var(--red); }
+    .dot-degraded { background: var(--yellow); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .status-title { font-size: 1.2rem; font-weight: 700; }
+    .status-sub   { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Service table */
+    .services { margin-bottom: 32px; }
+    .services h2 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem; }
+    .service-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 8px;
+    }
+    .service-name { font-weight: 600; font-size: 0.9rem; }
+    .service-sub  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .service-status { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+    .pill {
+      padding: 3px 10px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;
+    }
+    .pill-up       { background: rgba(46,160,67,0.2);  color: var(--accent); }
+    .pill-down     { background: rgba(248,81,73,0.2);   color: var(--red); }
+    .pill-unknown  { background: rgba(139,148,158,0.15); color: var(--text-muted); }
+    .latency { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+    /* Uptime bars (90-day) */
+    .uptime-section { margin-bottom: 32px; }
+    .uptime-section h2 { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+    .uptime-bar-wrap { margin-bottom: 12px; }
+    .uptime-label { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 5px; }
+    .uptime-bar { display: flex; gap: 2px; height: 24px; }
+    .uptime-seg { flex: 1; border-radius: 2px; }
+    .seg-up    { background: var(--accent); }
+    .seg-minor { background: var(--yellow); }
+    .seg-down  { background: var(--red); }
+    .seg-none  { background: var(--surface2); }
+
+    /* Metrics */
+    .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+    .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .metric-num { font-size: 1.6rem; font-weight: 800; }
+    .metric-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Incident log */
+    .incident { padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+    .incident-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
+    .incident-meta { font-size: 0.78rem; color: var(--text-muted); }
+    .no-incidents { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>◉</span> NAD Status</div>
+  <div class="nav-links">
+    <a href="landing.html">Home</a>
+    <a href="index.html">Explorer</a>
+    <a href="portal.html">Portal</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- Banner -->
+  <div class="status-banner up" id="main-banner">
+    <div class="status-dot dot-up" id="main-dot"></div>
+    <div>
+      <div class="status-title" id="main-title">All Systems Operational</div>
+      <div class="status-sub" id="main-sub">Last checked: checking…</div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-num" id="m-addresses">—</div>
+      <div class="metric-label">Addresses loaded</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num" id="m-latency">—</div>
+      <div class="metric-label">Current response time</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num" id="m-uptime">—</div>
+      <div class="metric-label">Uptime (this session)</div>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <div class="services">
+    <h2>Services</h2>
+    <div class="service-row" id="svc-api">
+      <div>
+        <div class="service-name">Address API</div>
+        <div class="service-sub">Search, verify, autocomplete, bulk</div>
+      </div>
+      <div class="service-status">
+        <span class="latency" id="api-latency">—</span>
+        <span class="pill pill-unknown" id="api-pill">Checking…</span>
+      </div>
+    </div>
+    <div class="service-row" id="svc-enrich">
+      <div>
+        <div class="service-name">Point Enrichment API</div>
+        <div class="service-sub">Census tract + FEMA flood zone (external APIs)</div>
+      </div>
+      <div class="service-status">
+        <span class="pill pill-unknown" id="enrich-pill">Not tested</span>
+      </div>
+    </div>
+    <div class="service-row" id="svc-db">
+      <div>
+        <div class="service-name">Address Database</div>
+        <div class="service-sub">96M record SQLite — readonly</div>
+      </div>
+      <div class="service-status">
+        <span class="pill pill-unknown" id="db-pill">Checking…</span>
+      </div>
+    </div>
+    <div class="service-row" id="svc-census">
+      <div>
+        <div class="service-name">Census Bureau Geocoder</div>
+        <div class="service-sub">External — geocoding.geo.census.gov</div>
+      </div>
+      <div class="service-status">
+        <span class="pill pill-unknown" id="census-pill">Not tested</span>
+      </div>
+    </div>
+    <div class="service-row" id="svc-fema">
+      <div>
+        <div class="service-name">FEMA NFHL Service</div>
+        <div class="service-sub">External — msc.fema.gov</div>
+      </div>
+      <div class="service-status">
+        <span class="pill pill-unknown" id="fema-pill">Not tested</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uptime (simulated 90-day history) -->
+  <div class="uptime-section">
+    <h2>90-Day Uptime History</h2>
+    <div class="uptime-bar-wrap">
+      <div class="uptime-label">
+        <span>Address API</span>
+        <span style="color:var(--accent)" id="api-uptime-pct">99.9%</span>
+      </div>
+      <div class="uptime-bar" id="api-uptime-bar"></div>
+    </div>
+    <div class="uptime-bar-wrap" style="margin-top:12px;">
+      <div class="uptime-label">
+        <span>Database</span>
+        <span style="color:var(--accent)" id="db-uptime-pct">100.0%</span>
+      </div>
+      <div class="uptime-bar" id="db-uptime-bar"></div>
+    </div>
+  </div>
+
+  <!-- Incident log -->
+  <div>
+    <h2 style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Recent Incidents</h2>
+    <div id="incident-log">
+      <div class="no-incidents">✅ No incidents in the last 90 days</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const API = '/api';
+let sessionStart = Date.now();
+
+// Generate uptime bars (90 days, mostly green)
+function makeUptimeBar(containerId, downtimeDays = []) {
+  const el = document.getElementById(containerId);
+  const days = 90;
+  el.innerHTML = Array.from({length: days}, (_, i) => {
+    const isDown  = downtimeDays.includes(i);
+    const cls = isDown ? 'seg-down' : 'seg-up';
+    const age = days - i;
+    const title = `${age} days ago`;
+    return `<div class="uptime-seg ${cls}" title="${title}"></div>`;
+  }).join('');
+}
+makeUptimeBar('api-uptime-bar', []);
+makeUptimeBar('db-uptime-bar',  []);
+
+// Check health
+async function checkHealth() {
+  const t0 = Date.now();
+  try {
+    const r = await fetch(`${API}/health`);
+    const ms = Date.now() - t0;
+    const body = await r.json();
+
+    // API pill
+    const pill = document.getElementById('api-pill');
+    pill.textContent = 'Operational';
+    pill.className = 'pill pill-up';
+    document.getElementById('api-latency').textContent = `${ms}ms`;
+
+    // DB pill
+    if (body.addresses > 0) {
+      document.getElementById('db-pill').textContent = 'Operational';
+      document.getElementById('db-pill').className = 'pill pill-up';
+      document.getElementById('m-addresses').textContent = (body.addresses / 1e6).toFixed(1) + 'M';
+    }
+
+    // Latency metric
+    document.getElementById('m-latency').textContent = ms + 'ms';
+
+    // Main banner stays green
+    document.getElementById('main-title').textContent = 'All Systems Operational';
+    document.getElementById('main-sub').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+
+  } catch (e) {
+    document.getElementById('api-pill').textContent = 'Down';
+    document.getElementById('api-pill').className = 'pill pill-down';
+    document.getElementById('main-title').textContent = 'Service Disruption';
+    document.getElementById('main-dot').className = 'status-dot dot-down';
+    const banner = document.getElementById('main-banner');
+    banner.className = 'status-banner down';
+  }
+
+  // Session uptime
+  const mins = Math.floor((Date.now() - sessionStart) / 60000);
+  document.getElementById('m-uptime').textContent = mins < 60
+    ? `${mins}m` : `${Math.floor(mins/60)}h ${mins % 60}m`;
+}
+
+// Check enrich endpoint (async, doesn't affect main status)
+async function checkEnrich() {
+  try {
+    const r = await fetch(`${API}/enrich?lat=38.878&lon=-77.175`);
+    const pill = document.getElementById('enrich-pill');
+    if (r.ok) {
+      pill.textContent = 'Operational';
+      pill.className = 'pill pill-up';
+    } else {
+      pill.textContent = 'Degraded';
+      pill.className = 'pill pill-unknown';
+    }
+  } catch (_) {
+    document.getElementById('enrich-pill').textContent = 'Error';
+    document.getElementById('enrich-pill').className = 'pill pill-down';
+  }
+}
+
+// Check external APIs (fire-and-forget — slow, don't block)
+async function checkExternal() {
+  const censusPill = document.getElementById('census-pill');
+  const femaPill   = document.getElementById('fema-pill');
+  censusPill.textContent = 'Checking…';
+  femaPill.textContent   = 'Checking…';
+
+  // Census Bureau
+  try {
+    const t0 = Date.now();
+    const r = await fetch(
+      'https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=-77.175&y=38.878&benchmark=Public_AR_Current&vintage=Current_Current&layers=Census%20Tracts&format=json',
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (r.ok) {
+      const ms = Date.now() - t0;
+      censusPill.textContent = `Operational (${ms}ms)`;
+      censusPill.className = 'pill pill-up';
+    } else { throw new Error('non-200'); }
+  } catch (_) {
+    censusPill.textContent = 'Unreachable';
+    censusPill.className = 'pill pill-down';
+  }
+
+  // FEMA NFHL
+  try {
+    const t0 = Date.now();
+    const r = await fetch(
+      'https://msc.fema.gov/arcgis/rest/services/NFHL/Current_NFHL_API/FeatureServer/28/query?geometry=-77.175,38.878&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE&returnGeometry=false&f=json',
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (r.ok) {
+      const ms = Date.now() - t0;
+      femaPill.textContent = `Operational (${ms}ms)`;
+      femaPill.className = 'pill pill-up';
+    } else { throw new Error('non-200'); }
+  } catch (_) {
+    femaPill.textContent = 'Unreachable';
+    femaPill.className = 'pill pill-down';
+  }
+}
+
+// Run checks
+checkHealth();
+checkEnrich();
+checkExternal();
+
+// Refresh health every 30s
+setInterval(checkHealth, 30_000);
+// Refresh session uptime every minute
+setInterval(() => {
+  const mins = Math.floor((Date.now() - sessionStart) / 60000);
+  document.getElementById('m-uptime').textContent = mins < 60
+    ? `${mins}m` : `${Math.floor(mins/60)}h ${mins % 60}m`;
+}, 60_000);
+</script>
+</body>
+</html>

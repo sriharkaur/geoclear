@@ -1,0 +1,491 @@
+#!/usr/bin/env node
+/**
+ * NAD Web Server
+ * ==============
+ * Serves the NAD web interface + API on port 4001.
+ * Combines static file serving with a lightweight API layer —
+ * no separate REST API process needed for local use.
+ *
+ * Usage:
+ *   node nad/web-server.js
+ *   node nad/web-server.js --port 4002
+ *
+ * Then open: http://localhost:4001
+ */
+
+'use strict';
+
+const express    = require('express');
+const rateLimit  = require('express-rate-limit');
+const crypto     = require('crypto');
+const path       = require('path');
+const { NADQuery }    = require('./query.js');
+const { enrich }      = require('./enrich.js');
+const { enrichPoint } = require('./geocode.js');
+const { KeyStore }    = require('./keys.js');
+
+// ── Config ────────────────────────────────────────────────────────
+const argv  = process.argv.slice(2);
+const PORT  = parseInt(
+  argv.find(a => a.startsWith('--port='))?.split('=')[1] ??
+  (argv.indexOf('--port') >= 0 ? argv[argv.indexOf('--port')+1] : '4001')
+);
+
+// ── DB + Cache ───────────────────────────────────────────────────
+const nad  = new NADQuery();
+const keys = new KeyStore();
+const ADMIN_SECRET          = process.env.NAD_ADMIN_SECRET    || 'nad_admin_localdev';
+const STRIPE_SECRET         = process.env.STRIPE_SECRET_KEY   || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_PRICES         = {
+  starter: process.env.STRIPE_PRICE_STARTER || '',
+  pro:     process.env.STRIPE_PRICE_PRO     || '',
+};
+const BASE_URL = process.env.NAD_BASE_URL || `http://localhost:${PORT}`;
+const stripe   = STRIPE_SECRET ? require('stripe')(STRIPE_SECRET) : null;
+
+// Simple in-memory cache for expensive queries
+const cache = new Map();
+function cached(key, fn, ttlMs = 1000 * 60 * 60) {  // 1-hour TTL
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.ts < ttlMs) return hit.val;
+  const val = fn();
+  cache.set(key, { val, ts: Date.now() });
+  return val;
+}
+
+// ── App ───────────────────────────────────────────────────────────
+const app = express();
+
+// ── Stripe Webhook (raw body — MUST precede express.json) ─────────
+app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) return res.status(503).json({ ok: false, error: 'Stripe not configured.' });
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+  } catch (e) {
+    return res.status(400).send(`Webhook Error: ${e.message}`);
+  }
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const { tier } = session.metadata || {};
+    const email    = session.customer_details?.email || session.customer_email;
+    if (email && tier) {
+      try {
+        const result = keys.generate({ email, tier, notes: `stripe:${session.id}` });
+        keys.completeStripeSession(session.id, result.key);
+        console.log(`[Stripe] Key issued for ${email} (${tier}): ${result.key.slice(0, 24)}…`);
+      } catch (e) {
+        console.error('[Stripe] Key generation failed:', e.message);
+      }
+    }
+  }
+  res.json({ received: true });
+});
+
+app.use(express.json());
+
+// ── Security headers + CORS ───────────────────────────────────────
+// Set NAD_ALLOWED_ORIGINS=https://yourdomain.com in production to restrict CORS.
+// Leave unset (or empty) in dev to allow all origins.
+const ALLOWED_ORIGINS = process.env.NAD_ALLOWED_ORIGINS
+  ? new Set(process.env.NAD_ALLOWED_ORIGINS.split(',').map(o => o.trim()))
+  : null; // null = wildcard (dev/local mode)
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS === null) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Api-Key, X-Admin-Secret');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// Serve static files (index.html + assets)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ── API Auth + Rate Limiting ──────────────────────────────────────
+// /api/health, /api/stats, /api/states are open — everything else requires a key
+const OPEN_API_PATHS = new Set(['/health', '/stats', '/states']);
+
+function apiAuth(req, res, next) {
+  const rawKey = req.headers['x-api-key'] || req.query.key;
+  if (!rawKey) {
+    return res.status(401).json({
+      ok: false,
+      error: 'API key required. Pass X-Api-Key header or ?key= query param.',
+      get_key: `${BASE_URL}/portal.html`,
+    });
+  }
+  const info = keys.validate(rawKey);
+  if (!info) {
+    return res.status(401).json({ ok: false, error: 'Invalid or revoked API key.' });
+  }
+  if (info.requests_today >= info.limits.req_per_day) {
+    return res.status(429).json({
+      ok: false,
+      error: `Daily quota exhausted (${info.limits.req_per_day.toLocaleString()} req/day for ${info.tier} tier). Resets at midnight UTC.`,
+      upgrade: `${BASE_URL}/portal.html`,
+    });
+  }
+  req.keyInfo = info;
+  res.on('finish', () => keys.recordUsage(info.key_id, req.path, res.statusCode));
+  next();
+}
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: (req) => req.keyInfo?.limits?.req_per_min ?? 10,
+  keyGenerator: (req) => `k:${req.keyInfo?.key_id ?? req.ip}`,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // IP fallback in keyGenerator is never reached — apiAuth rejects unauthenticated requests first
+  validate: { keyGeneratorIpFallback: false },
+  handler: (req, res) => {
+    const lim  = req.keyInfo?.limits?.req_per_min ?? 10;
+    const tier = req.keyInfo?.tier ?? 'free';
+    res.status(429).json({
+      ok: false,
+      error: `Rate limit exceeded — ${lim} req/min for ${tier} tier.`,
+      upgrade: `${BASE_URL}/portal.html`,
+    });
+  },
+});
+
+// Apply auth + rate-limit to all protected /api routes
+app.use('/api', (req, res, next) => {
+  if (OPEN_API_PATHS.has(req.path)) return next();
+  apiAuth(req, res, next);
+});
+app.use('/api', (req, res, next) => {
+  if (OPEN_API_PATHS.has(req.path) || !req.keyInfo) return next();
+  apiLimiter(req, res, next);
+});
+
+// ── Helpers ───────────────────────────────────────────────────────
+const ok  = (res, data, meta = {}) => res.json({ ok: true, ...meta, data });
+const err = (res, msg, status = 400) => res.status(status).json({ ok: false, error: msg });
+
+function enrichAddress(a) {
+  const e = enrich(a);
+  return {
+    verified:     true,
+    confidence:   e.confidence,
+    full_address: e.full_address,
+    add_number:   e.add_number,
+    st_pre_dir:   e.st_pre_dir,
+    st_name:      e.st_name,
+    st_pos_typ:   e.st_pos_typ,
+    st_pos_dir:   e.st_pos_dir,
+    unit:         e.unit,
+    neighborhood: e.neighborhood,
+    inc_muni:     e.inc_muni,
+    post_city:    e.post_city,
+    city:         e.display_city,
+    county:       e.county,
+    state:        e.state,
+    zip_code:     e.zip_code,
+    plus_4:       e.plus4,
+    fips:         e.fips,
+    timezone:     e.timezone,
+    residential:  e.residential,
+    latitude:     e.latitude,
+    longitude:    e.longitude,
+    placement:    e.placement,
+    addr_type:    e.addr_type,
+    addr_class:   e.addr_class,
+    add_auth:     e.add_auth,
+    date_update:  e.date_update,
+    nad_source:   e.nad_source,
+    nad_uuid:     e.nad_uuid,
+  };
+}
+
+// ── API Routes ────────────────────────────────────────────────────
+
+// Stats
+app.get('/api/stats', (req, res) => {
+  const data = cached('stats', () => nad.stats());
+  ok(res, data);
+});
+
+// Address search  (?fuzzy=true enables typo-tolerant matching)
+app.get('/api/address', (req, res) => {
+  const { street, number, city, state, zip, limit, fuzzy } = req.query;
+  if (!street && !zip && !number && !city && !state) {
+    return err(res, 'Provide at least one search parameter.');
+  }
+  const lim   = Math.min(parseInt(limit || '10'), 50);
+  const isFuz = fuzzy === 'true' || fuzzy === '1';
+  const key   = `addr:${number}:${street}:${city}:${state}:${zip}:${lim}:${isFuz}`;
+  const fn    = isFuz ? 'findAddressFuzzy' : 'findAddress';
+  const raw   = cached(key, () => nad[fn]({
+    addNumber:  number,
+    streetName: street,
+    city,
+    stateCode:  state,
+    zipCode:    zip,
+    limit:      lim,
+  }));
+  if (!raw.length) return err(res, 'No addresses found.', 404);
+  ok(res, raw.map(enrichAddress), { count: raw.length });
+});
+
+// Autocomplete / typeahead  (?q=123+Main&state=TX&limit=10)
+app.get('/api/suggest', (req, res) => {
+  const { q, state, zip, limit } = req.query;
+  if (!q || q.trim().length < 2) return err(res, 'q must be at least 2 characters.');
+  const lim  = Math.min(parseInt(limit || '10'), 20);
+  const key  = `suggest:${q}:${state||''}:${zip||''}:${lim}`;
+  const data = cached(key, () => nad.suggest({ q, stateCode: state, zipCode: zip, limit: lim }),
+    1000 * 60 * 5);  // 5-min TTL (typeahead is more volatile)
+  ok(res, data, { count: data.length });
+});
+
+// Bulk address verify
+app.post('/api/address/bulk', (req, res) => {
+  const items = req.body;
+  if (!Array.isArray(items)) return err(res, 'Body must be an array.');
+  if (items.length > 1000)   return err(res, 'Max 1,000 addresses per request.');
+  const results = items.map(({ street, number, city, state, zip }) => {
+    const found = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
+    return found.length ? enrichAddress(found[0]) : { verified: false, input: { street, number, city, state, zip } };
+  });
+  ok(res, results, { count: results.length });
+});
+
+// ZIP lookup
+app.get('/api/zip/:zip', (req, res) => {
+  const { zip } = req.params;
+  const { state } = req.query;
+  const data = cached(`zip:${zip}:${state||''}`, () => nad.getZip(zip, state));
+  if (!data) return err(res, `ZIP ${zip} not found.`, 404);
+  ok(res, data);
+});
+
+// State summary
+app.get('/api/state/:code', (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const data = cached(`state:${code}`, () => nad.getState(code));
+  if (!data) return err(res, `State ${code} not found.`, 404);
+  ok(res, data);
+});
+
+// All states (for top-states list)
+app.get('/api/states', (req, res) => {
+  const data = cached('states', () =>
+    nad.listStates().sort((a, b) => (b.address_count || 0) - (a.address_count || 0))
+  );
+  ok(res, data, { count: data.length });
+});
+
+// Counties
+app.get('/api/county', (req, res) => {
+  const { state, name } = req.query;
+  if (!state) return err(res, 'state parameter required.');
+  const key  = `county:${state}:${name||''}`;
+  const data = cached(key, () =>
+    name ? [nad.getCounty(name, state)].filter(Boolean) : nad.listCounties(state)
+  );
+  ok(res, data, { count: data.length });
+});
+
+// Cities
+app.get('/api/city', (req, res) => {
+  const { state, name, county, limit } = req.query;
+  if (!state && !name) return err(res, 'Provide state or name.');
+  const lim  = parseInt(limit || '100');
+  const key  = `city:${state}:${county}:${name}:${lim}`;
+  let data   = cached(key, () =>
+    name ? nad.searchCity(name, state) : nad.listCities(state, county)
+  );
+  data = data.slice(0, lim);
+  ok(res, data, { count: data.length });
+});
+
+// Neighborhoods
+app.get('/api/neighborhood', (req, res) => {
+  const { state, city, limit } = req.query;
+  if (!state) return err(res, 'state parameter required.');
+  const lim = parseInt(limit || '50');
+  const key = `nbrhd:${state}:${city}:${lim}`;
+  const db  = nad.db;
+  const data = cached(key, () =>
+    db.prepare(`
+      SELECT n.name, n.type, n.address_count,
+             ci.name AS city_name, s.code AS state_code
+      FROM neighborhoods n
+      JOIN states s ON s.id = n.state_id
+      LEFT JOIN cities ci ON ci.id = n.city_id
+      WHERE s.code = ?
+        ${city ? "AND UPPER(ci.name) LIKE UPPER(?)" : ""}
+      ORDER BY n.address_count DESC LIMIT ?
+    `).all(...[state.toUpperCase(), ...(city ? [`%${city}%`] : []), lim])
+  );
+  ok(res, data, { count: data.length });
+});
+
+// ZIP codes in state/city
+app.get('/api/zips', (req, res) => {
+  const { state, city, limit } = req.query;
+  if (!state) return err(res, 'state parameter required.');
+  const lim  = parseInt(limit || '50');
+  const key  = `zips:${state}:${city}:${lim}`;
+  const data = cached(key, () => nad.listZips(state, city).slice(0, lim));
+  ok(res, data, { count: data.length });
+});
+
+// Proximity search
+app.get('/api/near', (req, res) => {
+  const { lat, lon, radius_km, limit } = req.query;
+  if (!lat || !lon) return err(res, 'lat and lon required.');
+  const radiusDeg = (parseFloat(radius_km) || 0.5) / 111;
+  const lim       = Math.min(parseInt(limit || '20'), 100);
+  const results   = nad.findNear(parseFloat(lat), parseFloat(lon), radiusDeg, lim);
+  if (!results.length) return err(res, `No addresses found within ${radius_km || 0.5} km.`, 404);
+  ok(res, results.map(enrichAddress), { count: results.length });
+});
+
+// Point enrichment — census tract + FEMA flood zone  (?lat=&lon=)
+// Also accepts ?nad_uuid= to look up address first then enrich its coordinates
+app.get('/api/enrich', async (req, res) => {
+  let { lat, lon, nad_uuid } = req.query;
+
+  if (nad_uuid && (!lat || !lon)) {
+    const row = nad.db.prepare('SELECT latitude, longitude FROM addresses WHERE nad_uuid=? LIMIT 1').get(nad_uuid);
+    if (!row) return err(res, `Address UUID ${nad_uuid} not found.`, 404);
+    lat = row.latitude;
+    lon = row.longitude;
+  }
+
+  if (!lat || !lon) return err(res, 'lat and lon required (or nad_uuid).');
+
+  try {
+    const data = await enrichPoint(parseFloat(lat), parseFloat(lon));
+    ok(res, data);
+  } catch (e) {
+    err(res, `Enrichment failed: ${e.message}`, 500);
+  }
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+  const stats = nad.stats();
+  res.json({ status: 'ok', addresses: stats.addresses, version: '1.0.0' });
+});
+
+// ── Key management (portal routes) ───────────────────────────────
+function adminAuth(req, res, next) {
+  const provided = req.headers['x-admin-secret'] || req.query.admin_secret || '';
+  // timingSafeEqual requires equal-length buffers; length mismatch is itself rejected
+  const a = Buffer.from(provided);
+  const b = Buffer.from(ADMIN_SECRET);
+  const valid = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!valid) return res.status(403).json({ ok: false, error: 'Admin secret required.' });
+  next();
+}
+
+app.get('/v1/admin/keys/stats', adminAuth, (req, res) => {
+  ok(res, keys.stats());
+});
+app.get('/v1/admin/keys', adminAuth, (req, res) => {
+  const data = keys.list({ includeRevoked: req.query.include_revoked === 'true' });
+  ok(res, data, { count: data.length });
+});
+app.post('/v1/admin/keys', adminAuth, (req, res) => {
+  const { email, name, tier, notes } = req.body || {};
+  if (!email) return err(res, 'email required.');
+  const result = keys.generate({ email, name, tier: tier || 'free', notes });
+  res.status(201).json({ ok: true, data: result });
+});
+app.delete('/v1/admin/keys/:id', adminAuth, (req, res) => {
+  const revoked = keys.revoke(req.params.id);
+  if (!revoked) return err(res, 'Key not found.', 404);
+  ok(res, { revoked: true, id: parseInt(req.params.id, 10) });
+});
+app.get('/v1/me', (req, res) => {
+  const rawKey = req.headers['x-api-key'] || req.query.key;
+  const info   = keys.validate(rawKey);
+  if (!info) return err(res, 'Invalid or missing API key.', 401);
+  ok(res, {
+    tier:           info.tier,
+    email:          info.email,
+    limits:         info.limits,
+    requests_today: info.requests_today,
+    requests_total: info.requests_total,
+    created_at:     info.created_at,
+  });
+});
+
+// ── Stripe Checkout ────────────────────────────────────────────────
+// Create a Stripe Checkout Session (public endpoint — no API key required)
+app.post('/v1/checkout', async (req, res) => {
+  if (!stripe) return err(res, 'Stripe not configured. Set STRIPE_SECRET_KEY env var.', 503);
+  const { email, tier } = req.body || {};
+  if (!email || !tier) return err(res, 'email and tier required.');
+  if (!['starter', 'pro'].includes(tier)) return err(res, 'tier must be "starter" or "pro".');
+  const priceId = STRIPE_PRICES[tier];
+  if (!priceId) return err(res, `Stripe price not configured for ${tier}. Set STRIPE_PRICE_${tier.toUpperCase()} env var.`, 503);
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode:                 'subscription',
+      payment_method_types: ['card'],
+      customer_email:       email,
+      line_items:           [{ price: priceId, quantity: 1 }],
+      metadata:             { tier, email },
+      success_url: `${BASE_URL}/portal.html?success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${BASE_URL}/portal.html?cancelled=1`,
+    });
+    keys.storeStripeSession(session.id, tier, email);
+    ok(res, { session_id: session.id, url: session.url });
+  } catch (e) {
+    err(res, `Stripe error: ${e.message}`, 500);
+  }
+});
+
+// Poll for key after payment completes (called by success page JS)
+app.get('/v1/checkout/session/:sessionId', (req, res) => {
+  const info = keys.getStripeSession(req.params.sessionId);
+  if (!info) return err(res, 'Session not found.', 404);
+  if (!info.api_key) return ok(res, { status: 'pending' });
+  ok(res, { status: 'complete', api_key: info.api_key, tier: info.tier, email: info.email });
+});
+
+// 404 for unmatched API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ ok: false, error: `Unknown API endpoint: ${req.method} ${req.path}` });
+});
+
+// Serve index.html for all other routes (SPA fallback)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ── Start ─────────────────────────────────────────────────────────
+app.listen(PORT, () => {
+  const stats    = nad.stats();
+  const keyStats = keys.stats();
+  console.log(`\n  NAD Address Intelligence`);
+  console.log(`  ─────────────────────────────────────────────`);
+  console.log(`  Explorer  : http://localhost:${PORT}`);
+  console.log(`  Landing   : http://localhost:${PORT}/landing.html`);
+  console.log(`  Portal    : http://localhost:${PORT}/portal.html`);
+  console.log(`  Status    : http://localhost:${PORT}/status.html`);
+  console.log(`\n  Addresses : ${stats.addresses?.toLocaleString()}`);
+  console.log(`  States    : ${stats.states}  Counties: ${stats.counties}  Cities: ${stats.cities}`);
+  console.log(`  API Keys  : ${keyStats.active} active (admin secret: ${ADMIN_SECRET})`);
+  console.log(`\n  Key API endpoints:`);
+  console.log(`    GET  /api/address?street=Main&state=TX`);
+  console.log(`    GET  /api/suggest?q=Penn&state=DC`);
+  console.log(`    GET  /api/enrich?lat=38.878&lon=-77.175`);
+  console.log(`    GET  /api/near?lat=40.758&lon=-73.9855`);
+  console.log(`    GET  /api/health\n`);
+});

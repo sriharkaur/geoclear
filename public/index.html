@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAD Address Intelligence</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #2ea043;
+      --accent-hover: #3fb950;
+      --accent-blue: #388bfd;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --text-dim: #484f58;
+      --red: #f85149;
+      --yellow: #d29922;
+      --radius: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+
+    .header-stats {
+      display: flex;
+      gap: 24px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stat-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-weight: 500;
+    }
+
+    .stat-pill span { color: var(--accent); }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── Left Panel ─────────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .tab:hover { color: var(--text); background: var(--surface2); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-content { display: none; flex: 1; overflow-y: auto; padding: 16px; }
+    .tab-content.active { display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Form Elements ──────────────────────────────────────── */
+    .field-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    input, select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      padding: 8px 10px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus { border-color: var(--accent-blue); }
+    input::placeholder { color: var(--text-dim); }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .row-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+
+    /* ── Results ────────────────────────────────────────────── */
+    .results { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+
+    .result-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .result-card:hover { border-color: var(--accent-blue); }
+    .result-card.selected { border-color: var(--accent); }
+
+    .result-address { font-weight: 600; font-size: 13px; color: var(--text); margin-bottom: 4px; }
+    .result-meta { font-size: 11px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .badge-green { border-color: var(--accent); color: var(--accent); }
+    .badge-blue { border-color: var(--accent-blue); color: var(--accent-blue); }
+    .badge-yellow { border-color: var(--yellow); color: var(--yellow); }
+
+    /* ── Right Panel / Map ───────────────────────────────────── */
+    .map-panel { display: flex; flex-direction: column; }
+
+    #map {
+      flex: 1;
+      background: #1a1f2b;
+    }
+
+    .detail-drawer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      height: 0;
+      overflow: hidden;
+      transition: height 0.25s ease;
+    }
+
+    .detail-drawer.open { height: 280px; overflow-y: auto; }
+
+    .detail-inner { padding: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    .detail-section h4 {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+
+    .detail-row { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .detail-label { font-size: 11px; color: var(--text-muted); }
+    .detail-value { font-size: 11px; color: var(--text); font-weight: 500; text-align: right; }
+    .detail-value.mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 10px; }
+
+    .close-drawer {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .close-drawer:hover { color: var(--text); }
+
+    /* ── Stats Dashboard ─────────────────────────────────────── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+    .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Misc ───────────────────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--border); }
+    .section-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .empty-state { text-align: center; color: var(--text-dim); padding: 32px 16px; font-size: 13px; }
+    .empty-icon { font-size: 32px; margin-bottom: 8px; }
+    .spinner { animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .coords-display { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; color: var(--accent-blue); }
+    .error-msg { background: rgba(248,81,73,0.1); border: 1px solid var(--red); border-radius: var(--radius); padding: 8px 12px; font-size: 12px; color: var(--red); }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <div class="logo-dot"></div>
+    NAD Address Intelligence
+  </a>
+  <div class="header-stats">
+    <div class="stat-pill"><span id="hdr-addresses">96.9M</span> addresses</div>
+    <div class="stat-pill"><span id="hdr-states">47</span> states</div>
+    <div class="stat-pill"><span id="hdr-counties">2,240</span> counties</div>
+    <div class="stat-pill">Q1-2026</div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ── Left Panel ── -->
+  <div class="panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="search">Search</div>
+      <div class="tab" data-tab="zip">ZIP</div>
+      <div class="tab" data-tab="near">Near Me</div>
+      <div class="tab" data-tab="explore">Explore</div>
+      <div class="tab" data-tab="stats">Stats</div>
+    </div>
+
+    <!-- ── Search Tab ── -->
+    <div class="tab-content active" id="tab-search">
+      <div class="field-group" style="position:relative;">
+        <label>Street Name</label>
+        <input id="s-street" type="text" placeholder="e.g. Pennsylvania Ave" autocomplete="off" />
+        <div id="s-autocomplete" style="
+          display:none; position:absolute; top:100%; left:0; right:0; z-index:200;
+          background:var(--bg-card); border:1px solid var(--border); border-top:none;
+          border-radius:0 0 6px 6px; max-height:200px; overflow-y:auto;
+          box-shadow:0 4px 12px rgba(0,0,0,0.4);
+        "></div>
+      </div>
+      <div class="row">
+        <div class="field-group">
+          <label>House Number</label>
+          <input id="s-number" type="text" placeholder="e.g. 935" />
+        </div>
+        <div class="field-group">
+          <label>Unit</label>
+          <input id="s-unit" type="text" placeholder="e.g. 4B" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field-group">
+          <label>City</label>
+          <input id="s-city" type="text" placeholder="e.g. Austin" />
+        </div>
+        <div class="field-group">
+          <label>State</label>
+          <select id="s-state">
+            <option value="">Any state</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field-group">
+          <label>ZIP Code</label>
+          <input id="s-zip" type="text" placeholder="e.g. 78701" maxlength="5" />
+        </div>
+        <div class="field-group">
+          <label>Limit</label>
+          <select id="s-limit">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="align-items:center;gap:1rem;">
+        <button class="btn" id="btn-search">&#x2315; Search</button>
+        <button class="btn btn-secondary" id="btn-clear-search">Clear</button>
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--text-muted);cursor:pointer;user-select:none;">
+          <input type="checkbox" id="s-fuzzy" style="cursor:pointer;" />
+          Fuzzy match
+        </label>
+      </div>
+      <hr class="divider" />
+      <div class="results" id="search-results">
+        <div class="empty-state">
+          <div class="empty-icon">&#x1F50D;</div>
+          Enter an address above to search 96M verified US addresses
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ZIP Tab ── -->
+    <div class="tab-content" id="tab-zip">
+      <div class="field-group">
+        <label>ZIP Code</label>
+        <input id="z-zip" type="text" placeholder="e.g. 90210" maxlength="5" />
+      </div>
+      <div class="field-group">
+        <label>State (optional)</label>
+        <select id="z-state">
+          <option value="">Any state</option>
+        </select>
+      </div>
+      <button class="btn" id="btn-zip">Look Up ZIP</button>
+      <div id="zip-result"></div>
+      <hr class="divider" />
+      <div class="section-title">Sample Addresses in ZIP</div>
+      <div class="results" id="zip-addresses"></div>
+    </div>
+
+    <!-- ── Near Me Tab ── -->
+    <div class="tab-content" id="tab-near">
+      <div class="row">
+        <div class="field-group">
+          <label>Latitude</label>
+          <input id="n-lat" type="number" step="0.0001" placeholder="40.7580" />
+        </div>
+        <div class="field-group">
+          <label>Longitude</label>
+          <input id="n-lon" type="number" step="0.0001" placeholder="-73.9855" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field-group">
+          <label>Radius (km)</label>
+          <select id="n-radius">
+            <option value="0.1">0.1 km</option>
+            <option value="0.25">0.25 km</option>
+            <option value="0.5" selected>0.5 km</option>
+            <option value="1">1 km</option>
+            <option value="2">2 km</option>
+            <option value="5">5 km</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Limit</label>
+          <select id="n-limit">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btn-near">&#x1F4CD; Find Near</button>
+        <button class="btn btn-secondary" id="btn-my-location">&#x25CE; My Location</button>
+      </div>
+      <div id="near-coords" class="coords-display" style="font-size:11px;"></div>
+      <div class="results" id="near-results">
+        <div class="empty-state">
+          <div class="empty-icon">&#x1F4CD;</div>
+          Click on the map to set coordinates, or use My Location
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Explore Tab ── -->
+    <div class="tab-content" id="tab-explore">
+      <div class="field-group">
+        <label>State</label>
+        <select id="e-state">
+          <option value="">Select a state...</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>County (optional)</label>
+        <select id="e-county" disabled>
+          <option value="">Select county...</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>City (optional)</label>
+        <select id="e-city" disabled>
+          <option value="">Select city...</option>
+        </select>
+      </div>
+      <button class="btn" id="btn-explore">&#x1F5FA; Explore</button>
+      <hr class="divider" />
+      <div class="results" id="explore-results">
+        <div class="empty-state">
+          <div class="empty-icon">&#x1F5FA;</div>
+          Select a state to explore the geographic hierarchy
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Stats Tab ── -->
+    <div class="tab-content" id="tab-stats">
+      <div class="stat-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-num" id="st-addresses">—</div><div class="stat-label">Addresses</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-states">—</div><div class="stat-label">States</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-counties">—</div><div class="stat-label">Counties</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-cities">—</div><div class="stat-label">Cities</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-neighborhoods">—</div><div class="stat-label">Neighborhoods</div></div>
+        <div class="stat-card"><div class="stat-num" id="st-zips">—</div><div class="stat-label">ZIP Codes</div></div>
+      </div>
+      <hr class="divider" />
+      <div class="section-title">Top States by Address Count</div>
+      <div id="top-states" class="results"></div>
+    </div>
+  </div>
+
+  <!-- ── Right Panel ── -->
+  <div class="map-panel">
+    <div id="map"></div>
+    <div class="detail-drawer" id="detail-drawer" style="position:relative;">
+      <button class="close-drawer" id="btn-close-drawer">&#x00D7;</button>
+      <div class="detail-inner" id="detail-inner"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────────
+const API = 'http://localhost:4001/api';
+
+// ── State ──────────────────────────────────────────────────────────
+let map, markersLayer, selectedMarker;
+let pendingNearClick = false;
+
+// ── Map Init ───────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', { center: [39.5, -98.35], zoom: 4 });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://carto.com">CARTO</a>',
+    maxZoom: 19,
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+
+  map.on('click', (e) => {
+    const { lat, lng } = e.latlng;
+    document.getElementById('n-lat').value = lat.toFixed(6);
+    document.getElementById('n-lon').value = lng.toFixed(6);
+    document.getElementById('near-coords').textContent = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+    // Switch to near tab if user clicks map
+    switchTab('near');
+  });
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${name}`));
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// ── API Calls ──────────────────────────────────────────────────────
+async function apiFetch(path) {
+  const res = await fetch(API + path);
+  const body = await res.json();
+  if (!res.ok) {
+    // 404 = no results (not a real error) — return empty data
+    if (res.status === 404) return { ok: false, data: [], count: 0, error: body.error };
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return body;
+}
+
+// ── Address Card Renderer ─────────────────────────────────────────
+function placementBadge(p) {
+  if (!p) return '';
+  const norm = p.toLowerCase();
+  const cls = norm.includes('rooftop') || norm.includes('structure') ? 'badge-green'
+            : norm.includes('parcel')  ? 'badge-blue' : 'badge-yellow';
+  return `<span class="badge ${cls}">${p}</span>`;
+}
+
+function confidenceBadge(score) {
+  if (score == null) return '';
+  const cls = score >= 90 ? 'badge-green' : score >= 70 ? 'badge-blue' : 'badge-yellow';
+  return `<span class="badge ${cls}" title="Confidence score">⬤ ${score}</span>`;
+}
+
+function renderCard(a, container, index) {
+  const addr  = a.full_address || a.formatted_address || '—';
+  const nbhd  = a.neighborhood || a.nbrhd_comm || '';
+  const city  = a.city || a.inc_muni || '';
+  const state = a.state || '';
+  const zip   = a.zip_code || a.zip || '';
+
+  const card = document.createElement('div');
+  card.className = 'result-card';
+  card.innerHTML = `
+    <div class="result-address">${addr}</div>
+    <div class="result-meta">
+      ${nbhd ? `<span>${nbhd}</span>` : ''}
+      <span>${[city, state, zip].filter(Boolean).join(', ')}</span>
+      ${confidenceBadge(a.confidence)}
+      ${placementBadge(a.placement)}
+    </div>
+  `;
+
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.result-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    showDetail(a);
+    if (a.latitude && a.longitude) {
+      panToAddress(a);
+    }
+  });
+
+  container.appendChild(card);
+  return card;
+}
+
+// ── Map Pin ────────────────────────────────────────────────────────
+const pinIcon = L.divIcon({
+  className: '',
+  html: `<div style="width:12px;height:12px;background:#2ea043;border-radius:50%;border:2px solid #3fb950;box-shadow:0 0 6px rgba(46,160,67,0.6);"></div>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+});
+
+const pinIconSelected = L.divIcon({
+  className: '',
+  html: `<div style="width:14px;height:14px;background:#388bfd;border-radius:50%;border:2px solid #79c0ff;box-shadow:0 0 8px rgba(56,139,253,0.7);"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
+function addMarker(a, selected = false) {
+  if (!a.latitude || !a.longitude) return null;
+  const m = L.marker([a.latitude, a.longitude], { icon: selected ? pinIconSelected : pinIcon });
+  m.bindPopup(`<b>${a.full_address || ''}</b><br>${a.inc_muni || ''}, ${a.state || ''} ${a.zip_code || ''}`);
+  m.addTo(markersLayer);
+  return m;
+}
+
+function panToAddress(a) {
+  if (!a.latitude || !a.longitude) return;
+  map.flyTo([a.latitude, a.longitude], 16, { duration: 1 });
+  markersLayer.eachLayer(m => {
+    if (m.getLatLng().lat === a.latitude && m.getLatLng().lng === a.longitude) {
+      m.setIcon(pinIconSelected);
+      m.openPopup();
+    }
+  });
+}
+
+function clearMarkers() {
+  markersLayer.clearLayers();
+}
+
+function plotAll(results) {
+  clearMarkers();
+  const valid = results.filter(a => a.latitude && a.longitude);
+  valid.forEach(a => addMarker(a));
+  if (valid.length > 0) {
+    const bounds = L.latLngBounds(valid.map(a => [a.latitude, a.longitude]));
+    map.flyToBounds(bounds.pad(0.2), { duration: 0.8, maxZoom: 15 });
+  }
+}
+
+// ── Detail Drawer ─────────────────────────────────────────────────
+function showDetail(a) {
+  const drawer = document.getElementById('detail-drawer');
+  const inner  = document.getElementById('detail-inner');
+  drawer.classList.add('open');
+
+  const row = (label, value) =>
+    value ? `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>` : '';
+  const rowMono = (label, value) =>
+    value ? `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value mono">${value}</span></div>` : '';
+
+  inner.innerHTML = `
+    <div class="detail-section">
+      <h4>Address Components</h4>
+      ${row('Number', a.add_number)}
+      ${row('Pre-Direction', a.st_pre_dir)}
+      ${row('Street Name', a.st_name)}
+      ${row('Post Type', a.st_pos_typ)}
+      ${row('Post Direction', a.st_pos_dir)}
+      ${row('Unit', a.unit)}
+      ${row('Full Address', a.full_address)}
+    </div>
+    <div class="detail-section">
+      <h4>Jurisdiction</h4>
+      ${row('Neighborhood', a.neighborhood || a.nbrhd_comm)}
+      ${row('City (Display)', a.city)}
+      ${row('Inc. Municipality', a.inc_muni)}
+      ${row('Postal City', a.post_city)}
+      ${row('County', a.county)}
+      ${row('State', a.state)}
+      ${row('ZIP Code', a.zip_code)}
+      ${row('ZIP+4', a.plus_4 || a.plus4)}
+      ${rowMono('County FIPS', a.fips)}
+    </div>
+    <div class="detail-section">
+      <h4>Intelligence</h4>
+      ${row('Confidence', a.confidence != null ? `${a.confidence} / 100` : null)}
+      ${row('Residential', a.residential)}
+      ${row('Timezone', a.timezone)}
+    </div>
+    <div class="detail-section">
+      <h4>Classification & Provenance</h4>
+      ${rowMono('Latitude', a.latitude?.toFixed(6))}
+      ${rowMono('Longitude', a.longitude?.toFixed(6))}
+      ${row('Placement', a.placement)}
+      ${row('Address Type', a.addr_type)}
+      ${row('Address Class', a.addr_class)}
+      ${row('Authority', a.add_auth)}
+      ${row('Date Updated', a.date_update)}
+      ${rowMono('NAD UUID', a.nad_uuid?.slice(0, 18) + '…')}
+    </div>
+  `;
+}
+
+document.getElementById('btn-close-drawer').addEventListener('click', () => {
+  document.getElementById('detail-drawer').classList.remove('open');
+});
+
+// ── Search ────────────────────────────────────────────────────────
+async function doSearch() {
+  const street = document.getElementById('s-street').value.trim();
+  const number = document.getElementById('s-number').value.trim();
+  const city   = document.getElementById('s-city').value.trim();
+  const state  = document.getElementById('s-state').value;
+  const zip    = document.getElementById('s-zip').value.trim();
+  const limit  = document.getElementById('s-limit').value;
+
+  if (!street && !zip && !number) {
+    showSearchResults([], 'Enter a street name, ZIP code, or house number to search.');
+    return;
+  }
+
+  const fuzzy = document.getElementById('s-fuzzy').checked;
+  const params = new URLSearchParams({ limit });
+  if (street) params.set('street', street);
+  if (number) params.set('number', number);
+  if (city)   params.set('city', city);
+  if (state)  params.set('state', state);
+  if (zip)    params.set('zip', zip);
+  if (fuzzy)  params.set('fuzzy', 'true');
+
+  const btn = document.getElementById('btn-search');
+  btn.textContent = '⟳ Searching…';
+  btn.disabled = true;
+
+  try {
+    const data = await apiFetch(`/address?${params}`);
+    const results = data.data || [];
+    showSearchResults(results, data.error);
+    plotAll(results);
+  } catch (e) {
+    showSearchResults([], null, e.message);
+  } finally {
+    btn.innerHTML = '&#x2315; Search';
+    btn.disabled = false;
+  }
+}
+
+function showSearchResults(results, emptyMsg, error) {
+  const container = document.getElementById('search-results');
+  container.innerHTML = '';
+
+  if (error) {
+    container.innerHTML = `<div class="error-msg">Error: ${error}</div>`;
+    return;
+  }
+
+  if (results.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x26A0;</div>${emptyMsg || 'No addresses found. Try broadening your search.'}</div>`;
+    return;
+  }
+
+  const header = document.createElement('div');
+  header.className = 'section-title';
+  header.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;
+  container.appendChild(header);
+
+  results.forEach((a, i) => renderCard(a, container, i));
+}
+
+document.getElementById('btn-search').addEventListener('click', doSearch);
+document.getElementById('btn-clear-search').addEventListener('click', () => {
+  ['s-street','s-number','s-unit','s-city','s-zip'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('s-state').value = '';
+  document.getElementById('search-results').innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F50D;</div>Enter an address above to search 96M verified US addresses</div>';
+  clearMarkers();
+  document.getElementById('detail-drawer').classList.remove('open');
+});
+
+['s-street','s-number','s-city','s-zip'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+});
+
+// ── Autocomplete (typeahead on street input) ──────────────────────
+(function() {
+  const input = document.getElementById('s-street');
+  const drop  = document.getElementById('s-autocomplete');
+  let timer;
+
+  function closeDrop() {
+    drop.style.display = 'none';
+    drop.innerHTML = '';
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 3) { closeDrop(); return; }
+    timer = setTimeout(async () => {
+      const state = document.getElementById('s-state').value;
+      const zip   = document.getElementById('s-zip').value.trim();
+      const params = new URLSearchParams({ q, limit: '8' });
+      if (state) params.set('state', state);
+      if (zip)   params.set('zip', zip);
+      try {
+        const data = await apiFetch(`/suggest?${params}`);
+        const items = data.data || [];
+        if (!items.length) { closeDrop(); return; }
+        drop.innerHTML = items.map(a => {
+          const label = a.full_address + (a.post_city || a.inc_muni
+            ? `, ${a.post_city || a.inc_muni} ${a.state} ${a.zip_code}`
+            : '');
+          return `<div class="ac-item" data-addr='${JSON.stringify(a).replace(/'/g,"&#39;")}'
+                    style="padding:0.5rem 0.75rem;cursor:pointer;font-size:0.82rem;border-bottom:1px solid var(--border);"
+                    onmouseover="this.style.background='var(--bg-hover)'"
+                    onmouseout="this.style.background=''">${label}</div>`;
+        }).join('');
+        drop.style.display = 'block';
+        drop.querySelectorAll('.ac-item').forEach(el => {
+          el.addEventListener('mousedown', (ev) => {
+            ev.preventDefault();
+            const a = JSON.parse(el.getAttribute('data-addr'));
+            // Fill in the search fields from the suggestion
+            input.value = a.full_address.split(' ').slice(1).join(' ').replace(/,.*/, '').trim();
+            const numMatch = a.full_address.match(/^(\d+)/);
+            if (numMatch) document.getElementById('s-number').value = numMatch[1];
+            if (a.zip_code) document.getElementById('s-zip').value = a.zip_code;
+            if (a.state) document.getElementById('s-state').value = a.state;
+            closeDrop();
+            doSearch();
+          });
+        });
+      } catch { closeDrop(); }
+    }, 220);
+  });
+
+  // Close on blur
+  input.addEventListener('blur', () => setTimeout(closeDrop, 150));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrop(); });
+})();
+
+// ── ZIP Lookup ────────────────────────────────────────────────────
+async function doZipLookup() {
+  const zip   = document.getElementById('z-zip').value.trim();
+  const state = document.getElementById('z-state').value;
+  if (!zip) return;
+
+  const params = new URLSearchParams({ zip });
+  if (state) params.set('state', state);
+
+  try {
+    const data = await apiFetch(`/zip/${zip}${state ? '?state='+state : ''}`);
+    const z = data.ok ? data.data : null;
+    document.getElementById('zip-result').innerHTML = z ? `
+      <div class="result-card" style="cursor:default;">
+        <div class="result-address">ZIP ${z.zip} — ${z.post_city || z.city_name}, ${z.state}</div>
+        <div class="result-meta">
+          <span>${z.county || ''}</span>
+          <span class="badge badge-green">${(z.address_count||0).toLocaleString()} addresses</span>
+        </div>
+      </div>
+    ` : `<div class="error-msg">ZIP ${zip} not found.</div>`;
+
+    // Also load sample addresses
+    const addrData = await apiFetch(`/address?zip=${zip}&limit=10`);
+    const addrs = (addrData.data || []);
+    const container = document.getElementById('zip-addresses');
+    container.innerHTML = '';
+    addrs.forEach((a,i) => renderCard(a, container, i));
+    plotAll(addrs);
+  } catch(e) {
+    document.getElementById('zip-result').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+document.getElementById('btn-zip').addEventListener('click', doZipLookup);
+document.getElementById('z-zip').addEventListener('keydown', e => { if (e.key === 'Enter') doZipLookup(); });
+
+// ── Near Me ───────────────────────────────────────────────────────
+async function doNearSearch() {
+  const lat    = parseFloat(document.getElementById('n-lat').value);
+  const lon    = parseFloat(document.getElementById('n-lon').value);
+  const radius = document.getElementById('n-radius').value;
+  const limit  = document.getElementById('n-limit').value;
+
+  if (isNaN(lat) || isNaN(lon)) {
+    document.getElementById('near-results').innerHTML = `<div class="error-msg">Enter valid latitude and longitude.</div>`;
+    return;
+  }
+
+  const btn = document.getElementById('btn-near');
+  btn.textContent = '⟳ Searching…';
+  btn.disabled = true;
+
+  try {
+    const data = await apiFetch(`/near?lat=${lat}&lon=${lon}&radius_km=${radius}&limit=${limit}`);
+    const results = data.data || [];
+    const container = document.getElementById('near-results');
+    container.innerHTML = '';
+
+    if (!results.length) {
+      container.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F50D;</div>No addresses found within ${radius} km of that location.</div>`;
+    } else {
+      const header = document.createElement('div');
+      header.className = 'section-title';
+      header.textContent = `${results.length} address${results.length !== 1 ? 'es' : ''} within ${radius} km`;
+      container.appendChild(header);
+      results.forEach((a, i) => renderCard(a, container, i));
+
+      clearMarkers();
+      // Add center crosshair
+      L.circle([lat, lon], { radius: radius * 1000, color: '#388bfd', fillColor: '#388bfd', fillOpacity: 0.05, weight: 1 }).addTo(markersLayer);
+      results.forEach(a => addMarker(a));
+      map.flyTo([lat, lon], 15, { duration: 0.8 });
+    }
+  } catch(e) {
+    document.getElementById('near-results').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  } finally {
+    btn.innerHTML = '&#x1F4CD; Find Near';
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('btn-near').addEventListener('click', doNearSearch);
+
+document.getElementById('btn-my-location').addEventListener('click', () => {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('n-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('n-lon').value = pos.coords.longitude.toFixed(6);
+    document.getElementById('near-coords').textContent = `📍 ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+    doNearSearch();
+  });
+});
+
+// ── Explore Tab ───────────────────────────────────────────────────
+document.getElementById('e-state').addEventListener('change', async function() {
+  const state = this.value;
+  const countyEl = document.getElementById('e-county');
+  const cityEl   = document.getElementById('e-city');
+
+  countyEl.innerHTML = '<option value="">All counties</option>';
+  cityEl.innerHTML   = '<option value="">All cities</option>';
+  countyEl.disabled  = !state;
+  cityEl.disabled    = true;
+
+  if (!state) return;
+
+  try {
+    const data = await apiFetch(`/county?state=${state}`);
+    (data.data || []).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = `${c.name} (${(c.address_count||0).toLocaleString()})`;
+      countyEl.appendChild(opt);
+    });
+  } catch(e) {}
+});
+
+document.getElementById('e-county').addEventListener('change', async function() {
+  const state  = document.getElementById('e-state').value;
+  const county = this.value;
+  const cityEl = document.getElementById('e-city');
+  cityEl.innerHTML = '<option value="">All cities</option>';
+  cityEl.disabled = !county;
+  if (!county) return;
+
+  try {
+    const data = await apiFetch(`/city?state=${state}&county=${encodeURIComponent(county)}&limit=200`);
+    (data.data || []).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = `${c.name} (${(c.address_count||0).toLocaleString()})`;
+      cityEl.appendChild(opt);
+    });
+  } catch(e) {}
+});
+
+async function doExplore() {
+  const state  = document.getElementById('e-state').value;
+  const county = document.getElementById('e-county').value;
+  const city   = document.getElementById('e-city').value;
+  if (!state) return;
+
+  const params = new URLSearchParams({ state, limit: 30 });
+  if (county) params.set('county', county);
+  if (city)   params.set('city', city);
+
+  try {
+    let data;
+    if (city) {
+      data = await apiFetch(`/address?state=${state}&city=${encodeURIComponent(city)}&limit=30`);
+    } else if (county) {
+      data = await apiFetch(`/city?state=${state}&county=${encodeURIComponent(county)}&limit=30`);
+    } else {
+      data = await apiFetch(`/county?state=${state}`);
+    }
+
+    const container = document.getElementById('explore-results');
+    container.innerHTML = '';
+    const results = data.data || [];
+
+    results.forEach(item => {
+      if (item.full_address || item.st_name) {
+        renderCard(item, container, 0);
+      } else {
+        // County or city summary card
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `
+          <div class="result-address">${item.name}</div>
+          <div class="result-meta">
+            ${item.state ? `<span>${item.state}</span>` : ''}
+            <span class="badge badge-green">${(item.address_count||0).toLocaleString()} addresses</span>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    });
+
+    if (results.length === 0) {
+      container.innerHTML = '<div class="empty-state">No results found.</div>';
+    }
+  } catch(e) {
+    document.getElementById('explore-results').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+document.getElementById('btn-explore').addEventListener('click', doExplore);
+
+// ── Stats Tab ─────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const data = await apiFetch('/stats');
+    const s = data.data || {};
+    document.getElementById('st-addresses').textContent     = (s.addresses||0).toLocaleString();
+    document.getElementById('st-states').textContent        = (s.states||0).toLocaleString();
+    document.getElementById('st-counties').textContent      = (s.counties||0).toLocaleString();
+    document.getElementById('st-cities').textContent        = (s.cities||0).toLocaleString();
+    document.getElementById('st-neighborhoods').textContent = (s.neighborhoods||0).toLocaleString();
+    document.getElementById('st-zips').textContent          = (s.zip_codes||0).toLocaleString();
+
+    // Header
+    document.getElementById('hdr-addresses').textContent = ((s.addresses||0)/1e6).toFixed(1) + 'M';
+    document.getElementById('hdr-states').textContent    = s.states || '47';
+    document.getElementById('hdr-counties').textContent  = (s.counties||0).toLocaleString();
+
+    // Top states
+    const statesData = await apiFetch('/states');
+    const topContainer = document.getElementById('top-states');
+    topContainer.innerHTML = '';
+    (statesData.data || []).slice(0, 10).filter(s => s.address_count > 0).forEach(st => {
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      const pct = Math.round((st.address_count / (s.addresses||1)) * 100 * 10) / 10;
+      card.innerHTML = `
+        <div class="result-address">${st.name} <span style="color:var(--text-muted);font-weight:400;">(${st.code})</span></div>
+        <div class="result-meta">
+          <span class="badge badge-green">${(st.address_count||0).toLocaleString()} addresses</span>
+          <span class="badge">${pct}% of total</span>
+        </div>
+      `;
+      topContainer.appendChild(card);
+    });
+  } catch(e) {}
+}
+
+// ── State Dropdowns ───────────────────────────────────────────────
+const US_STATES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','Washington DC'],['FL','Florida'],
+  ['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],
+  ['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],
+  ['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],
+  ['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],
+  ['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],
+  ['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],
+  ['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],
+  ['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']
+];
+
+function populateStateDropdowns() {
+  ['s-state','z-state','e-state'].forEach(id => {
+    const sel = document.getElementById(id);
+    US_STATES.forEach(([code, name]) => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = `${name} (${code})`;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ── Boot ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  populateStateDropdowns();
+  loadStats();
+
+  // Auto-load stats when switching to stats tab
+  document.querySelector('[data-tab="stats"]').addEventListener('click', loadStats);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAD Developer Portal — API Keys</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d; --border: #30363d;
+      --accent: #2ea043; --accent-hover: #3fb950; --blue: #388bfd;
+      --red: #f85149; --yellow: #d29922;
+      --text: #e6edf3; --text-muted: #8b949e; --text-dim: #484f58;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 56px; position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 24px; font-size: 0.85rem; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
+
+    /* Tier overview */
+    .tier-pills { display: flex; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+    .tier-pill {
+      padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
+      background: var(--surface);
+    }
+    .tier-pill:hover, .tier-pill.active { border-color: var(--accent); color: var(--accent); }
+
+    /* Create key form */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px; margin-bottom: 24px;
+    }
+    .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 180px; }
+    .form-group label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+    .form-group input, .form-group select {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 9px 12px; border-radius: 6px;
+      font-size: 0.9rem; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+    .btn {
+      padding: 9px 20px; border-radius: 6px; font-size: 0.9rem;
+      font-weight: 600; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--border); }
+    .btn-danger:hover { border-color: var(--red); }
+    .btn-copy { background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-size: 0.78rem; padding: 5px 12px; }
+    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Stats bar */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px;
+    }
+    .stat-num { font-size: 1.5rem; font-weight: 700; }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Key list */
+    .key-table { width: 100%; border-collapse: collapse; }
+    .key-table th {
+      text-align: left; padding: 10px 12px; font-size: 0.75rem; font-weight: 600;
+      color: var(--text-muted); border-bottom: 1px solid var(--border);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .key-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .key-table tr:last-child td { border-bottom: none; }
+    .key-table tr:hover td { background: var(--surface2); }
+    .key-mono { font-family: var(--mono); font-size: 0.78rem; color: var(--blue); }
+    .tier-badge {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .tier-free       { background: rgba(139,148,158,0.15); color: #8b949e; }
+    .tier-starter    { background: rgba(56,139,253,0.15);  color: #79c0ff; }
+    .tier-pro        { background: rgba(46,160,67,0.2);    color: #3fb950; }
+    .tier-enterprise { background: rgba(210,153,34,0.15);  color: #d29922; }
+
+    /* New key banner */
+    .new-key-banner {
+      background: rgba(46,160,67,0.1); border: 1px solid rgba(46,160,67,0.4);
+      border-radius: 8px; padding: 16px; margin-bottom: 20px;
+      display: none;
+    }
+    .new-key-banner h4 { color: var(--accent); margin-bottom: 8px; font-size: 0.9rem; }
+    .key-reveal {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px 14px;
+      font-family: var(--mono); font-size: 0.9rem; color: var(--text);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.9rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface2); border: 1px solid var(--accent);
+      color: var(--text); padding: 12px 20px; border-radius: 8px;
+      font-size: 0.85rem; display: none; z-index: 999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    /* My key lookup */
+    .lookup-row { display: flex; gap: 10px; align-items: center; }
+    .lookup-result {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; margin-top: 12px; display: none;
+      font-size: 0.85rem;
+    }
+    .lookup-result table { width: 100%; border-collapse: collapse; }
+    .lookup-result td { padding: 6px 0; }
+    .lookup-result td:first-child { color: var(--text-muted); width: 140px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span>◉</span> NAD Developer Portal</div>
+  <div class="nav-links">
+    <a href="landing.html">Home</a>
+    <a href="index.html">Explorer</a>
+    <a href="status.html">Status</a>
+  </div>
+</header>
+
+<main>
+  <h1>API Key Management</h1>
+  <p class="subtitle">Get an API key instantly or look up your existing key below.</p>
+
+  <!-- Return banners from Stripe Checkout -->
+  <div id="checkout-success-banner" style="display:none; background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.4); border-radius:8px; padding:20px; margin-bottom:24px;">
+    <h4 style="color:var(--accent); margin-bottom:10px;">✅ Payment successful — generating your API key…</h4>
+    <div id="checkout-key-status" style="color:var(--text-muted); font-size:0.9rem;">
+      Waiting for confirmation from Stripe…
+    </div>
+    <div id="checkout-key-display" style="display:none; margin-top:12px;">
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:8px;">Your API key — copy it now, it won't be shown again:</p>
+      <div class="key-reveal">
+        <span id="checkout-key-value" style="word-break:break-all; font-family:var(--mono);"></span>
+        <button class="btn btn-copy" onclick="copyCheckoutKey()">Copy</button>
+      </div>
+    </div>
+  </div>
+  <div id="checkout-cancel-banner" style="display:none; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); border-radius:8px; padding:16px; margin-bottom:24px; color:var(--text-muted); font-size:0.9rem;">
+    Payment cancelled — your card was not charged.
+    <button onclick="this.parentElement.style.display='none'" style="float:right; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1rem;">✕</button>
+  </div>
+
+  <!-- Self-Serve Pricing Section -->
+  <div class="card" id="pricing-section">
+    <h3>💳 Get Your API Key</h3>
+    <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:20px;">Subscribe to get instant API access. Cancel any time.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+      <!-- Starter -->
+      <div style="background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:20px;">
+        <div style="font-size:0.75rem; font-weight:700; color:#79c0ff; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Starter</div>
+        <div style="font-size:1.8rem; font-weight:800; margin-bottom:2px;">$49<span style="font-size:0.9rem; font-weight:400; color:var(--text-muted)">/mo</span></div>
+        <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">50K req/day · 100 req/min · bulk up to 100</div>
+        <ul style="list-style:none; font-size:0.82rem; color:var(--text-muted); margin-bottom:20px; display:flex; flex-direction:column; gap:6px;">
+          <li>✓ Address verification + enrichment</li>
+          <li>✓ Neighborhood + county in every response</li>
+          <li>✓ Autocomplete + proximity search</li>
+          <li>✗ Census tract / FEMA (Pro only)</li>
+        </ul>
+        <button class="btn btn-primary" style="width:100%;" onclick="startCheckout('starter')">Subscribe — $49/mo</button>
+      </div>
+      <!-- Pro -->
+      <div style="background:var(--surface2); border:1px solid var(--accent); border-radius:8px; padding:20px; position:relative;">
+        <div style="position:absolute; top:-10px; right:16px; background:var(--accent); color:#fff; font-size:0.7rem; font-weight:700; padding:2px 10px; border-radius:10px; text-transform:uppercase;">Most Popular</div>
+        <div style="font-size:0.75rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Pro</div>
+        <div style="font-size:1.8rem; font-weight:800; margin-bottom:2px;">$249<span style="font-size:0.9rem; font-weight:400; color:var(--text-muted)">/mo</span></div>
+        <div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:16px;">500K req/day · 1K req/min · bulk up to 1,000</div>
+        <ul style="list-style:none; font-size:0.82rem; color:var(--text-muted); margin-bottom:20px; display:flex; flex-direction:column; gap:6px;">
+          <li>✓ Everything in Starter</li>
+          <li>✓ Census tract (FIPS) enrichment</li>
+          <li>✓ FEMA flood zone overlay</li>
+          <li>✓ Priority support</li>
+        </ul>
+        <button class="btn btn-primary" style="width:100%; background:var(--accent);" onclick="startCheckout('pro')">Subscribe — $249/mo</button>
+      </div>
+    </div>
+    <!-- Inline checkout form (email collection before Stripe redirect) -->
+    <div id="checkout-form" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:20px;">
+      <h4 style="margin-bottom:4px;">Almost there</h4>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:16px;">Subscribing to <strong id="checkout-tier-label"></strong> — enter your email and you'll be redirected to Stripe to complete payment.</p>
+      <div style="display:flex; gap:10px; align-items:flex-end;">
+        <div class="form-group" style="flex:1;">
+          <label>Work Email</label>
+          <input type="email" id="checkout-email" placeholder="you@company.com" onkeydown="if(event.key==='Enter') submitCheckout()" />
+        </div>
+        <button id="checkout-submit-btn" class="btn btn-primary" onclick="submitCheckout()">Subscribe Now →</button>
+        <button class="btn" style="background:var(--surface); border:1px solid var(--border);" onclick="document.getElementById('checkout-form').style.display='none'">Cancel</button>
+      </div>
+    </div>
+    <p style="color:var(--text-dim); font-size:0.75rem; margin-top:12px;">Secure payment via Stripe · Cancel any time · Instant API key delivery</p>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-card"><div class="stat-num" id="s-active">—</div><div class="stat-label">Active Keys</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-total">—</div><div class="stat-label">Total Keys</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-today">—</div><div class="stat-label">Requests Today</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-alltm">—</div><div class="stat-label">All-Time Requests</div></div>
+  </div>
+
+  <!-- Look up my key -->
+  <div class="card">
+    <h3>🔍 Look Up My Key</h3>
+    <div class="lookup-row">
+      <input id="my-key-input" class="form-group input" placeholder="nad_pro_xxxx…"
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:0.9rem;outline:none;flex:1;"
+        autocomplete="off" />
+      <button class="btn btn-primary" onclick="lookupMyKey()">Lookup</button>
+    </div>
+    <div class="lookup-result" id="my-key-result">
+      <table>
+        <tr><td>Tier</td><td id="mk-tier">—</td></tr>
+        <tr><td>Email</td><td id="mk-email">—</td></tr>
+        <tr><td>Requests today</td><td id="mk-today">—</td></tr>
+        <tr><td>All-time requests</td><td id="mk-total">—</td></tr>
+        <tr><td>Rate limit</td><td id="mk-ratelimit">—</td></tr>
+        <tr><td>Created</td><td id="mk-created">—</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Admin section -->
+  <div class="card">
+    <h3>🔑 Admin — Create New Key</h3>
+    <div style="margin-bottom:14px;">
+      <div class="form-group" style="max-width:320px;">
+        <label>Admin Secret</label>
+        <input type="password" id="admin-secret" placeholder="nad_admin_localdev" value="nad_admin_localdev" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="new-email" placeholder="user@company.com" />
+      </div>
+      <div class="form-group">
+        <label>Name / Label</label>
+        <input type="text" id="new-name" placeholder="Production Key" />
+      </div>
+      <div class="form-group" style="min-width:140px;flex:0;">
+        <label>Tier</label>
+        <select id="new-tier">
+          <option value="free">Free</option>
+          <option value="starter">Starter</option>
+          <option value="pro" selected>Pro</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="createKey()" style="align-self:flex-end;">Generate Key</button>
+    </div>
+  </div>
+
+  <!-- New key reveal banner -->
+  <div class="new-key-banner" id="new-key-banner">
+    <h4>✅ New API key generated — copy it now, it won't be shown again</h4>
+    <div class="key-reveal">
+      <span id="new-key-value" style="word-break:break-all;"></span>
+      <button class="btn btn-copy" onclick="copyKey()">Copy</button>
+    </div>
+  </div>
+
+  <!-- Key list -->
+  <div class="card" id="key-list-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3>Active Keys</h3>
+      <button class="btn btn-primary" style="font-size:0.78rem;padding:6px 14px;" onclick="loadKeys()">↻ Refresh</button>
+    </div>
+    <div id="key-list">
+      <div class="empty-state">Enter your admin secret above and click Refresh to load keys</div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function adminHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-Admin-Secret': document.getElementById('admin-secret').value.trim(),
+  };
+}
+
+function toast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.style.display = 'none', ms);
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch('/v1/admin/keys/stats', { headers: adminHeaders() });
+    if (!r.ok) return;
+    const { data } = await r.json();
+    document.getElementById('s-active').textContent = data.active?.toLocaleString() ?? '—';
+    document.getElementById('s-total').textContent  = data.total?.toLocaleString() ?? '—';
+    document.getElementById('s-today').textContent  = data.requests_today?.toLocaleString() ?? '—';
+    document.getElementById('s-alltm').textContent  = data.requests_total?.toLocaleString() ?? '—';
+  } catch (_) {}
+}
+
+async function loadKeys() {
+  await loadStats();
+  const el = document.getElementById('key-list');
+  try {
+    const r = await fetch('/v1/admin/keys', { headers: adminHeaders() });
+    if (!r.ok) {
+      el.innerHTML = `<div class="empty-state" style="color:var(--red);">
+        Auth failed — check your admin secret (default: nad_admin_localdev)
+      </div>`;
+      return;
+    }
+    const { data } = await r.json();
+    if (!data.length) {
+      el.innerHTML = '<div class="empty-state">No active keys</div>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="key-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Tier</th>
+            <th>Email</th>
+            <th>Req Today</th>
+            <th>Req Total</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(k => `
+            <tr>
+              <td><span class="key-mono">${(k.key_prefix || k.key || '').slice(0, 24)}…</span></td>
+              <td><span class="tier-badge tier-${k.tier}">${k.tier}</span></td>
+              <td style="color:var(--text-muted)">${k.email || '—'}</td>
+              <td>${(k.requests_today || 0).toLocaleString()}</td>
+              <td>${(k.requests_total || 0).toLocaleString()}</td>
+              <td style="color:var(--text-muted);font-size:0.78rem;">${k.created_at?.slice(0,10) || '—'}</td>
+              <td>
+                <button class="btn btn-danger" style="font-size:0.72rem;padding:4px 10px;"
+                  onclick="revokeKey(${k.id}, '${(k.key_prefix || k.key || '').slice(0, 16)}')">Revoke</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red);">Error: ${e.message}</div>`;
+  }
+}
+
+async function createKey() {
+  const email = document.getElementById('new-email').value.trim();
+  const name  = document.getElementById('new-name').value.trim();
+  const tier  = document.getElementById('new-tier').value;
+  if (!email) { toast('Email is required'); return; }
+
+  try {
+    const r = await fetch('/v1/admin/keys', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ email, name, tier }),
+    });
+    const body = await r.json();
+    if (!r.ok) { toast(`Error: ${body.error}`); return; }
+
+    // Show banner
+    document.getElementById('new-key-value').textContent = body.data.key;
+    document.getElementById('new-key-banner').style.display = 'block';
+    document.getElementById('new-email').value = '';
+    document.getElementById('new-name').value  = '';
+    toast('Key generated!');
+    loadKeys();
+  } catch (e) {
+    toast(`Failed: ${e.message}`);
+  }
+}
+
+async function revokeKey(id, prefix) {
+  if (!confirm(`Revoke key ${prefix}…? This cannot be undone.`)) return;
+  try {
+    const r = await fetch(`/v1/admin/keys/${id}`, {
+      method: 'DELETE', headers: adminHeaders(),
+    });
+    if (!r.ok) { const b = await r.json(); toast(`Error: ${b.error}`); return; }
+    toast('Key revoked');
+    loadKeys();
+  } catch (e) {
+    toast(`Failed: ${e.message}`);
+  }
+}
+
+function copyKey() {
+  const val = document.getElementById('new-key-value').textContent;
+  navigator.clipboard.writeText(val).then(() => toast('Copied!'));
+}
+
+async function lookupMyKey() {
+  const key = document.getElementById('my-key-input').value.trim();
+  if (!key) return;
+  try {
+    const r = await fetch('/v1/me', {
+      headers: { 'X-Api-Key': key }
+    });
+    const body = await r.json();
+    const el = document.getElementById('my-key-result');
+    el.style.display = 'block';
+    if (!r.ok) {
+      el.innerHTML = `<p style="color:var(--red)">${body.error || 'Invalid key'}</p>`;
+      return;
+    }
+    const d = body.data;
+    el.innerHTML = `
+      <table><tbody>
+        <tr><td>Tier</td><td><span class="tier-badge tier-${d.tier}">${d.tier}</span></td></tr>
+        <tr><td>Email</td><td>${d.email || '—'}</td></tr>
+        <tr><td>Requests today</td><td>${(d.requests_today||0).toLocaleString()} / ${(d.limits?.req_per_day||0).toLocaleString()}</td></tr>
+        <tr><td>All-time requests</td><td>${(d.requests_total||0).toLocaleString()}</td></tr>
+        <tr><td>Rate limit</td><td>${d.limits?.req_per_min || '—'} req/min</td></tr>
+        <tr><td>Bulk max</td><td>${d.limits?.bulk_max || 0} addresses</td></tr>
+        <tr><td>Enrichment</td><td>${d.limits?.enrichment ? '✅ Census + FEMA' : '❌ Requires Pro'}</td></tr>
+        <tr><td>Created</td><td>${d.created_at?.slice(0,10) || '—'}</td></tr>
+      </tbody></table>
+    `;
+  } catch (e) {
+    toast(`Error: ${e.message}`);
+  }
+}
+
+// Load on page load
+loadStats();
+
+// ── Stripe Checkout Flow ──────────────────────────────────────────
+let _checkoutTier = null;
+
+function startCheckout(tier) {
+  _checkoutTier = tier;
+  const labels = { starter: 'Starter — $49/mo', pro: 'Pro — $249/mo' };
+  document.getElementById('checkout-tier-label').textContent = labels[tier] || tier;
+  document.getElementById('checkout-form').style.display = 'block';
+  document.getElementById('checkout-email').value = '';
+  document.getElementById('checkout-email').focus();
+  document.getElementById('checkout-submit-btn').disabled = false;
+  document.getElementById('checkout-submit-btn').textContent = 'Subscribe Now →';
+}
+
+async function submitCheckout() {
+  const email = document.getElementById('checkout-email').value.trim();
+  if (!email || !email.includes('@')) { toast('Valid email required'); return; }
+  const btn = document.getElementById('checkout-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Redirecting to Stripe…';
+  try {
+    const r = await fetch('/v1/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, tier: _checkoutTier }),
+    });
+    const body = await r.json();
+    if (!r.ok) {
+      toast(`Error: ${body.error}`);
+      btn.disabled = false;
+      btn.textContent = 'Subscribe Now →';
+      return;
+    }
+    window.location.href = body.data.url;
+  } catch (e) {
+    toast(`Failed: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = 'Subscribe Now →';
+  }
+}
+
+function copyCheckoutKey() {
+  const val = document.getElementById('checkout-key-value').textContent;
+  navigator.clipboard.writeText(val).then(() => toast('Copied!'));
+}
+
+async function pollForKey(sessionId, attempts = 0) {
+  if (attempts > 20) {
+    document.getElementById('checkout-key-status').textContent =
+      'Key generation is taking longer than expected. Check your email or contact support.';
+    return;
+  }
+  try {
+    const r = await fetch(`/v1/checkout/session/${encodeURIComponent(sessionId)}`);
+    const body = await r.json();
+    if (body.data?.status === 'complete') {
+      document.getElementById('checkout-key-value').textContent = body.data.api_key;
+      document.getElementById('checkout-key-display').style.display = 'block';
+      document.getElementById('checkout-key-status').style.display = 'none';
+      // Pre-fill the lookup box so they can immediately check usage
+      document.getElementById('my-key-input').value = body.data.api_key;
+    } else {
+      setTimeout(() => pollForKey(sessionId, attempts + 1), 2500);
+    }
+  } catch (_) {
+    setTimeout(() => pollForKey(sessionId, attempts + 1), 2500);
+  }
+}
+
+// Handle return from Stripe Checkout
+(function handleStripeReturn() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('success')) {
+    document.getElementById('checkout-success-banner').style.display = 'block';
+    document.getElementById('pricing-section').style.display = 'none';
+    const sessionId = p.get('session_id');
+    if (sessionId) pollForKey(sessionId);
+  }
+  if (p.get('cancelled')) {
+    document.getElementById('checkout-cancel-banner').style.display = 'block';
+  }
+}());
+</script>
+</body>
+</html>
