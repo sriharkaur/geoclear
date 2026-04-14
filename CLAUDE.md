@@ -167,6 +167,41 @@ curl https://geoclear.onrender.com/api/health
 
 ---
 
+## 3. PLANNING BEFORE BUILDING
+
+**Before writing any code for a non-trivial task, produce a plan and get confirmation.**
+
+A good plan answers:
+1. **What already exists?** — check `FEATURES.md` + grep the codebase. Never build something that's already there.
+2. **What files will change?** — list every file that will be touched.
+3. **What is the exact sequence of steps?** — ordered list, each step small enough to be verified.
+4. **What can go wrong?** — identify the top 1–3 failure modes and how to handle them (e.g. disk space, timeouts, partial writes).
+5. **What is the rollback?** — for any destructive or irreversible step, know how to undo it before you start.
+
+**Format (use this in chat before starting):**
+```
+Plan: <feature name>
+Files: web-server.js, enrich.js, FEATURES.md, ARCHITECTURE.md, RELEASES.md, QUEUE.md
+Steps:
+  1. ...
+  2. ...
+Failure modes: <what could break and how to detect it>
+Rollback: <how to undo if something goes wrong>
+```
+
+**When a plan is required** (don't skip for these):
+- Any new endpoint or schema change
+- Any data operation (import, merge, upload, delete from /data)
+- Any infrastructure change (Render config, disk, env vars)
+- Any change touching 3+ files
+
+**When to just do it** (no plan needed):
+- Single-file bug fix
+- Doc updates
+- Config value change
+
+---
+
 ## 3. DEVELOPMENT WORKFLOW
 
 **Session start checklist:**
