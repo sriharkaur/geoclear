@@ -18,6 +18,7 @@
  */
 
 const path     = require('path');
+const fs       = require('fs');
 const Database = require('better-sqlite3');
 const crypto   = require('crypto');
 
@@ -32,6 +33,7 @@ const TIERS = {
 
 class KeyStore {
   constructor(dbPath = DB_PATH) {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     this.db = new Database(dbPath);
     this._init();
   }

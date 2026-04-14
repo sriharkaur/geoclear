@@ -30,10 +30,21 @@ const DEFAULT_DB = path.join(NAD_DIR, 'nad.db');
 
 class NADQuery {
   constructor(dbPath = DEFAULT_DB) {
-    this.db = new Database(dbPath, { readonly: true });
+    try {
+      this.db = new Database(dbPath, { readonly: true });
+    } catch (err) {
+      console.warn(`[NADQuery] DB not available at ${dbPath}: ${err.message}`);
+      this.db = null;
+    }
   }
 
-  close() { this.db.close(); }
+  isReady() { return this.db !== null; }
+
+  close() { if (this.db) this.db.close(); }
+
+  _require() {
+    if (!this.db) throw Object.assign(new Error('Database not yet available — run init-db or rsync nad.db to /data'), { code: 'DB_NOT_READY' });
+  }
 
   // ---- Level 6: Country ----
   getCountry(code = 'US') {

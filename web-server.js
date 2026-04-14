@@ -160,6 +160,15 @@ const apiLimiter = rateLimit({
   },
 });
 
+// DB readiness gate — address/lookup routes need nad.db; keys routes just need keys.db
+app.use('/api', (req, res, next) => {
+  const needsNad = !OPEN_API_PATHS.has(req.path) && req.path !== '/keys' && req.path !== '/health';
+  if (needsNad && !nad.isReady()) {
+    return res.status(503).json({ ok: false, error: 'Address database not yet loaded. Check back shortly.', code: 'DB_NOT_READY' });
+  }
+  next();
+});
+
 // Apply auth + rate-limit to all protected /api routes
 app.use('/api', (req, res, next) => {
   if (OPEN_API_PATHS.has(req.path)) return next();
@@ -469,23 +478,24 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Global error handler
+app.use((err, req, res, next) => {  // eslint-disable-line no-unused-vars
+  if (err.code === 'DB_NOT_READY') return res.status(503).json({ ok: false, error: err.message, code: 'DB_NOT_READY' });
+  console.error('[error]', err.message);
+  res.status(500).json({ ok: false, error: 'Internal server error' });
+});
+
 // ── Start ─────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  const stats    = nad.stats();
+  const dbReady  = nad.isReady();
+  const stats    = dbReady ? nad.stats() : null;
   const keyStats = keys.stats();
-  console.log(`\n  NAD Address Intelligence`);
+  console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);
-  console.log(`  Explorer  : http://localhost:${PORT}`);
-  console.log(`  Landing   : http://localhost:${PORT}/landing.html`);
-  console.log(`  Portal    : http://localhost:${PORT}/portal.html`);
-  console.log(`  Status    : http://localhost:${PORT}/status.html`);
-  console.log(`\n  Addresses : ${stats.addresses?.toLocaleString()}`);
-  console.log(`  States    : ${stats.states}  Counties: ${stats.counties}  Cities: ${stats.cities}`);
-  console.log(`  API Keys  : ${keyStats.active} active (admin secret: ${ADMIN_SECRET})`);
-  console.log(`\n  Key API endpoints:`);
+  console.log(`  URL       : ${BASE_URL}`);
+  console.log(`  Port      : ${PORT}`);
+  console.log(`  DB Status : ${dbReady ? `✓ ready — ${stats.addresses?.toLocaleString()} addresses` : '⚠ nad.db not loaded (rsync to /data to activate)'}`);
+  console.log(`  API Keys  : ${keyStats.active} active`);
   console.log(`    GET  /api/address?street=Main&state=TX`);
-  console.log(`    GET  /api/suggest?q=Penn&state=DC`);
-  console.log(`    GET  /api/enrich?lat=38.878&lon=-77.175`);
-  console.log(`    GET  /api/near?lat=40.758&lon=-73.9855`);
   console.log(`    GET  /api/health\n`);
 });
