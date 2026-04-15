@@ -816,13 +816,12 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
     VALUES (${COLS.map(() => '?').join(',')})`);
   const insertBatch2 = writeDb2.transaction(rows => {
     let n = 0;
-    for (const r of rows) { n += writeDb2.prepare(`INSERT OR IGNORE INTO addresses
-      (nad_uuid,add_number,st_name,unit,post_city,inc_muni,state,zip_code,
-       latitude,longitude,addr_type,placement,nad_source,full_address,date_update,date_imported)
-      VALUES (${COLS.map(() => '?').join(',')})`).run(...r).changes; }
+    for (const r of rows) { n += stmt2.run(...r).changes; }
     return n;
   });
 
+  const fileSize = fs.statSync(CACHE_PATH).size;
+  console.log(`[import-cached] Starting: ${CACHE_PATH} (${(fileSize/1e9).toFixed(3)}GB)`);
   res.json({ ok: true, message: `Re-running import from ${CACHE_PATH}. Check /api/stats.` });
 
   let inserted = 0, lineCount = 0, skipped = 0, batch = [];
