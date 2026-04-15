@@ -1,0 +1,117 @@
+# BDS Project Configuration
+# Location: {project-root}/.bds/bds.config.yaml
+# Created by: /bds-db init (called from /bds-bootstrap or /bds-import)
+# Purpose: Customizes the BDS framework for this specific project.
+#          This file governs how the project DB is initialized, which
+#          features are enabled, and project-specific thresholds.
+#
+# IMPORTANT: This file is committed to git (.bds/ is NOT gitignored).
+#            It's part of the project's framework contract.
+#            The project DB (.bds/bds.db) IS gitignored.
+# ============================================================
+
+project:
+  id: "{PREFIX}"               # 3-letter uppercase prefix: GEO, FIN, MED, etc.
+  name: "{Project Name}"
+  description: "{One-line description of what this product does}"
+  product_type: "{API_SERVICE|SAAS_WEB_APP|CONSUMER_APP|DATA_PRODUCT|MARKETPLACE|DEVELOPER_TOOL|AI_AGENT_PRODUCT}"
+  stage: PRE_LAUNCH             # PRE_LAUNCH | EARLY | GROWTH | SCALE | ENTERPRISE
+  prod_url: ""                  # https://yourapp.io (fill when deployed)
+  north_star: ""                # One sentence: what winning looks like in 3 years
+
+bds:
+  framework_version: "1.0"     # Global BDS version this project inherited from
+  schema_version: "1.0"        # Project DB schema version
+  inherited_at: "{YYYY-MM-DD}" # When /bds-import or /bds-bootstrap ran
+  framework_source: "~/.claude" # Where the global framework lives (don't change)
+
+db:
+  path: ".bds/bds.db"          # Relative to project root — always use this path
+  wal_mode: true
+  foreign_keys: true
+
+# Which BDS features are active for this project
+# Set to false to disable features not relevant to your product type
+features:
+  lineage_tracking: true        # Track BI → Task lineage chains
+  kpi_measurement: true         # Store KPI time series measurements
+  agent_run_tracking: true      # Log every skill invocation
+  audit_log: true               # Immutable entity change history
+  health_checks: true           # /bds layer scores over time
+  project_metrics: true         # MRR, customers, latency, etc.
+  deployment_tracking: true     # DEP + VR pairs for every deploy
+  comms_sync: true              # Sync COMMS.md items to DB
+
+# Project-specific thresholds (override BDS defaults)
+thresholds:
+  orphan_task_warn_pct: 5       # ⚠️ AT RISK if orphan_tasks > 5%
+  orphan_task_critical_pct: 10  # ❌ CRITICAL if orphan_tasks > 10%
+  kpi_at_risk_pct: 80           # ⚠️ AT RISK if KPI < 80% of target
+  kpi_miss_pct: 50              # ❌ MISS if KPI < 50% of target
+  strategy_stale_days: 60       # STALE if strategy analyses > 60 days old
+  goal_stale_days: 30           # STALE if business goals not updated > 30 days
+  health_check_interval_days: 14 # How often to run /bds
+
+# Entity types actively used in this project
+# Disable types you don't use to reduce noise in lineage checks
+entity_types:
+  enabled:
+    - BI
+    - VIS
+    - BG
+    - MG
+    - DG
+    - CGG
+    - STRAT
+    - PER
+    - KPI
+    - TIER
+    - EPIC
+    - FEAT
+    - REQ
+    - DESIGN
+    - AD
+    - TASK
+    - TC
+    - TR
+    - BUG
+    - DEP
+    - VR
+    - INC
+    - RB
+    - DEC
+    - COMM
+    - SESSION
+  disabled:
+    # Examples of types you might disable:
+    # - COMP    # if competitor tracking is handled externally
+    # - DM      # if schema tracking not needed
+    # - MIG     # if migrations tracked separately
+
+# KPI measurement configuration
+kpi:
+  default_period: weekly          # default measurement_period for new KPIs
+  auto_remind: true               # create COMM item when KPI goes AT_RISK
+  reminder_threshold_pct: 80      # trigger reminder if KPI < 80% of target
+
+# Project-specific metric types (in addition to BDS defaults)
+# Add any metrics you want tracked in project_metrics table
+custom_metrics:
+  - name: api_calls_per_day
+    unit: count
+    source: api_logs
+  - name: avg_response_time_ms
+    unit: ms
+    source: api_logs
+  # Add more as needed
+
+# Stack-specific settings (populated by /bds-bootstrap or /bds-customize)
+stack:
+  language: ""          # node | python | go | rust | typescript
+  framework: ""         # express | fastapi | gin | etc.
+  database: ""          # sqlite | postgres | mysql | etc.
+  deployment: ""        # render | railway | vercel | aws | gcp
+  port: 0
+  test_command: ""      # e.g. "npm test" or "pytest"
+  start_command: ""     # e.g. "node web-server.js"
+  health_check_url: ""  # e.g. "http://localhost:4001/api/health"
