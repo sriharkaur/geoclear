@@ -807,15 +807,18 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
   console.log(`[import-cached] Spawning worker: ${CACHE_PATH} (${(fileSize/1e9).toFixed(3)}GB)`);
   res.json({ ok: true, message: `Import started in worker thread from ${CACHE_PATH}. Check /api/stats.` });
 
+  const CHECKPOINT_PATH = path.join(DATA_DIR, 'import-checkpoint.txt');
   const worker = new Worker(path.join(__dirname, 'import-worker.js'), {
-    workerData: { dbPath, cachePath: CACHE_PATH },
+    workerData: { dbPath, cachePath: CACHE_PATH, checkpointPath: CHECKPOINT_PATH },
   });
   worker.on('message', msg => {
-    if (msg.type === 'progress')
-      console.log(`[import-cached] ${(msg.lineCount/1e6).toFixed(1)}M lines, ${msg.inserted.toLocaleString()} inserted, ${msg.skipped} skipped`);
+    if (msg.type === 'progress') {
+      if (msg.message) console.log(`[import-cached] ${msg.message}`);
+      else console.log(`[import-cached] line ${(msg.totalLines/1e6).toFixed(1)}M — ${(msg.lineCount/1e6).toFixed(1)}M processed, ${msg.inserted.toLocaleString()} inserted, ${msg.skipped} skipped`);
+    }
     if (msg.type === 'done') {
       cache.delete('stats');
-      console.log(`[import-cached] Done: ${msg.lineCount.toLocaleString()} lines, ${msg.inserted.toLocaleString()} new rows, ${msg.skipped} skipped`);
+      console.log(`[import-cached] Done: ${msg.totalLines.toLocaleString()} raw lines, ${msg.lineCount.toLocaleString()} processed, ${msg.inserted.toLocaleString()} new rows, ${msg.skipped} skipped`);
     }
     if (msg.type === 'error')
       console.error('[import-cached] Worker error:', msg.message);
