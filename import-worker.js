@@ -117,5 +117,13 @@ rl.on('close', () => {
   parentPort.postMessage({ type: 'done', totalLines, lineCount, inserted, skipped });
 });
 
-rl.on('error',   e => parentPort.postMessage({ type: 'error', message: `readline: ${e.message}` }));
-gunzip.on('error', e => parentPort.postMessage({ type: 'error', message: `gunzip: ${e.message}` }));
+function cleanupOnError(label, e) {
+  parentPort.postMessage({ type: 'error', message: `${label}: ${e.message}` });
+  try { if (batch.length) inserted += insertBatch(batch); } catch {}
+  try { db.pragma('synchronous = FULL'); db.close(); } catch {}
+  try { fs.unlinkSync(checkpointPath); } catch {}
+  parentPort.postMessage({ type: 'done', totalLines, lineCount, inserted, skipped });
+}
+
+rl.on('error',     e => cleanupOnError('readline', e));
+gunzip.on('error', e => cleanupOnError('gunzip', e));
