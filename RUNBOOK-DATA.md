@@ -10,10 +10,10 @@
 | Trigger | Section |
 |---------|---------|
 | First deploy to a new Render service | [Initial Full Transfer](#initial-full-transfer) |
-| NAD quarterly release (every ~3 months) | [Quarterly Delta Update](#quarterly-delta-update) |
+| NAD quarterly release (every ~3 months) | [Bulk Import — Staging Pipeline](#bulk-import--staging-pipeline) |
+| New Overture / OpenAddresses data | [Bulk Import — Staging Pipeline](#bulk-import--staging-pipeline) |
 | Render service replaced / disk re-created | [Initial Full Transfer](#initial-full-transfer) |
 | Disaster recovery (disk corruption/loss) | [Initial Full Transfer](#initial-full-transfer) |
-| Overture gap-fill import completed locally | [Quarterly Delta Update](#quarterly-delta-update) |
 
 ---
 
@@ -109,35 +109,133 @@ curl "https://geoclear.onrender.com/api/address?street=1600+Pennsylvania+Ave&cit
 
 ---
 
-## Quarterly Delta Update
+## Bulk Import — Staging Pipeline
 
-Use when: NAD releases a new quarterly ZIP, or after Overture gap-fill import.
+**Use for:** NAD quarterly update, Overture gap-fill, OpenAddresses, any new data source.
+**Never run imports directly on prod or locally.** Staging has the 100GB disk; your Mac does not.
 
-**Step 1 — Import locally first:**
-```bash
-# Download new NAD ZIP to geoclear/data/
-node download.js
-
-# Import (sample run first — always)
-node init-db.js --limit 1000
-
-# Full import if sample looks good
-node init-db.js
+```
+New data source
+  → Download + import on staging Render Shell
+  → Export as gzipped TSV
+  → Chunked upload to prod /data via POST /v1/admin/upload-chunk
+  → Import via POST /v1/admin/import-tsv-gz-cached (runs in worker_threads)
+  → Verify count via GET /api/stats
 ```
 
-**Step 2 — Delta rsync (only changed blocks transferred):**
+### Step 1 — Run import on staging Render Shell
+
+Open staging shell: Render dashboard → `geoclear-staging` → Shell
+
 ```bash
-rsync -avz --checksum --partial --progress \
-  -e "ssh -o ProxyCommand=none -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
-  /Users/shaileshbhujbal/Projects/geoclear/data/nad.db \
-  srv-d7ep7bfavr4c73d46gng@ssh.virginia.render.com:/data/nad.db
+# Download new source data
+node download.js           # NAD quarterly ZIP
+# or
+node overture-import.js --db=/data/overture-additions.db --state=FL
+
+# Verify row count
+sqlite3 /data/overture-additions.db "SELECT COUNT(*) FROM addresses;"
 ```
 
-- `--checksum` compares file content block-by-block — only changed pages transfer
-- Duration: ~5–15 minutes for a typical quarterly delta (~2–5GB changed)
-- No service interruption — SQLite readers continue serving from the file while rsync writes; Render will briefly use the old pages until rsync completes
+### Step 2 — Export to gzipped TSV (run on staging shell)
 
-**Step 3 — Redeploy (same command as above)**
+```bash
+# Fast bulk export — avoids Node OOM on large datasets
+python3 - <<'EOF'
+import sqlite3, gzip
+
+SRC  = '/data/overture-additions.db'
+OUT  = '/data/overture.tsv.gz'
+COLS = ['nad_uuid','add_number','st_name','unit','post_city','inc_muni','state',
+        'zip_code','latitude','longitude','addr_type','placement','nad_source',
+        'full_address','date_update','date_imported']
+
+conn = sqlite3.connect(SRC)
+cur  = conn.cursor()
+cur.execute(f"SELECT {','.join(COLS)} FROM addresses")
+
+written = 0
+with gzip.open(OUT, 'wt', encoding='utf-8', compresslevel=6) as f:
+    while True:
+        rows = cur.fetchmany(50000)
+        if not rows: break
+        for row in rows:
+            f.write('\t'.join('' if v is None else str(v) for v in row) + '\n')
+            written += 1
+        if written % 5000000 == 0:
+            print(f'{written:,} rows written…', flush=True)
+
+conn.close()
+print(f'Done: {written:,} rows → {OUT}')
+EOF
+ls -lh /data/overture.tsv.gz
+```
+
+### Step 3 — Chunked upload to prod (run locally)
+
+```bash
+# Upload from staging /data to prod via chunked HTTP
+# (each 500MB chunk ~60s — well under Render's 300s timeout)
+source ~/.zshrc
+SECRET=$(curl -s "https://api.render.com/v1/services/srv-d7ep7bfavr4c73d46gng/env-vars" \
+  -H "Authorization: Bearer $RENDER_API_KEY" | \
+  python3 -c "import json,sys; [print(i['envVar']['value']) for i in json.load(sys.stdin) if i['envVar']['key']=='NAD_ADMIN_SECRET']")
+
+# First download the TSV from staging to local /tmp
+# (or copy via: ssh staging-shell "cat /data/overture.tsv.gz" > /tmp/overture.tsv.gz)
+
+python3 /tmp/chunked-upload.py "$SECRET" /tmp/overture.tsv.gz
+```
+
+### Step 4 — Trigger import on prod
+
+```bash
+curl -s -X POST https://geoclear.io/v1/admin/import-tsv-gz-cached \
+  -H "X-Admin-Secret: $SECRET"
+# → {"ok":true,"message":"Import started in worker thread..."}
+```
+
+The import runs in a `worker_threads` worker — prod stays responsive during the entire import.
+
+### Step 5 — Monitor
+
+```bash
+# Count updates every ~1 hour (stats cache TTL)
+watch -n 60 'curl -s https://geoclear.io/api/stats | python3 -c "import json,sys; print(json.load(sys.stdin)[\"data\"][\"addresses\"])"'
+```
+
+### Performance notes
+
+| Approach | Rate | 64.9M rows |
+|----------|------|-----------|
+| INSERT with 14 indexes (current) | ~5K rows/sec | ~3.5 hours |
+| DROP INDEX → INSERT → CREATE INDEX | ~100K rows/sec insert + ~20 min/index rebuild | ~30 min total |
+
+**For future large imports (>10M rows):** drop indexes before bulk load, rebuild after.
+Script template (run in Render Shell on prod, server stays up — WAL readers unaffected):
+
+```bash
+node -e "
+const Database = require('better-sqlite3');
+const db = new Database('/data/nad.db');
+db.pragma('journal_mode = WAL');
+
+// 1. Drop secondary indexes (keep only PRIMARY KEY)
+const idxs = db.prepare(\"SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='addresses' AND name NOT LIKE 'sqlite_%'\").all();
+idxs.forEach(({name}) => { console.log('DROP', name); db.exec('DROP INDEX IF EXISTS ' + name); });
+
+// 2. Bulk insert here (fast — no index overhead)
+// ... import logic ...
+
+// 3. Recreate indexes (one sequential pass each)
+db.exec(\`
+  CREATE INDEX IF NOT EXISTS idx_addr_state_id  ON addresses(state_id);
+  CREATE INDEX IF NOT EXISTS idx_addr_state_txt ON addresses(state);
+  -- ... add remaining indexes from schema.sql
+\`);
+console.log('Done');
+"
+```
 
 ---
 
