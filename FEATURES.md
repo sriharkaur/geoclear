@@ -121,7 +121,10 @@ All require `X-Admin-Secret` header.
 | POST | `/v1/admin/metered/flush` | Manually flush metered usage to Stripe |
 | POST | `/v1/admin/stream-upload` | Stream-write large files to `/data/<filename>` — no body limit; headers: `X-Upload-Filename` |
 | POST | `/v1/admin/upload-chunk` | Resumable chunked upload to `/data/<filename>` at byte offset; headers: `X-Upload-Filename`, `X-Chunk-Offset` |
-| POST | `/v1/admin/merge` | Merge all addresses from an attached SQLite DB into nad.db (staging → prod promotion); body: `{ dbPath, source }` |
+| POST | `/v1/admin/merge` | Merge all addresses from an attached SQLite DB into nad.db (staging → prod promotion); body: `{ dbPath, source }` — uses writable connection |
+| POST | `/v1/admin/import-tsv-gz` | Stream a gzipped TSV directly into nad.db; tees to `/data/overture.tsv.gz` for restart safety |
+| POST | `/v1/admin/import-tsv-gz-cached` | Re-run import from saved `/data/overture.tsv.gz` — runs in `worker_threads` (non-blocking) |
+| GET  | `/v1/admin/db-probe` | Diagnostic: inspect schema + indexes, test a live INSERT/DELETE round-trip |
 
 ---
 
@@ -156,7 +159,7 @@ All require `X-Admin-Secret` header.
 | Overture Maps full run | FL, CA, MI, NJ, PA, MS, SC, GA, SD, HI, LA, NV, NH + more | 64,900,000 | `data/overture-additions.db` (37GB, local — upload to prod in progress) |
 | Dev sample DB | All 50 states, 20K addrs/state | ~983,000 | `data/dev.db` (572MB, local only — set `NAD_DB=data/dev.db`) |
 
-**Pending:** once `overture-additions.db` finishes uploading to prod `/data`, call `POST /v1/admin/merge` to fold 64.9M rows into nad.db → ~185M total addresses (after dedup).
+**In progress:** 2.57GB gzipped TSV (`overture.tsv.gz`) uploaded to prod `/data`. Import running via `worker_threads` — expected final count ~185M.
 
 ---
 
@@ -189,7 +192,7 @@ All require `X-Admin-Secret` header.
 ---
 
 ## Not Yet Built (see QUEUE.md)
-- Overture full gap-fill merge to prod (64.9M rows in overture-additions.db — upload in progress, merge pending)
+- Overture merge completion (⏳ import running — count at ~120M, target ~185M)
 - Usage dashboard for customers (show their own usage over time)
 - CSV upload → enriched CSV download
 - Bulk async + webhooks for 10M+ record jobs

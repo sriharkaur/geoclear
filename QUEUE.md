@@ -41,10 +41,14 @@ _Last updated: 2026-04-14 (session 5)_
 - [x] `create-dev-db.js` — generates `data/dev.db` (572MB, 20K addrs/state) for local dev without 91GB nad.db ✅
 - [x] `POST /v1/admin/stream-upload` — streams large files to `/data` without buffering ✅
 - [x] `POST /v1/admin/upload-chunk` — resumable chunked upload for 37GB+ files (bypasses Render HTTP timeout) ✅
-- [x] `POST /v1/admin/merge` — merges a SQLite DB into nad.db in background (INSERT OR IGNORE, 10K-row batches) ✅
+- [x] `POST /v1/admin/merge` — merges a SQLite DB into nad.db in background (INSERT OR IGNORE, 10K-row batches) — fixed to use writable DB connection (session 6) ✅
 - [x] `sync-staging-to-prod.sh` — documents and guides staging → prod data promotion workflow ✅
+- [x] `POST /v1/admin/import-tsv-gz-cached` — re-run import from cached `/data/overture.tsv.gz`; now runs in `worker_threads` (non-blocking) ✅
+- [x] `import-worker.js` — standalone worker_threads module; offloads all SQLite bulk-insert work from main event loop ✅
+- [x] `GET /v1/admin/db-probe` — diagnostic endpoint: tests write access, schema inspection, test INSERT ✅
+- [x] Fixed write endpoints (`import-tsv-gz`, `import-tsv-gz-cached`, `merge`) — nad.db was opened readonly; now open separate writable connection per operation ✅
 - [x] **Overture full gap-fill import** — 64.9M addresses across FL(16.1M), CA(27.1M), MI(4.7M), NJ(4.9M), PA(2.3M), MS(2.3M), SC, GA, SD, HI, LA, NV, NH + more — in `overture-additions.db` (37GB) ✅
-- [ ] **Merge Overture data into prod** — upload `overture-additions.db` → `POST /v1/admin/merge` → 120M + 64.9M = ~185M addresses. **IN PROGRESS** (chunked upload running)
+- [ ] **Merge Overture data into prod** — 2.57GB TSV uploaded to `/data/overture.tsv.gz`; import running via worker_threads (non-blocking). ⏳ IN PROGRESS — monitor `/api/stats` for count to reach ~185M
 - [ ] Fill remaining state gaps via state GIS portals (AL, AK — not in Overture)
 - [ ] Address disambiguation — rank candidates when multiple "123 Main St" exist
 - [ ] Coverage declaration per response — which states have full/partial/no coverage
