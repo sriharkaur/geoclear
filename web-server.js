@@ -784,7 +784,6 @@ app.post('/v1/admin/import-tsv-gz', (req, res) => {
   });
   rl.on('close', () => {
     if (batch.length) inserted += insertBatch(batch);
-    writeDb.pragma('synchronous = FULL');
     writeDb.close();
     cache.delete('stats');
     console.log(`[import-tsv-gz] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} new rows inserted`);
@@ -836,14 +835,18 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
     batch.push(parts.slice(0, COLS.length).map(v => v === '' ? null : v));
     lineCount++;
     if (batch.length >= BATCH) {
-      try { inserted += insertBatch2(batch); } catch(e) { console.error('[import-cached] batch error:', e.message); }
+      const toInsert = batch;
       batch = [];
-      if (lineCount % 1000000 === 0) console.log(`[import-cached] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted, ${skipped} skipped`);
+      rl.pause();  // yield to event loop between batches so health checks pass
+      setImmediate(() => {
+        try { inserted += insertBatch2(toInsert); } catch(e) { console.error('[import-cached] batch error:', e.message); }
+        if (lineCount % 1000000 === 0) console.log(`[import-cached] ${(lineCount/1e6).toFixed(1)}M lines, ${inserted.toLocaleString()} inserted, ${skipped} skipped`);
+        rl.resume();
+      });
     }
   });
   rl.on('close', () => {
     try { if (batch.length) inserted += insertBatch2(batch); } catch(e) { console.error('[import-cached] final batch error:', e.message); }
-    writeDb2.pragma('synchronous = FULL');
     writeDb2.close();
     cache.delete('stats');
     console.log(`[import-cached] Done: ${lineCount.toLocaleString()} lines, ${inserted.toLocaleString()} inserted, ${skipped} skipped`);
