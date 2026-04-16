@@ -29,21 +29,12 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 >
 > **Critical SSL prerequisite before enabling proxy:** Cloudflare's default SSL mode is "Flexible" — it encrypts browser→Cloudflare but sends plain HTTP to the origin. Render's custom domain cert expects HTTPS end-to-end. If you flip the orange cloud with Flexible SSL, the Render cert chain breaks and the site goes down. Set SSL/TLS mode to **Full (strict)** in Cloudflare dashboard *before* enabling proxy. Verify on `geoclear-staging.onrender.com` first — staging has the same Render cert setup.
 
-- [ ] **Enable Cloudflare proxy (orange cloud) on geoclear.io**
-  - Current: DNS-only (grey cloud) — zero CDN, zero DDoS protection, all traffic hits Render origin
-  - Benefit: edge caching, DDoS mitigation, Cloudflare's global network absorbs spikes before they reach Render
-  - **Steps (do in order):**
-    1. Cloudflare dashboard → SSL/TLS → set mode to **Full (strict)**
-    2. Verify `geoclear-staging.onrender.com` still resolves correctly
-    3. Flip geoclear.io CNAME from grey cloud → orange cloud
-    4. Run smoke test: `curl https://geoclear.io/api/health`
-    5. Check response headers for `CF-Ray:` — confirms traffic is going through Cloudflare edge
+- [x] **Enable Cloudflare proxy (orange cloud) on geoclear.io** ✅
+  - SSL/TLS set to Full (strict), both DNS records proxied, CF-Ray header confirmed in smoke test
 
-- [ ] **Add Cloudflare cache rules for read-only API responses**
-  - Candidates: `/api/stats` (changes ~hourly), `/api/states` (changes on data merge), `/api/health` (near-static)
-  - TTL: 60–300s is sufficient — absorbs traffic spikes without serving stale data to paying customers
-  - Configure via **Cloudflare Cache Rules** (not origin `Cache-Control` headers) so it's managed in one place
-  - Do NOT cache `/api/address`, `/api/suggest`, or any authenticated endpoint — responses are per-key and per-query
+- [x] **Add Cloudflare cache rules for read-only API responses** ✅
+  - Rule: "GeoClear read-only API cache" — matches `/api/stats`, `/api/states`, `/api/health`
+  - TTL: 5 minutes (300s), ignore cache-control header — 1 of 10 active Cache Rules used
 
 - [ ] **Evaluate Render autoscaling or standby instance** *(defer until first enterprise customer)*
   - Current single-instance setup: a deploy or process crash = 30–60s downtime

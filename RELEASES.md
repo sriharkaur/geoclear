@@ -11,6 +11,8 @@
 > Features merged to main but not yet cut into a version.
 
 - **Overture Maps full merge complete** — nad.db now has 198,657,535 addresses; all 16 indexes rebuilt on prod (completed 01:59 UTC 2026-04-16)
+- **Cloudflare proxy enabled** — SSL Full (strict) set, orange cloud active on geoclear.io; CF-Ray header confirmed
+- **Cloudflare cache rule live** — "GeoClear read-only API cache": `/api/stats`, `/api/states`, `/api/health` cached 5 min (300s) at edge
 - Stripe **live mode** fully wired: `sk_live_...`, `whsec_live_...`, live price IDs for Starter / Growth / Pay-as-you-go
 - Metered billing live: `STRIPE_METER_ID` + `STRIPE_PRICE_METERED` set to live Stripe Billing Meter (`mtr_61UVWpc...`, event `geoclear_lookup`)
 - Fix: metered tier checkout session omits `quantity` (required by Stripe for metered prices)
