@@ -8,28 +8,28 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --bg:       #03071A;
-      --bg-alt:   #060D28;
-      --surface:  #0A1229;
-      --surface2: #0E1A38;
-      --border:   rgba(99,130,255,0.1);
-      --border2:  rgba(99,130,255,0.18);
-      --border3:  rgba(99,130,255,0.28);
-      --text:     #EEF2FF;
-      --muted:    #8892B0;
-      --dim:      #4A5568;
-      --sky:      #38BDF8;
-      --indigo:   #818CF8;
-      --violet:   #A78BFA;
-      --green:    #34D399;
-      --amber:    #FBBF24;
-      --red:      #F87171;
-      --grad:     linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
-      --font:     'Inter', -apple-system, system-ui, sans-serif;
+      --bg:       #faf9f7;
+      --bg-alt:   #f2f0ed;
+      --surface:  #ffffff;
+      --surface2: #f0ebe4;
+      --border:   rgba(46,147,111,0.12);
+      --border2:  rgba(46,147,111,0.2);
+      --border3:  rgba(46,147,111,0.32);
+      --text:     #242220;
+      --muted:    #7a6e68;
+      --dim:      #a58979;
+      --sky:      #2e936f;
+      --indigo:   #956bad;
+      --violet:   #8cb0b2;
+      --green:    #2e936f;
+      --amber:    #c6a673;
+      --red:      #eb8771;
+      --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
+      --font:     'Red Hat Text', -apple-system, system-ui, sans-serif;
       --mono:     'JetBrains Mono', 'SF Mono', Consolas, monospace;
       --sidebar:  260px;
     }
@@ -131,7 +131,7 @@
       flex-shrink: 0;
     }
     .get  { background: rgba(52,211,153,0.15); color: var(--green); }
-    .post { background: rgba(56,189,248,0.15); color: var(--sky); }
+    .post { background: rgba(46,147,111,0.15); color: var(--sky); }
 
     /* ── MAIN ── */
     .main {
@@ -267,8 +267,8 @@
       border-color: var(--border2);
     }
     .code-block {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
+      background: #1e1e1e;
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 0 8px 8px 8px;
       padding: 18px 20px;
       overflow-x: auto;
@@ -278,7 +278,7 @@
       font-family: var(--mono);
       font-size: 0.8rem;
       line-height: 1.7;
-      color: var(--text);
+      color: #e8e6e3;
       white-space: pre;
     }
     .tab-panel { display: none; }
@@ -295,8 +295,8 @@
       margin-top: 16px;
     }
     .resp-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: #1e1e1e;
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
       padding: 16px 18px;
       overflow-x: auto;
@@ -305,10 +305,10 @@
       font-family: var(--mono);
       font-size: 0.78rem;
       line-height: 1.7;
-      color: var(--muted);
+      color: #b0aaa4;
     }
-    .j-key   { color: var(--sky); }
-    .j-str   { color: var(--green); }
+    .j-key   { color: #7dd3b8; }
+    .j-str   { color: #a8d8b0; }
     .j-num   { color: var(--amber); }
     .j-bool  { color: var(--violet); }
     .j-null  { color: var(--red); }
@@ -330,8 +330,8 @@
       font-size: 0.85rem;
     }
     .alert-info {
-      background: rgba(56,189,248,0.07);
-      border: 1px solid rgba(56,189,248,0.2);
+      background: rgba(46,147,111,0.07);
+      border: 1px solid rgba(46,147,111,0.2);
       color: var(--muted);
     }
     .alert-icon { flex-shrink: 0; margin-top: 1px; }
@@ -408,7 +408,7 @@
 
     /* CTA */
     .cta-bar {
-      background: linear-gradient(135deg, rgba(56,189,248,0.07) 0%, rgba(129,140,248,0.07) 100%);
+      background: linear-gradient(135deg, rgba(46,147,111,0.07) 0%, rgba(140,176,178,0.07) 100%);
       border: 1px solid var(--border2);
       border-radius: 12px;
       padding: 28px 32px;
@@ -426,7 +426,7 @@
       align-items: center;
       gap: 7px;
       background: var(--grad);
-      color: #03071A;
+      color: #faf9f7;
       font-weight: 700;
       font-size: 0.85rem;
       padding: 10px 22px;
@@ -521,7 +521,7 @@
 
     <div class="alert alert-info">
       <span class="alert-icon">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2e936f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="8" cy="8" r="6.5"/>
           <path d="M8 7v4M8 5.5v.5"/>
         </svg>
@@ -901,7 +901,7 @@ const { data } = await res.json();</pre></div>
 
     <div class="alert alert-info" style="margin-top:16px">
       <span class="alert-icon">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#2e936f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="8" cy="8" r="6.5"/>
           <path d="M8 7v4M8 5.5v.5"/>
         </svg>
