@@ -409,7 +409,13 @@ app.get('/api/address', (req, res) => {
     limit:      lim,
   }));
   if (!raw.length) return err(res, 'No addresses found.', 404);
-  ok(res, raw.map(enrichAddress), { count: raw.length });
+  const results = raw.map(enrichAddress);
+  if (!req.keyInfo?.limits?.enrichment) {
+    const hint = { census_tract: null, flood_zone: null, flood_sfha: null,
+      _enrichment: { available: true, required_tier: 'pro', upgrade_url: 'https://geoclear.io/portal.html' } };
+    results.forEach(r => Object.assign(r, hint));
+  }
+  ok(res, results, { count: results.length });
 });
 
 // Autocomplete / typeahead  (?q=123+Main&state=TX&limit=10)
@@ -432,6 +438,11 @@ app.post('/api/address/bulk', (req, res) => {
     const found = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
     return found.length ? enrichAddress(found[0]) : { verified: false, input: { street, number, city, state, zip } };
   });
+  if (!req.keyInfo?.limits?.enrichment) {
+    const hint = { census_tract: null, flood_zone: null, flood_sfha: null,
+      _enrichment: { available: true, required_tier: 'pro', upgrade_url: 'https://geoclear.io/portal.html' } };
+    results.forEach(r => { if (r.verified !== false) Object.assign(r, hint); });
+  }
   ok(res, results, { count: results.length });
 });
 
@@ -530,6 +541,21 @@ app.get('/api/near', (req, res) => {
 // Point enrichment — census tract + FEMA flood zone  (?lat=&lon=)
 // Also accepts ?nad_uuid= to look up address first then enrich its coordinates
 app.get('/api/enrich', async (req, res) => {
+  // Enrichment requires Pro or Enterprise
+  if (!req.keyInfo?.limits?.enrichment) {
+    return res.status(402).json({
+      ok: false,
+      error: 'enrichment_requires_pro',
+      message: 'Census tract and FEMA flood zone data requires a Pro plan or higher.',
+      example_response: {
+        census: { tract: '010100', block_group: '1', geoid: '110010101001' },
+        fema:   { flood_zone: 'X', sfha: false, panel: '1100010001B' },
+        coordinates: { latitude: 38.8977, longitude: -77.0365 },
+      },
+      upgrade_url: 'https://geoclear.io/portal.html',
+    });
+  }
+
   let { lat, lon, nad_uuid } = req.query;
 
   if (nad_uuid && (!lat || !lon)) {
