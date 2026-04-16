@@ -92,7 +92,7 @@
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(24px) saturate(160%);
       -webkit-backdrop-filter: blur(24px) saturate(160%);
-      background: rgba(3,7,26,0.82);
+      background: rgba(250,249,247,0.88);
       transition: border-color 0.3s;
     }
     .nav-inner {
@@ -103,6 +103,7 @@
     .nav-logo {
       display: flex; align-items: center; gap: 9px;
       font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em;
+      color: var(--text);
     }
     .logo-mark { display: block; flex-shrink: 0; }
     .nav-links {
@@ -259,9 +260,9 @@
       transform: translate(-50%, -50%);
       width: 680px; height: 680px;
       object-fit: contain;
-      filter: grayscale(100%) brightness(0.6) opacity(0.05);
+      filter: grayscale(100%) brightness(0.3) opacity(0.07);
       pointer-events: none; user-select: none;
-      mix-blend-mode: screen;
+      mix-blend-mode: multiply;
       z-index: 0;
     }
 
@@ -932,7 +933,7 @@
     <a href="/" class="nav-logo">
       <svg class="logo-mark" width="22" height="28" viewBox="0 0 22 28" fill="none" aria-hidden="true">
         <path d="M11 0C4.93 0 0 4.93 0 11C0 18.7 11 28 11 28C11 28 22 18.7 22 11C22 4.93 17.07 0 11 0Z" fill="#2e936f"/>
-        <circle cx="11" cy="10.5" r="4.8" fill="#2e936f"/>
+        <circle cx="11" cy="10.5" r="4.8" fill="#ffffff"/>
         <circle cx="11" cy="10.5" r="1.9" fill="#2e936f"/>
       </svg>
       GeoClear
@@ -1528,7 +1529,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="footer-logo-mark">
           <svg width="18" height="23" viewBox="0 0 22 28" fill="none" aria-hidden="true">
             <path d="M11 0C4.93 0 0 4.93 0 11C0 18.7 11 28 11 28C11 28 22 18.7 22 11C22 4.93 17.07 0 11 0Z" fill="#2e936f"/>
-            <circle cx="11" cy="10.5" r="4.8" fill="#2e936f"/>
+            <circle cx="11" cy="10.5" r="4.8" fill="#ffffff"/>
             <circle cx="11" cy="10.5" r="1.9" fill="#2e936f"/>
           </svg>
         </div>
