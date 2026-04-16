@@ -10,17 +10,17 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 ### Top 5 — Do in this order
 
 - [ ] **P1 — RapidAPI marketplace listing** — upload `openapi.yaml`, write enrichment-led description, set pricing tiers. ~60 min. Success: listing live within 7 days, first API call from RapidAPI within 14 days.
-- [ ] **P2 — Ship `/docs` page** — endpoint reference with curl + Node.js examples. HN launch blocker. Success: all public endpoints documented, HN launch unblocked.
+- [x] **P2 — Ship `/docs` page** — full endpoint reference, curl + Node.js examples, sidebar nav, rate limits, errors. ✅
 - [ ] **P3 — Warm outreach to 20 target companies** — logistics, proptech, fintech. Use template in `AddressAPIBusinessGTM.md`. Success: 20 sent, 5 replies, 1 paid trial within 30 days.
-- [ ] **P4 — Usage dashboard in customer portal** — surface `GET /v1/me` data visually in `/portal.html`; upgrade CTA at 70% quota. Success: dashboard live, free→paid conversion tracked.
+- [x] **P4 — Usage dashboard in customer portal** — quota bar, 70% upgrade CTA, enrichment preview. ✅
 - [ ] **P5 — Complete + announce Overture 185M merge** — verify row count, post HN + LinkedIn announcement. Success: 185M+ confirmed, announcement posted.
 
 ### Enrichment Monetization — "Enrichment = Pro" conversion lever (S1 + W2)
 
-- [ ] **Return enrichment fields as `null` for free/starter** — add `census_tract`, `flood_zone`, `flood_sfha` to every `/api/address` response; return `null` for non-pro tiers with `"_enrichment": { "available": true, "required_tier": "pro", "upgrade_url": "..." }`. Makes missing data visible at the highest-intent moment.
-- [ ] **Soft-gate `/api/enrich` for free/starter** — replace hard 403 with 402 that returns example enriched data alongside the error: `{ "error": "enrichment_requires_pro", "example_response": { "census_tract": "4015.02", "flood_zone": "AE", ... }, "upgrade_url": "..." }`. Developer already showed intent by calling the endpoint — give them a taste.
-- [ ] **Enrichment preview in portal** — add "What Pro unlocks" section to `/portal.html` showing a live example response with all enrichment fields populated. Static sample address is fine.
-- [ ] **Reframe pricing page** — restructure pricing grid so primary axis is enrichment access (census tract, FEMA flood zone, residential flag), not lookup volume. Volume limits become secondary. Answer "do I need enrichment?" not "how many lookups?"
+- [x] **Return enrichment fields as `null` for free/starter** — `census_tract`, `flood_zone`, `flood_sfha` + `_enrichment` upgrade hint on every `/api/address` response for non-pro tiers. ✅
+- [x] **Soft-gate `/api/enrich` for free/starter** — 402 with example response + `upgrade_url` for free/starter/metered. ✅
+- [x] **Enrichment preview in portal** — live enrichment field preview in `/portal.html`; shows real values for pro, `null — Pro required` for others. ✅
+- [x] **Reframe pricing page** — portal pricing grid now leads with enrichment access; census tract + FEMA flood zone as primary differentiator. ✅
 - [ ] **Fintech/insurance vertical outreach** — FEMA flood zone is a compliance line item for mortgage lenders (NFIP), property insurers, proptech. Outreach message: "flood zone determination API, self-serve, $249/mo" — not generic "address API." Target: lenders, insurers, proptech platforms.
 
 ### Infrastructure — CDN & Availability (T3)
