@@ -6,16 +6,16 @@
   <title>GeoClear — System Status</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg: #faf9f7; --surface: #ffffff; --surface2: #f0ebe4; --border: rgba(46,147,111,0.15);
       --accent: #2e936f; --blue: #956bad; --red: #eb8771; --yellow: #c6a673;
       --text: #242220; --text-muted: #7a6e68;
-      --font: 'Red Hat Text', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font); }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
     header {
       background: var(--surface); border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
@@ -39,8 +39,8 @@
     .dot-down    { background: var(--red); }
     .dot-degraded{ background: var(--yellow); }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-    .status-title { font-size: 1.2rem; font-weight: 700; }
-    .status-sub   { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+    .status-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
+    .status-sub   { font-size: 0.9rem; color: var(--text-muted); margin-top: 4px; }
 
     /* Service rows */
     .services { margin-bottom: 32px; }
@@ -50,9 +50,9 @@
       padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
       border-radius: 8px; margin-bottom: 8px;
     }
-    .service-name { font-weight: 600; font-size: 0.9rem; }
-    .service-sub  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-    .service-right { display: flex; align-items: center; gap: 10px; font-size: 0.82rem; }
+    .service-name { font-weight: 600; font-size: 0.95rem; }
+    .service-sub  { font-size: 0.84rem; color: var(--text-muted); margin-top: 2px; }
+    .service-right { display: flex; align-items: center; gap: 10px; font-size: 0.875rem; }
     .pill {
       padding: 3px 10px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;
     }
@@ -65,8 +65,8 @@
     .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
     @media (max-width: 560px) { .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
     .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-    .metric-num   { font-size: 1.5rem; font-weight: 800; }
-    .metric-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+    .metric-num   { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; }
+    .metric-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 5px; font-weight: 500; }
 
     /* Uptime table */
     .uptime-section { margin-bottom: 32px; }

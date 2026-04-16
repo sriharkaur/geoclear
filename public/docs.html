@@ -8,7 +8,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <style>
     :root {
@@ -29,7 +29,7 @@
       --amber:    #c6a673;
       --red:      #eb8771;
       --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
-      --font:     'Red Hat Text', -apple-system, system-ui, sans-serif;
+      --font:     'Inter', -apple-system, system-ui, sans-serif;
       --mono:     'JetBrains Mono', 'SF Mono', Consolas, monospace;
       --sidebar:  260px;
     }
@@ -40,8 +40,8 @@
       font-family: var(--font);
       background: var(--bg);
       color: var(--text);
-      font-size: 0.9rem;
-      line-height: 1.65;
+      font-size: 1rem;
+      line-height: 1.75;
     }
     a { color: var(--sky); text-decoration: none; }
     a:hover { text-decoration: underline; }
@@ -111,7 +111,7 @@
       align-items: center;
       gap: 8px;
       padding: 6px 20px;
-      font-size: 0.82rem;
+      font-size: 0.875rem;
       color: var(--muted);
       transition: color 0.15s, background 0.15s;
       border-left: 2px solid transparent;
@@ -147,15 +147,17 @@
       scroll-margin-top: 32px;
     }
     .section-title {
-      font-size: 1.4rem;
-      font-weight: 700;
+      font-size: 1.7rem;
+      font-weight: 800;
       color: var(--text);
-      margin-bottom: 6px;
+      letter-spacing: -0.025em;
+      margin-bottom: 8px;
     }
     .section-sub {
       color: var(--muted);
-      font-size: 0.88rem;
-      margin-bottom: 24px;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+      line-height: 1.7;
     }
 
     /* endpoint card */
@@ -184,16 +186,17 @@
       color: var(--text);
     }
     .endpoint-title {
-      font-size: 1.05rem;
-      font-weight: 600;
+      font-size: 1.15rem;
+      font-weight: 700;
       color: var(--text);
-      margin-bottom: 6px;
+      letter-spacing: -0.015em;
+      margin-bottom: 8px;
     }
     .endpoint-desc {
       color: var(--muted);
-      font-size: 0.875rem;
+      font-size: 0.95rem;
       margin-bottom: 20px;
-      line-height: 1.7;
+      line-height: 1.75;
     }
 
     /* params table */

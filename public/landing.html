@@ -11,7 +11,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   <style>
     /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
@@ -47,7 +47,7 @@
       --glow:     rgba(46, 147, 111, 0.08);
 
       /* Type */
-      --font:     'Red Hat Text', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
 
       /* Shape */
@@ -64,8 +64,8 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--font);
-      font-size: 15px;
-      line-height: 1.65;
+      font-size: 17px;
+      line-height: 1.75;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
@@ -102,7 +102,7 @@
     }
     .nav-logo {
       display: flex; align-items: center; gap: 9px;
-      font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em;
+      font-weight: 700; font-size: 1.1rem; letter-spacing: -0.025em;
       color: var(--text);
     }
     .logo-mark { display: block; flex-shrink: 0; }
@@ -110,7 +110,7 @@
       display: flex; align-items: center; gap: 4px;
     }
     .nav-links a {
-      color: var(--muted); font-size: 0.875rem; font-weight: 500;
+      color: var(--muted); font-size: 0.9rem; font-weight: 500;
       padding: 7px 13px; border-radius: 7px;
       transition: color 0.15s, background 0.15s;
     }
@@ -192,11 +192,11 @@
 
     /* Headline */
     .hero h1 {
-      font-size: clamp(2.6rem, 5vw, 4rem);
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.025em;
-      margin-bottom: 22px;
+      font-size: clamp(3rem, 5.5vw, 5rem);
+      font-weight: 800;
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+      margin-bottom: 26px;
     }
     .hero h1 .line-1 { display: block; color: var(--text); }
     .hero h1 .line-2 {
@@ -208,9 +208,10 @@
     }
 
     .hero-sub {
-      font-size: 1.05rem; color: var(--muted);
-      line-height: 1.75; max-width: 480px;
-      margin-bottom: 36px;
+      font-size: 1.2rem; color: var(--muted);
+      line-height: 1.75; max-width: 500px;
+      margin-bottom: 40px;
+      font-weight: 400;
     }
 
     .hero-btns {
@@ -220,8 +221,8 @@
     .btn-primary {
       background: var(--grad);
       color: #fff; border: none;
-      padding: 13px 26px; border-radius: var(--r);
-      font-size: 0.9rem; font-weight: 700;
+      padding: 14px 28px; border-radius: var(--r);
+      font-size: 0.975rem; font-weight: 700;
       letter-spacing: -0.01em;
       display: inline-flex; align-items: center; gap: 8px;
       transition: opacity 0.15s, box-shadow 0.15s;
@@ -230,8 +231,8 @@
     .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 32px rgba(46,147,111,0.35); }
     .btn-ghost {
       background: transparent; color: var(--text);
-      padding: 12px 22px; border-radius: var(--r);
-      border: 1px solid var(--border2); font-size: 0.9rem; font-weight: 500;
+      padding: 13px 24px; border-radius: var(--r);
+      border: 1px solid var(--border2); font-size: 0.975rem; font-weight: 500;
       display: inline-flex; align-items: center; gap: 8px;
       transition: border-color 0.15s, background 0.15s;
     }
@@ -246,12 +247,12 @@
     }
     .trust-item { display: flex; flex-direction: column; }
     .trust-val {
-      font-size: 1.65rem; font-weight: 800; letter-spacing: -0.04em;
+      font-size: 1.85rem; font-weight: 800; letter-spacing: -0.04em;
       color: var(--text);
     }
     .trust-lbl {
-      font-size: 0.71rem; color: var(--dim);
-      text-transform: uppercase; letter-spacing: 0.09em; margin-top: 2px;
+      font-size: 0.75rem; color: var(--dim);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px;
     }
 
     /* ─── HERO YANTRA ──────────────────────────────────────────────────────── */
@@ -343,18 +344,18 @@
     .metric:last-child { border-right: none; }
     .metric:hover { background: var(--surface2); }
     .metric-val {
-      font-size: 2rem; font-weight: 800; letter-spacing: -0.04em;
+      font-size: 2.4rem; font-weight: 800; letter-spacing: -0.04em;
       color: var(--text);
       line-height: 1;
     }
-    .metric-lbl { font-size: 0.76rem; color: var(--muted); margin-top: 6px; }
+    .metric-lbl { font-size: 0.82rem; color: var(--muted); margin-top: 8px; font-weight: 500; }
 
     /* ─── SECTIONS ──────────────────────────────────────────────────────────── */
     section { padding: 96px 0; }
     .section-label {
       display: inline-flex; align-items: center; gap: 8px;
-      font-size: 0.72rem; font-weight: 700;
-      color: var(--sky); letter-spacing: 0.12em;
+      font-size: 0.76rem; font-weight: 700;
+      color: var(--sky); letter-spacing: 0.1em;
       text-transform: uppercase; margin-bottom: 16px;
     }
     .section-label::before {
@@ -363,13 +364,13 @@
       background: var(--sky); opacity: 0.7;
     }
     .sh2 {
-      font-size: clamp(1.85rem, 3.5vw, 2.75rem);
-      font-weight: 700; letter-spacing: -0.02em; line-height: 1.15;
-      margin-bottom: 16px;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+      margin-bottom: 18px;
     }
     .ssub {
-      font-size: 1.02rem; color: var(--muted); line-height: 1.75;
-      max-width: 520px; margin-bottom: 56px;
+      font-size: 1.1rem; color: var(--muted); line-height: 1.75;
+      max-width: 540px; margin-bottom: 56px;
     }
 
     /* ─── FEATURE GRID ──────────────────────────────────────────────────────── */
@@ -405,10 +406,10 @@
       border: 1px solid rgba(46,147,111,0.15);
     }
     .feat-title {
-      font-size: 0.93rem; font-weight: 700;
-      letter-spacing: -0.01em; margin-bottom: 9px;
+      font-size: 1rem; font-weight: 700;
+      letter-spacing: -0.015em; margin-bottom: 10px;
     }
-    .feat-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.65; }
+    .feat-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
 
     /* ─── HOW IT WORKS ──────────────────────────────────────────────────────── */
     .how-section { background: var(--bg-alt); }
@@ -434,10 +435,10 @@
       font-family: var(--mono); letter-spacing: 0;
     }
     .step-title {
-      font-size: 1rem; font-weight: 700; letter-spacing: -0.02em;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
       margin-bottom: 10px;
     }
-    .step-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.68; }
+    .step-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.72; }
 
     /* ─── CODE SECTION ──────────────────────────────────────────────────────── */
     .code-section .container {
@@ -582,22 +583,22 @@
       letter-spacing: 0.08em; text-transform: uppercase;
     }
     .plan-name {
-      font-size: 0.8rem; font-weight: 700;
+      font-size: 0.82rem; font-weight: 700;
       color: var(--muted); text-transform: uppercase;
       letter-spacing: 0.1em; margin-bottom: 12px;
     }
     .plan-price-row { margin-bottom: 6px; }
     .plan-price {
-      font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em;
+      font-size: 2.6rem; font-weight: 800; letter-spacing: -0.04em;
     }
-    .plan-price sup { font-size: 1rem; font-weight: 700; vertical-align: super; }
-    .plan-price-note { font-size: 0.78rem; color: var(--dim); margin-bottom: 20px; }
+    .plan-price sup { font-size: 1.1rem; font-weight: 700; vertical-align: super; }
+    .plan-price-note { font-size: 0.82rem; color: var(--dim); margin-bottom: 20px; }
     .plan-divider { height: 1px; background: var(--border); margin-bottom: 20px; }
     .plan-features { flex: 1; }
     .plan-feature {
-      font-size: 0.81rem; color: var(--muted);
+      font-size: 0.88rem; color: var(--muted);
       display: flex; align-items: flex-start; gap: 10px;
-      margin-bottom: 9px; line-height: 1.45;
+      margin-bottom: 10px; line-height: 1.5;
     }
     .plan-feature::before {
       content: '✓';
@@ -606,8 +607,8 @@
     }
     .plan-cta {
       margin-top: 24px;
-      padding: 11px 20px; border-radius: var(--r);
-      font-size: 0.85rem; font-weight: 700;
+      padding: 13px 20px; border-radius: var(--r);
+      font-size: 0.9rem; font-weight: 700;
       width: 100%; border: none; transition: opacity 0.15s, box-shadow 0.15s;
     }
     .plan-cta-primary {
@@ -634,11 +635,11 @@
     }
     .enrich-item:hover { background: var(--surface); }
     .enrich-label {
-      font-size: 0.72rem; font-weight: 700; color: var(--sky);
+      font-size: 0.76rem; font-weight: 700; color: var(--sky);
       text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
     }
-    .enrich-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
-    .enrich-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+    .enrich-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.015em; }
+    .enrich-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
 
     /* ─── FINAL CTA ─────────────────────────────────────────────────────────── */
     .cta-section {
@@ -658,7 +659,7 @@
       max-width: var(--max); margin: 0 auto; padding: 96px 32px;
       text-align: center; position: relative; z-index: 1;
     }
-    .cta-inner .sh2 { font-size: clamp(2rem, 4vw, 3.2rem); }
+    .cta-inner .sh2 { font-size: clamp(2.4rem, 4.5vw, 3.8rem); }
     .cta-inner .ssub { margin: 0 auto 40px; text-align: center; }
     .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
@@ -680,8 +681,8 @@
     }
     .footer-logo-mark { display: flex; align-items: center; }
     .footer-tagline {
-      font-size: 0.84rem; color: var(--muted); line-height: 1.7;
-      max-width: 220px; margin-bottom: 24px;
+      font-size: 0.9rem; color: var(--muted); line-height: 1.7;
+      max-width: 240px; margin-bottom: 24px;
     }
     .footer-status {
       display: inline-flex; align-items: center; gap: 7px;
@@ -695,14 +696,14 @@
       width: 5px; height: 5px; border-radius: 50%; background: var(--green);
     }
     .footer-col h4 {
-      font-size: 0.78rem; font-weight: 700; color: var(--muted);
+      font-size: 0.8rem; font-weight: 700; color: var(--muted);
       text-transform: uppercase; letter-spacing: 0.09em;
       margin-bottom: 16px;
     }
     .footer-col ul { list-style: none; }
-    .footer-col li { margin-bottom: 10px; }
+    .footer-col li { margin-bottom: 11px; }
     .footer-col a {
-      font-size: 0.84rem; color: var(--dim);
+      font-size: 0.9rem; color: var(--dim);
       transition: color 0.15s;
     }
     .footer-col a:hover { color: var(--text); }
@@ -712,9 +713,9 @@
       border-top: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
     }
-    .footer-bottom p { font-size: 0.78rem; color: var(--dim); }
+    .footer-bottom p { font-size: 0.82rem; color: var(--dim); }
     .footer-bottom-links { display: flex; gap: 20px; }
-    .footer-bottom-links a { font-size: 0.78rem; color: var(--dim); transition: color 0.15s; }
+    .footer-bottom-links a { font-size: 0.82rem; color: var(--dim); transition: color 0.15s; }
     .footer-bottom-links a:hover { color: var(--muted); }
 
     /* ─── SIGNUP MODAL ──────────────────────────────────────────────────────── */
@@ -743,19 +744,19 @@
     }
     .modal-close:hover { color: var(--text); background: var(--surface2); }
     .modal h2 {
-      font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em;
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
       margin-bottom: 8px;
     }
-    .modal-sub { font-size: 0.875rem; color: var(--muted); margin-bottom: 28px; }
+    .modal-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 28px; }
     .modal label {
-      display: block; font-size: 0.78rem; font-weight: 600;
+      display: block; font-size: 0.82rem; font-weight: 600;
       color: var(--muted); margin-bottom: 6px;
     }
     .modal input[type=email] {
       width: 100%;
       background: var(--bg); border: 1px solid var(--border2);
       border-radius: var(--r); color: var(--text);
-      padding: 11px 14px; font-size: 0.9rem;
+      padding: 12px 16px; font-size: 0.95rem;
       font-family: var(--font); outline: none; margin-bottom: 20px;
       transition: border-color 0.15s, box-shadow 0.15s;
     }

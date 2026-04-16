@@ -6,7 +6,7 @@
   <title>GeoClear — Developer Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Text:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg: #faf9f7; --bg-alt: #f2f0ed; --surface: #ffffff; --surface2: #f0ebe4;
@@ -14,11 +14,11 @@
       --text: #242220; --muted: #7a6e68; --dim: #a58979;
       --sky: #2e936f; --indigo: #956bad; --green: #2e936f; --amber: #c6a673; --red: #eb8771; --violet: #8cb0b2;
       --grad: linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
-      --font: 'Red Hat Text', -apple-system, system-ui, sans-serif;
+      --font: 'Inter', -apple-system, system-ui, sans-serif;
       --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.7; min-height: 100vh; }
     a { color: var(--sky); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
@@ -33,14 +33,14 @@
     .nav-links a:hover { color: var(--text); text-decoration: none; }
 
     main { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; }
-    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
-    .subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 32px; }
+    h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 6px; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin-bottom: 32px; }
 
     .card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 24px; margin-bottom: 20px;
     }
-    .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
 
     /* ── PRICING CARDS ── */
     .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
