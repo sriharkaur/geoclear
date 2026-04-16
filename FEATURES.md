@@ -154,12 +154,10 @@ All require `X-Admin-Secret` header.
 
 | Source | Coverage | Addresses | Location |
 |--------|----------|-----------|----------|
-| NAD r22 | 120M+ US addresses, ~47 states | 120,160,305 | `/data/nad.db` (91GB) on prod |
-| Overture Maps gap-fill | FL, MI, NJ, NV, NH (in prod) | included in nad.db | prod `/data/nad.db` |
-| Overture Maps full run | FL, CA, MI, NJ, PA, MS, SC, GA, SD, HI, LA, NV, NH + more | 64,900,000 | `data/overture-additions.db` (37GB, local — upload to prod in progress) |
+| NAD r22 + Overture full merge | 198M+ US addresses, all covered states | 198,657,535 | `/data/nad.db` on prod — all 16 indexes live as of 2026-04-16 |
 | Dev sample DB | All 50 states, 20K addrs/state | ~983,000 | `data/dev.db` (572MB, local only — set `NAD_DB=data/dev.db`) |
 
-**In progress:** 2.57GB gzipped TSV (`overture.tsv.gz`) uploaded to prod `/data`. Import running via `worker_threads` — expected final count ~185M.
+**Complete:** Overture Maps full gap-fill merged into prod nad.db — **198,657,535 addresses**. All 16 indexes rebuilt (completed 01:59 UTC 2026-04-16).
 
 ---
 
@@ -192,7 +190,7 @@ All require `X-Admin-Secret` header.
 ---
 
 ## Not Yet Built (see QUEUE.md)
-- Overture merge completion (⏳ import running — count at ~120M, target ~185M)
+- Overture merge completion ✅ DONE — 198,657,535 addresses, all 16 indexes live
 - Usage dashboard for customers (show their own usage over time)
 - CSV upload → enriched CSV download
 - Bulk async + webhooks for 10M+ record jobs

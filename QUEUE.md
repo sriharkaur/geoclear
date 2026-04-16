@@ -1,6 +1,54 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-14 (session 5)_
+_Last updated: 2026-04-15 (session 6 — SWOT analysis)_
+
+---
+
+## 🎯 SWOT PRIORITIES — Next 30 Days (from 2026-04-15 analysis)
+> Source: `strategy/2026-04-15-swot-analysis.md`
+
+### Top 5 — Do in this order
+
+- [ ] **P1 — RapidAPI marketplace listing** — upload `openapi.yaml`, write enrichment-led description, set pricing tiers. ~60 min. Success: listing live within 7 days, first API call from RapidAPI within 14 days.
+- [ ] **P2 — Ship `/docs` page** — endpoint reference with curl + Node.js examples. HN launch blocker. Success: all public endpoints documented, HN launch unblocked.
+- [ ] **P3 — Warm outreach to 20 target companies** — logistics, proptech, fintech. Use template in `AddressAPIBusinessGTM.md`. Success: 20 sent, 5 replies, 1 paid trial within 30 days.
+- [ ] **P4 — Usage dashboard in customer portal** — surface `GET /v1/me` data visually in `/portal.html`; upgrade CTA at 70% quota. Success: dashboard live, free→paid conversion tracked.
+- [ ] **P5 — Complete + announce Overture 185M merge** — verify row count, post HN + LinkedIn announcement. Success: 185M+ confirmed, announcement posted.
+
+### Enrichment Monetization — "Enrichment = Pro" conversion lever (S1 + W2)
+
+- [ ] **Return enrichment fields as `null` for free/starter** — add `census_tract`, `flood_zone`, `flood_sfha` to every `/api/address` response; return `null` for non-pro tiers with `"_enrichment": { "available": true, "required_tier": "pro", "upgrade_url": "..." }`. Makes missing data visible at the highest-intent moment.
+- [ ] **Soft-gate `/api/enrich` for free/starter** — replace hard 403 with 402 that returns example enriched data alongside the error: `{ "error": "enrichment_requires_pro", "example_response": { "census_tract": "4015.02", "flood_zone": "AE", ... }, "upgrade_url": "..." }`. Developer already showed intent by calling the endpoint — give them a taste.
+- [ ] **Enrichment preview in portal** — add "What Pro unlocks" section to `/portal.html` showing a live example response with all enrichment fields populated. Static sample address is fine.
+- [ ] **Reframe pricing page** — restructure pricing grid so primary axis is enrichment access (census tract, FEMA flood zone, residential flag), not lookup volume. Volume limits become secondary. Answer "do I need enrichment?" not "how many lookups?"
+- [ ] **Fintech/insurance vertical outreach** — FEMA flood zone is a compliance line item for mortgage lenders (NFIP), property insurers, proptech. Outreach message: "flood zone determination API, self-serve, $249/mo" — not generic "address API." Target: lenders, insurers, proptech platforms.
+
+### Infrastructure — CDN & Availability (T3)
+
+> **Context:** Current setup is Cloudflare DNS-only (grey cloud) → Render origin. This means every request hits Render directly — no edge caching, no DDoS mitigation, no failover. Fine for launch, but a liability once paying customers depend on uptime. The fix is enabling Cloudflare proxy (orange cloud), but it has one hard prerequisite that will cause an outage if skipped.
+>
+> **Critical SSL prerequisite before enabling proxy:** Cloudflare's default SSL mode is "Flexible" — it encrypts browser→Cloudflare but sends plain HTTP to the origin. Render's custom domain cert expects HTTPS end-to-end. If you flip the orange cloud with Flexible SSL, the Render cert chain breaks and the site goes down. Set SSL/TLS mode to **Full (strict)** in Cloudflare dashboard *before* enabling proxy. Verify on `geoclear-staging.onrender.com` first — staging has the same Render cert setup.
+
+- [ ] **Enable Cloudflare proxy (orange cloud) on geoclear.io**
+  - Current: DNS-only (grey cloud) — zero CDN, zero DDoS protection, all traffic hits Render origin
+  - Benefit: edge caching, DDoS mitigation, Cloudflare's global network absorbs spikes before they reach Render
+  - **Steps (do in order):**
+    1. Cloudflare dashboard → SSL/TLS → set mode to **Full (strict)**
+    2. Verify `geoclear-staging.onrender.com` still resolves correctly
+    3. Flip geoclear.io CNAME from grey cloud → orange cloud
+    4. Run smoke test: `curl https://geoclear.io/api/health`
+    5. Check response headers for `CF-Ray:` — confirms traffic is going through Cloudflare edge
+
+- [ ] **Add Cloudflare cache rules for read-only API responses**
+  - Candidates: `/api/stats` (changes ~hourly), `/api/states` (changes on data merge), `/api/health` (near-static)
+  - TTL: 60–300s is sufficient — absorbs traffic spikes without serving stale data to paying customers
+  - Configure via **Cloudflare Cache Rules** (not origin `Cache-Control` headers) so it's managed in one place
+  - Do NOT cache `/api/address`, `/api/suggest`, or any authenticated endpoint — responses are per-key and per-query
+
+- [ ] **Evaluate Render autoscaling or standby instance** *(defer until first enterprise customer)*
+  - Current single-instance setup: a deploy or process crash = 30–60s downtime
+  - Render paid plans support multiple instances with zero-downtime deploys
+  - Not urgent until an enterprise customer signs an uptime SLA — flag for T2 milestone
 
 ---
 
@@ -48,7 +96,7 @@ _Last updated: 2026-04-14 (session 5)_
 - [x] `GET /v1/admin/db-probe` — diagnostic endpoint: tests write access, schema inspection, test INSERT ✅
 - [x] Fixed write endpoints (`import-tsv-gz`, `import-tsv-gz-cached`, `merge`) — nad.db was opened readonly; now open separate writable connection per operation ✅
 - [x] **Overture full gap-fill import** — 64.9M addresses across FL(16.1M), CA(27.1M), MI(4.7M), NJ(4.9M), PA(2.3M), MS(2.3M), SC, GA, SD, HI, LA, NV, NH + more — in `overture-additions.db` (37GB) ✅
-- [ ] **Merge Overture data into prod** — 2.57GB TSV uploaded to `/data/overture.tsv.gz`; import running via worker_threads (non-blocking). ⏳ IN PROGRESS — monitor `/api/stats` for count to reach ~185M
+- [x] **Merge Overture data into prod** — 198,657,535 addresses in nad.db. All 16 indexes rebuilt (completed 01:59 UTC 2026-04-16). ✅
 - [ ] Fill remaining state gaps via state GIS portals (AL, AK — not in Overture)
 - [ ] Address disambiguation — rank candidates when multiple "123 Main St" exist
 - [ ] Coverage declaration per response — which states have full/partial/no coverage
