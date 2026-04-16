@@ -903,16 +903,8 @@ app.post('/v1/admin/relink-fks', adminAuth, (req, res) => {
   const dbPath   = path.join(DATA_DIR, 'nad.db');
   const { Worker } = require('worker_threads');
 
-  // Quick count of unlinked rows before starting
-  let unlinked = 0;
-  try {
-    const probe = require('better-sqlite3')(dbPath, { readonly: true });
-    unlinked = probe.prepare('SELECT COUNT(*) as n FROM addresses WHERE state_id IS NULL').get().n;
-    probe.close();
-  } catch (_) {}
-
-  console.log(`[relink-fks] Starting relink — ${unlinked.toLocaleString()} unlinked rows`);
-  res.json({ ok: true, message: `FK relink started. ${unlinked.toLocaleString()} rows to process. Check console logs for progress.`, unlinked });
+  console.log('[relink-fks] Starting relink worker');
+  res.json({ ok: true, message: 'FK relink started in background. Monitor console logs for progress. /api/states will update when complete.' });
 
   const worker = new Worker(path.join(__dirname, 'relink-worker.js'), { workerData: { dbPath } });
   worker.on('message', msg => {
