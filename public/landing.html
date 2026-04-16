@@ -667,6 +667,28 @@
     .cta-inner .ssub { margin: 0 auto 40px; text-align: center; }
     .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
+    /* ─── DATA SOURCES STRIP ────────────────────────────────────────────────── */
+    .sources-strip {
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 32px;
+      overflow: hidden;
+    }
+    .sources-inner {
+      max-width: var(--max); margin: 0 auto;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .sources-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--dim);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+    .source-item {
+      font-size: 0.78rem; color: var(--muted);
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .source-sep { color: var(--border3); font-size: 0.9rem; }
+
     /* ─── FOOTER ────────────────────────────────────────────────────────────── */
     footer {
       border-top: 1px solid var(--border);
@@ -968,7 +990,7 @@
     <div class="hero-text">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        Now live — 120M+ addresses indexed
+        Now live — 198M+ verified US addresses
       </div>
 
       <h1>
@@ -977,9 +999,9 @@
       </h1>
 
       <p class="hero-sub">
-        120 million US addresses. County FIPS, census tracts, FEMA flood zones,
-        and coordinates — returned in under 5ms. One endpoint, one key, no
-        infrastructure to manage.
+        198 million verified US addresses — enriched with flood zones, census tracts,
+        county codes, coordinates, and timezone in a single API call. Under 5ms.
+        One key. Works from anywhere in the world.
       </p>
 
       <div class="hero-btns">
@@ -995,7 +1017,7 @@
 
       <div class="hero-trust">
         <div class="trust-item">
-          <span class="trust-val">120M+</span>
+          <span class="trust-val">198M+</span>
           <span class="trust-lbl">US addresses</span>
         </div>
         <div class="trust-item">
@@ -1043,6 +1065,8 @@
   <span class="tf">"lat"</span>: <span class="tn">38.8977</span>, <span class="tf">"lon"</span>: <span class="tn">-77.0366</span>,
   <span class="tf">"timezone"</span>: <span class="ts">"America/New_York"</span>,
   <span class="tf">"fema_zone"</span>: <span class="ts">"X"</span>,
+  <span class="tf">"rdi"</span>: <span class="ts">"Commercial"</span>,
+  <span class="tf">"confidence"</span>: <span class="tn">99</span>,
   <span class="tf">"status"</span>: <span class="tok">"verified"</span>
 <span class="dim">}</span><span class="cursor"></span>
         </div>
@@ -1056,7 +1080,7 @@
 <div class="metrics-strip">
   <div class="metrics-inner">
     <div class="metric">
-      <div class="metric-val" data-count="120" data-suffix="M+" data-prefix="">120M+</div>
+      <div class="metric-val" data-count="198" data-suffix="M+" data-prefix="">198M+</div>
       <div class="metric-lbl">Verified US addresses</div>
     </div>
     <div class="metric">
@@ -1074,14 +1098,34 @@
   </div>
 </div>
 
+<!-- ──────────────────────────────────────────────────────────────── DATA SOURCES -->
+<div class="sources-strip">
+  <div class="sources-inner">
+    <span class="sources-label">Authoritative data from</span>
+    <span class="source-item">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><path d="M6 2v4l2.5 2"/></svg>
+      USDOT National Address Database
+    </span>
+    <span class="source-sep">·</span>
+    <span class="source-item">US Census Bureau TIGER/Line</span>
+    <span class="source-sep">·</span>
+    <span class="source-item">FEMA National Flood Hazard Layer</span>
+    <span class="source-sep">·</span>
+    <span class="source-item">Overture Maps Foundation</span>
+    <span class="source-sep">·</span>
+    <span class="source-item">Updated quarterly</span>
+  </div>
+</div>
+
 <!-- ──────────────────────────────────────────────────────────────── FEATURES -->
 <section class="features-section" id="features">
   <div class="container">
     <div class="section-label">Features</div>
-    <h2 class="sh2">What you get with<br>every API call</h2>
+    <h2 class="sh2">Everything an address<br>should tell you</h2>
     <p class="ssub">
-      Not just verification — enrichment. Every address comes back with the data your
-      compliance, underwriting, or routing logic actually needs.
+      Not just valid or invalid — a complete data package. Every address comes back verified,
+      geocoded, and enriched with 8 fields. Ready for compliance, routing, risk scoring, or
+      any workflow that needs to act on a location.
     </p>
 
     <div class="feat-grid" data-fade-group>
@@ -1093,7 +1137,7 @@
           </svg>
         </div>
         <div class="feat-title">Address Verification</div>
-        <div class="feat-desc">Validate and standardize any US address against 120M+ records. Fuzzy match handles typos and abbreviations automatically.</div>
+        <div class="feat-desc">Validate and standardize any US address against 198M+ verified records. Fuzzy matching handles typos, abbreviations, and partial inputs automatically.</div>
       </div>
       <div class="feat-card">
         <div class="feat-icon">
@@ -1103,7 +1147,7 @@
           </svg>
         </div>
         <div class="feat-title">County + FIPS Codes</div>
-        <div class="feat-desc">Every address returns its county name and 5-digit FIPS code — essential for compliance, tax routing, and government reporting.</div>
+        <div class="feat-desc">Every address returns its county name and 5-digit FIPS code — the universal jurisdiction identifier required by US banking, tax, and government reporting systems.</div>
       </div>
       <div class="feat-card">
         <div class="feat-icon">
@@ -1113,7 +1157,7 @@
           </svg>
         </div>
         <div class="feat-title">Census Tract Data</div>
-        <div class="feat-desc">Census tract and block group enrichment for CRA compliance, demographic analysis, and financial eligibility determination.</div>
+        <div class="feat-desc">Official US Census tract and block group identifiers — required for fair lending compliance (CRA), demographic analysis, and financial eligibility determination.</div>
       </div>
       <div class="feat-card">
         <div class="feat-icon">
@@ -1122,8 +1166,8 @@
             <path d="M2 15.5C4 13.5 6 17.5 8 15.5C10 13.5 12 17.5 14 15.5C15.5 13.9 16.5 17.5 16 16"/>
           </svg>
         </div>
-        <div class="feat-title">FEMA Flood Zones</div>
-        <div class="feat-desc">Instant flood zone classification (A, AE, X, etc.) for insurance underwriting, mortgage lending, and real estate applications.</div>
+        <div class="feat-title">Flood Zone Classification</div>
+        <div class="feat-desc">Instant flood risk classification (Zone A, AE, X, VE, etc.) from the US government's National Flood Hazard Layer — required for mortgage lending, property insurance, and real estate decisions.</div>
       </div>
       <div class="feat-card">
         <div class="feat-icon">
@@ -1145,7 +1189,7 @@
           </svg>
         </div>
         <div class="feat-title">Bulk Processing</div>
-        <div class="feat-desc">Verify up to 1,000 addresses per request. Clean entire datasets in seconds, not hours. No rate limiting on batch operations.</div>
+        <div class="feat-desc">Verify and enrich up to 1,000 addresses per request. Clean entire datasets — CRM exports, property lists, customer uploads — in seconds, not hours.</div>
       </div>
     </div>
   </div>
@@ -1156,23 +1200,23 @@
   <div class="container">
     <div class="section-label">How it works</div>
     <h2 class="sh2">Up and running<br>in under three minutes</h2>
-    <p class="ssub" style="margin-bottom: 56px;">No client library to install, no OAuth dance, no webhook configuration. If you can make an HTTP request, you're done.</p>
+    <p class="ssub" style="margin-bottom: 56px;">No SDK to install, no OAuth dance, no configuration files. One HTTPS request from any language, any country. If you can call a REST API, you're ready in minutes.</p>
 
     <div class="steps" data-fade-group>
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-title">Get your API key</div>
-        <div class="step-desc">Sign up with an email address. Your free key is issued instantly — 10,000 lookups per month, no credit card required.</div>
+        <div class="step-desc">Enter your email. Your free key arrives instantly — 10,000 lookups per month, no credit card, no approval process. Open to teams worldwide.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-title">Make a request</div>
-        <div class="step-desc">Pass an address as query parameters. The API matches it against 120M records and returns a standardized, enriched response in milliseconds.</div>
+        <div class="step-desc">Pass a street address as query parameters. GeoClear matches it against 198M verified records and returns a fully enriched response in under 5ms.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-title">Use the data</div>
-        <div class="step-desc">Every response includes verified address fields, coordinates, county FIPS, census tract, FEMA flood zone, and timezone — ready to use.</div>
+        <div class="step-desc">Every response includes verified address, coordinates, county code, census tract, flood zone, timezone, and confidence score — structured JSON, ready to use immediately.</div>
       </div>
     </div>
   </div>
@@ -1195,9 +1239,9 @@
       <div class="uc-copy">
         <h2 class="sh2" id="uc-h2">One request.<br>Eight fields back.</h2>
         <p class="ssub" id="uc-desc">
-          REST + JSON. No SDK required, no configuration, no query language.
-          Send a street address, get back county FIPS, census tract, coordinates, flood zone,
-          and timezone — every time.
+          Pure REST + JSON. No SDK, no configuration, no query language to learn.
+          Send a street address, get back county code, census tract, coordinates,
+          flood zone, timezone, and confidence score — every time, from any stack.
         </p>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1293,6 +1337,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   <span style="color:var(--sky)">"fema_zone"</span>:     <span style="color:#86EFAC">"X"</span>,
   <span style="color:var(--sky)">"plus4"</span>:         <span style="color:#86EFAC">"1901"</span>,
   <span style="color:var(--sky)">"rdi"</span>:           <span style="color:#86EFAC">"Commercial"</span>,
+  <span style="color:var(--sky)">"confidence"</span>:    <span style="color:#FCD34D">97</span>,
   <span style="color:var(--sky)">"status"</span>:        <span style="color:var(--green)">"verified"</span>
 <span style="color:var(--dim)">}</span></pre>
       </div>
@@ -1305,7 +1350,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   <div class="container">
     <div class="section-label">Live demo</div>
     <h2 class="sh2" style="margin-bottom: 12px;">Try it yourself</h2>
-    <p class="ssub">Search any US address. Results are live — served directly from our API.</p>
+    <p class="ssub">Search any US address. Results are live — served directly from production, showing exactly what your application would receive.</p>
 
     <div class="demo-card">
       <div class="demo-header">
@@ -1335,38 +1380,49 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <div class="section-label">Enrichment data</div>
     <h2 class="sh2">One address. Eight data points.</h2>
     <p class="ssub" style="margin-bottom: 48px;">
-      Every lookup returns a complete picture — not just what the address is, but everything you need to act on it.
+      Every lookup returns a complete intelligence package — not just whether an address exists,
+      but everything your product needs to act on it. No extra calls, no joins, no lookups.
     </p>
     <div class="enrich-grid" data-fade-group>
       <div class="enrich-item">
         <div class="enrich-label">County</div>
-        <div class="enrich-title">County Name + FIPS</div>
-        <div class="enrich-desc">Full county name and 5-digit FIPS code for compliance, tax jurisdiction routing, and government reporting workflows.</div>
+        <div class="enrich-title">County Name + FIPS Code</div>
+        <div class="enrich-desc">Full county name and 5-digit FIPS code — the standard jurisdiction identifier in US banking, tax systems, government reporting, and compliance workflows.</div>
       </div>
       <div class="enrich-item">
         <div class="enrich-label">Census</div>
         <div class="enrich-title">Census Tract + Block Group</div>
-        <div class="enrich-desc">Official census tract and block group identifiers. Required for CRA compliance, underwriting, and demographic segmentation.</div>
+        <div class="enrich-desc">Official US Census tract and block group identifiers — required for fair lending (CRA) compliance, demographic analysis, and financial eligibility determination.</div>
       </div>
       <div class="enrich-item">
-        <div class="enrich-label">FEMA</div>
+        <div class="enrich-label">Flood Risk</div>
         <div class="enrich-title">Flood Zone Classification</div>
-        <div class="enrich-desc">FEMA flood zone designation (A, AE, X, VE, etc.) for insurance pricing, mortgage requirements, and risk scoring.</div>
+        <div class="enrich-desc">Official flood zone designation (Zone A, AE, X, VE, etc.) from the US National Flood Hazard Layer — the data behind every US mortgage flood determination and property insurance decision.</div>
       </div>
       <div class="enrich-item">
         <div class="enrich-label">Timezone</div>
-        <div class="enrich-title">IANA Timezone ID</div>
-        <div class="enrich-desc">Precise IANA timezone identifier (e.g. America/Chicago). Never calculate timezones from zip codes again.</div>
+        <div class="enrich-title">IANA Timezone</div>
+        <div class="enrich-desc">Precise IANA timezone string (e.g. <em>America/Chicago</em>). Accurate across daylight saving boundaries — no more calculating timezone from ZIP code.</div>
       </div>
       <div class="enrich-item">
         <div class="enrich-label">Geocode</div>
         <div class="enrich-title">Latitude + Longitude</div>
-        <div class="enrich-desc">High-precision coordinates for mapping, proximity searches, delivery routing, and spatial analysis.</div>
+        <div class="enrich-desc">High-precision coordinates for mapping, proximity search, delivery routing, spatial analysis, and any location-aware feature your product needs.</div>
       </div>
       <div class="enrich-item">
-        <div class="enrich-label">Delivery</div>
+        <div class="enrich-label">Delivery type</div>
         <div class="enrich-title">RDI Classification</div>
-        <div class="enrich-desc">Residential, Commercial, or PO Box classification. Critical for shipping cost calculation and address validation in e-commerce.</div>
+        <div class="enrich-desc">Residential, Commercial, or PO Box — automatically classified. Essential for shipping cost calculation, carrier selection, and e-commerce address validation.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">Confidence</div>
+        <div class="enrich-title">Match Confidence Score</div>
+        <div class="enrich-desc">A 0–100 accuracy score returned with every match. Know how reliable each result is before acting on it — critical for automated pipelines and data quality workflows.</div>
+      </div>
+      <div class="enrich-item">
+        <div class="enrich-label">ZIP+4</div>
+        <div class="enrich-title">Full ZIP+4 Postal Code</div>
+        <div class="enrich-desc">The complete 9-digit ZIP+4 code for delivery precision, USPS mail pre-sorting, and postal routing — derived automatically, no extra call needed.</div>
       </div>
     </div>
   </div>
@@ -1379,6 +1435,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <h2 class="sh2">Simple, usage-based pricing</h2>
     <p class="ssub" style="margin-bottom: 48px;">
       Start free. Scale as you grow. No per-seat fees, no setup costs, no long-term contracts.
+      USD pricing — open to teams anywhere in the world.
     </p>
 
     <!-- Volume calculator -->
@@ -1469,7 +1526,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     </div>
 
     <p style="text-align:center;font-size:0.82rem;color:var(--dim);margin-top:28px;">
-      Need more than 5M lookups/month? <a href="mailto:hello@geoclear.io" style="color:var(--sky);">Talk to us about Enterprise →</a>
+      Need unpredictable volume? <a href="#pricing" onclick="openCheckout('payg')" style="color:var(--sky);">Pay-as-you-go at $0.001/lookup</a> — no monthly commitment. &nbsp;|&nbsp; Need more than 5M/month? <a href="mailto:hello@geoclear.io" style="color:var(--sky);">Talk to us about Enterprise →</a>
     </p>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-top:32px;padding-top:28px;border-top:1px solid var(--border);flex-wrap:wrap;">
@@ -1513,8 +1570,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <span class="grad-text">product has been missing.</span>
     </h2>
     <p class="ssub">
-      Join developers who rely on GeoClear for address verification, enrichment, and compliance data.
-      Free tier available. No credit card required.
+      Used by teams in insurance, logistics, fintech, and real estate — building on US location data
+      from anywhere in the world. Free tier: 10,000 lookups/month. No credit card. No lock-in.
     </p>
     <div class="cta-btns">
       <button class="btn-primary" style="font-size:1rem;padding:15px 32px;" onclick="openModal()">
@@ -1542,9 +1599,12 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         GeoClear
       </div>
       <p class="footer-tagline">
-        The address intelligence layer for developers building on US location data.
+        The complete US address intelligence API — for any product, any team, anywhere in the world.
       </p>
       <div class="footer-status">All systems operational</div>
+      <p style="font-size:0.72rem;color:var(--dim);margin-top:16px;line-height:1.65;">
+        Data: USDOT NAD · US Census Bureau<br>FEMA NFHL · Overture Maps Foundation
+      </p>
     </div>
 
     <div class="footer-col">
@@ -1605,7 +1665,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 
     <div id="modal-form">
       <h2>Get your free API key</h2>
-      <p class="modal-sub">10,000 lookups/month. No credit card. Instant delivery to your inbox.</p>
+      <p class="modal-sub">10,000 lookups/month, all enrichment fields included. No credit card. Instant delivery. Open to teams worldwide.</p>
       <label for="modal-email">Work email</label>
       <input type="email" id="modal-email" placeholder="you@company.com" />
       <button class="modal-cta" onclick="submitSignup()">Get free API key →</button>
