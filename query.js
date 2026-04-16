@@ -18,6 +18,12 @@
 
 'use strict';
 
+// Coverage map: which states were supplemented by Overture Maps gap-fill
+const OVERTURE_STATES = new Set([
+  'CA','FL','NJ','MI','PA','MS','GA','LA','NV','SC','ID','MT','NH','WY','SD'
+]);
+const THIN_STATES = new Set(['AK','VI','AS','GU','MP','PR']);
+
 const path     = require('path');
 const Database = require('better-sqlite3');
 
@@ -67,7 +73,7 @@ class NADQuery {
   }
 
   getState(stateCode) {
-    return this.db.prepare(`
+    const row = this.db.prepare(`
       SELECT s.*, c.code AS country_code,
         (SELECT COUNT(*) FROM counties WHERE state_id = s.id)  AS county_count_live,
         (SELECT COUNT(*) FROM cities   WHERE state_id = s.id)  AS city_count_live,
@@ -76,6 +82,17 @@ class NADQuery {
       FROM states s JOIN countries c ON c.id = s.country_id
       WHERE s.code = ?
     `).get(stateCode.toUpperCase());
+    if (row) {
+      const code = row.code;
+      row.coverage = OVERTURE_STATES.has(code) ? 'gap-fill'
+        : THIN_STATES.has(code)                ? 'partial'
+        : row.address_count_live === 0         ? 'none'
+        :                                        'full';
+      row.coverage_source = OVERTURE_STATES.has(code)
+        ? 'NAD r22 + Overture Maps'
+        : 'NAD r22';
+    }
+    return row;
   }
 
   // ---- Level 4: County ----
@@ -217,7 +234,9 @@ class NADQuery {
     if (stateCode) { clauses.push('a.state = ?');               params.push(stateCode.toUpperCase()); }
 
     const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-    return this.db.prepare(`
+
+    // Fetch limit*3 rows so JS-side scoring has enough candidates to work with after sorting.
+    const rows = this.db.prepare(`
       SELECT a.id, a.nad_uuid, a.full_address,
              a.add_number, a.st_pre_dir, a.st_name, a.st_pos_typ, a.st_pos_dir,
              a.unit,
@@ -228,7 +247,75 @@ class NADQuery {
       FROM addresses a ${where}
       ORDER BY a.state, a.inc_muni, a.st_name, a.add_number
       LIMIT ?
-    `).all(...params, limit);
+    `).all(...params, limit * 3);
+
+    // ---- JS-side scoring & match_type ----------------------------------------
+
+    const cityUpper = city ? city.toUpperCase() : null;
+
+    const scored = rows.map(row => {
+      let score = 0;
+
+      // +3 exact zip match
+      if (zipCode && row.zip_code === zipCode) score += 3;
+
+      // +2 city exact-contains match (case-insensitive, not just partial — the DB already
+      // filtered partial via LIKE, so here we re-check that the city token is actually
+      // present as a whole word-level substring in the row's city fields).
+      if (cityUpper) {
+        const muniUpper  = (row.inc_muni  || '').toUpperCase();
+        const postUpper  = (row.post_city || '').toUpperCase();
+        if (muniUpper === cityUpper || postUpper === cityUpper ||
+            muniUpper.includes(cityUpper) || postUpper.includes(cityUpper)) {
+          score += 2;
+        }
+      }
+
+      // +1 exact house number match
+      if (addNumber && row.add_number === addNumber) score += 1;
+
+      // +1 has coordinates
+      if (row.latitude && row.longitude) score += 1;
+
+      // +1 has county populated
+      if (row.county) score += 1;
+
+      // ---- match_type --------------------------------------------------------
+      const hasNum    = !!(addNumber  && row.add_number === addNumber);
+      const hasStreet = !!streetName;  // street was used as a filter — row passed it
+      const hasZip    = !!(zipCode    && row.zip_code === zipCode);
+      const hasCity   = !!(cityUpper  &&
+                           ((row.inc_muni  || '').toUpperCase().includes(cityUpper) ||
+                            (row.post_city || '').toUpperCase().includes(cityUpper)));
+      const hasState  = !!stateCode;
+
+      let match_type;
+      if (hasNum && hasStreet && (hasZip || (hasCity && hasState))) {
+        match_type = 'exact';
+      } else if (hasNum && hasStreet) {
+        match_type = 'number+street';
+      } else if (hasStreet && (hasZip || hasCity || hasState)) {
+        match_type = 'street+location';
+      } else if (hasStreet) {
+        match_type = 'street';
+      } else {
+        match_type = 'location';
+      }
+
+      return { ...row, match_type, _score: score };
+    });
+
+    // Sort: score desc, then st_name asc, then add_number asc (numeric)
+    scored.sort((a, b) => {
+      if (b._score !== a._score) return b._score - a._score;
+      const nameA = (a.st_name || '').toUpperCase();
+      const nameB = (b.st_name || '').toUpperCase();
+      if (nameA !== nameB) return nameA < nameB ? -1 : 1;
+      return (parseInt(a.add_number, 10) || 0) - (parseInt(b.add_number, 10) || 0);
+    });
+
+    // Slice to requested limit and strip internal scoring field
+    return scored.slice(0, limit).map(({ _score, ...row }) => row);
   }
 
   /**

@@ -10,6 +10,11 @@
 ## Unreleased
 > Features merged to main but not yet cut into a version.
 
+- **Address disambiguation** — `findAddress()` now scores + re-ranks results by match specificity; adds `match_type: "exact" | "number+street" | "street+location" | "street" | "location"` to each result
+- **Coverage declaration** — `GET /api/address` responses include `coverage: "full" | "gap-fill" | "partial"`; `GET /api/state/:code` includes `coverage` + `coverage_source` (NAD r22 vs NAD r22 + Overture Maps)
+- **FK relink** — `POST /v1/admin/relink-fks` — background worker that populates `state_id`, `zip_code_id`, `county_id`, `city_id` for the ~64.9M Overture rows merged without hierarchy FK linkage; fixes `/api/states` 0-counts for MI, NJ, NV, NH, FL, CA, etc.
+- **OpenAddresses import script** — `openaddresses-import.js` — streams OA gzipped CSVs from their S3 index, deduplicates via `nad_uuid = 'OA:' + HASH`, batch-inserts; `--state`, `--limit`, `--list` flags
+
 - **Overture Maps full merge complete** — nad.db now has 198,657,535 addresses; all 16 indexes rebuilt on prod (completed 01:59 UTC 2026-04-16)
 - **Cloudflare proxy enabled** — SSL Full (strict) set, orange cloud active on geoclear.io; CF-Ray header confirmed
 - **Cloudflare cache rule live** — "GeoClear read-only API cache": `/api/stats`, `/api/states`, `/api/health` cached 5 min (300s) at edge

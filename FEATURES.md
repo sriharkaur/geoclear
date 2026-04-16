@@ -1,7 +1,7 @@
 # GeoClear — Feature Inventory
 > **Single source of truth for everything built.**
 > Update this file every time a feature ships. Mirrors RELEASES.md chronologically but organized by feature area for quick lookup.
-> Last updated: 2026-04-14 (session 5)
+> Last updated: 2026-04-16 (session 7)
 
 ---
 
@@ -10,11 +10,12 @@
 | Feature | Endpoint / Location | Notes |
 |---------|-------------------|-------|
 | Address search | `GET /api/address` | `?street=&city=&state=&zip=&number=&limit=` |
+| Address disambiguation | `GET /api/address` | Results scored + ranked by specificity; `match_type` field on each result |
 | Fuzzy / typo-tolerant search | `GET /api/address?fuzzy=true` | Calls `findAddressFuzzy()` in query.js |
 | Autocomplete / typeahead | `GET /api/suggest` | `?q=&state=&zip=&limit=` — 5-min TTL cache |
 | Bulk address verify | `POST /api/address/bulk` | Array input, max 1,000 per request, synchronous |
 | ZIP code lookup | `GET /api/zip/:zip` | Returns ZIP metadata |
-| State summary | `GET /api/state/:code` | Address count + metadata per state |
+| State summary | `GET /api/state/:code` | Address count + metadata + `coverage` + `coverage_source` per state |
 | All states | `GET /api/states` | Sorted by address count |
 | County lookup | `GET /api/county` | `?state=&name=` |
 | City search | `GET /api/city` | `?state=&name=&county=&limit=` |
@@ -36,6 +37,7 @@ Enrichments returned on **every** `/api/address` response (no extra call needed)
 | `residential` | `residentialFlag()` in enrich.js | `residential` / `commercial` / `unknown` |
 | `display_city` | `enrich()` in enrich.js | `post_city` preferred over `inc_muni` |
 | `neighborhood` | `enrich()` in enrich.js | `nbrhd_comm` or `uninc_comm` |
+| `coverage` | `enrichAddress()` in web-server.js | `"full"` / `"gap-fill"` / `"partial"` — data source quality for this state |
 
 Enrichments via separate call (`GET /api/enrich?lat=&lon=` or `?nad_uuid=`):
 

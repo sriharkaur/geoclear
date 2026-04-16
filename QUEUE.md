@@ -89,9 +89,10 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 - [x] **Overture full gap-fill import** — 64.9M addresses across FL(16.1M), CA(27.1M), MI(4.7M), NJ(4.9M), PA(2.3M), MS(2.3M), SC, GA, SD, HI, LA, NV, NH + more — in `overture-additions.db` (37GB) ✅
 - [x] **Merge Overture data into prod** — 198,657,535 addresses in nad.db. All 16 indexes rebuilt (completed 01:59 UTC 2026-04-16). ✅
 - [ ] Fill remaining state gaps via state GIS portals (AL, AK — not in Overture)
-- [ ] Address disambiguation — rank candidates when multiple "123 Main St" exist
-- [ ] Coverage declaration per response — which states have full/partial/no coverage
-- [ ] OpenAddresses import (~50M additional US addresses, new source)
+- [x] Address disambiguation — `match_type` scoring in `findAddress()`; results ranked by specificity ✅
+- [x] Coverage declaration per response — `coverage` field on every `/api/address` result; `coverage` + `coverage_source` on `/api/state/:code` ✅
+- [x] OpenAddresses import script — `openaddresses-import.js` ready; run on staging when needed ✅
+- [ ] **FK relink on prod** — run `POST /v1/admin/relink-fks` after deploy to fix /api/states 0-counts for MI, NJ, NV, NH, FL, CA (64.9M Overture rows missing state_id) ⏳ IN PROGRESS
 - [ ] NAD r23 quarterly update (~June 2026) — run on staging, merge to prod
 
 ---

@@ -347,6 +347,9 @@ app.use('/api', (req, res, next) => {
 const ok  = (res, data, meta = {}) => res.json({ ok: true, ...meta, data });
 const err = (res, msg, status = 400) => res.status(status).json({ ok: false, error: msg });
 
+const _OVERTURE_STATES = new Set(['CA','FL','NJ','MI','PA','MS','GA','LA','NV','SC','ID','MT','NH','WY','SD']);
+const _THIN_STATES     = new Set(['AK','VI','AS','GU','MP','PR']);
+
 function enrichAddress(a) {
   const e = enrich(a);
   return {
@@ -379,6 +382,10 @@ function enrichAddress(a) {
     date_update:  e.date_update,
     nad_source:   e.nad_source,
     nad_uuid:     e.nad_uuid,
+    coverage:     _OVERTURE_STATES.has(e.state) ? 'gap-fill'
+                : _THIN_STATES.has(e.state)     ? 'partial'
+                : e.state                       ? 'full'
+                :                                 null,
   };
 }
 
@@ -883,6 +890,41 @@ app.get('/v1/admin/db-probe', adminAuth, (req, res) => {
     if (writeDb3) try { writeDb3.close(); } catch {}
     res.status(500).json({ ok: false, error: e.message });
   }
+});
+
+// POST /v1/admin/relink-fks
+// Populates state_id, zip_code_id, county_id, city_id for addresses with NULL FK columns.
+// Targets ~64.9M Overture rows merged without hierarchy linkage.
+// Runs in a worker thread — returns immediately. Progress logged to console.
+// Check /api/states after completion to confirm counts update.
+app.post('/v1/admin/relink-fks', adminAuth, (req, res) => {
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'DB not ready.' });
+  const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+  const dbPath   = path.join(DATA_DIR, 'nad.db');
+  const { Worker } = require('worker_threads');
+
+  // Quick count of unlinked rows before starting
+  let unlinked = 0;
+  try {
+    const probe = require('better-sqlite3')(dbPath, { readonly: true });
+    unlinked = probe.prepare('SELECT COUNT(*) as n FROM addresses WHERE state_id IS NULL').get().n;
+    probe.close();
+  } catch (_) {}
+
+  console.log(`[relink-fks] Starting relink — ${unlinked.toLocaleString()} unlinked rows`);
+  res.json({ ok: true, message: `FK relink started. ${unlinked.toLocaleString()} rows to process. Check console logs for progress.`, unlinked });
+
+  const worker = new Worker(path.join(__dirname, 'relink-worker.js'), { workerData: { dbPath } });
+  worker.on('message', msg => {
+    if (msg.message) console.log(`[relink-fks] ${msg.message}`);
+    if (msg.type === 'done') {
+      cache.clear();  // bust all caches so /api/states reflects new counts
+      console.log('[relink-fks] Complete. Cache cleared.', JSON.stringify(msg.results));
+    }
+    if (msg.type === 'error') console.error('[relink-fks] Error:', msg.message);
+  });
+  worker.on('error', e => console.error('[relink-fks] Worker fatal:', e.message));
+  worker.on('exit', code => { if (code !== 0) console.error(`[relink-fks] Worker exit code ${code}`); });
 });
 
 // DELETE /v1/admin/data-file  body: { filename }
