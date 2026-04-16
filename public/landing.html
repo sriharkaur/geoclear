@@ -1557,18 +1557,18 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <ul>
         <li><a href="/docs">API reference</a></li>
         <li><a href="/docs#quickstart">Quickstart</a></li>
-        <li><a href="/docs#enrichment">Enrichment</a></li>
-        <li><a href="/docs#bulk">Bulk API</a></li>
+        <li><a href="/docs#enrich">Enrichment</a></li>
+        <li><a href="/docs#address-bulk">Bulk API</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h4>Data</h4>
       <ul>
-        <li><a href="/docs#coverage">Coverage</a></li>
-        <li><a href="/docs#fema">FEMA zones</a></li>
-        <li><a href="/docs#census">Census data</a></li>
-        <li><a href="/docs#updates">Data updates</a></li>
+        <li><a href="/docs#address-lookup">Coverage</a></li>
+        <li><a href="/docs#enrich">FEMA zones</a></li>
+        <li><a href="/docs#enrich">Census data</a></li>
+        <li><a href="/docs">Data updates</a></li>
       </ul>
     </div>
 
@@ -1678,6 +1678,12 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   function openCheckout(tier) {
     openModal();
   }
+
+  /* ── Auto-open modal on #signup hash ── */
+  if (window.location.hash === '#signup') openModal();
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#signup') openModal();
+  });
 
   /* ── Live demo ── */
   async function runDemo() {
