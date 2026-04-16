@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GeoClear API reference — address verification, enrichment, autocomplete, bulk lookup, and proximity search. curl and Node.js examples." />
+  <title>GeoClear — API Docs</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:       #03071A;
+      --bg-alt:   #060D28;
+      --surface:  #0A1229;
+      --surface2: #0E1A38;
+      --border:   rgba(99,130,255,0.1);
+      --border2:  rgba(99,130,255,0.18);
+      --border3:  rgba(99,130,255,0.28);
+      --text:     #EEF2FF;
+      --muted:    #8892B0;
+      --dim:      #4A5568;
+      --sky:      #38BDF8;
+      --indigo:   #818CF8;
+      --violet:   #A78BFA;
+      --green:    #34D399;
+      --amber:    #FBBF24;
+      --red:      #F87171;
+      --grad:     linear-gradient(135deg, #38BDF8 0%, #818CF8 100%);
+      --font:     'Inter', -apple-system, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --sidebar:  260px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.65;
+    }
+    a { color: var(--sky); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--mono);
+      font-size: 0.82em;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--sky);
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar);
+      flex-shrink: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: var(--bg-alt);
+      border-right: 1px solid var(--border);
+      padding: 24px 0 40px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .sidebar-logo a {
+      font-size: 1rem;
+      font-weight: 700;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sidebar-logo .back {
+      display: block;
+      margin-top: 6px;
+      font-size: 0.72rem;
+      color: var(--dim);
+      -webkit-text-fill-color: var(--dim);
+      background: none;
+    }
+    .sidebar-logo .back:hover { color: var(--muted); -webkit-text-fill-color: var(--muted); }
+    .nav-section {
+      padding: 8px 20px 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 20px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      transition: color 0.15s, background 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--text);
+      background: rgba(99,130,255,0.06);
+      border-left-color: var(--sky);
+      text-decoration: none;
+    }
+    .method-pill {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .get  { background: rgba(52,211,153,0.15); color: var(--green); }
+    .post { background: rgba(56,189,248,0.15); color: var(--sky); }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: var(--sidebar);
+      flex: 1;
+      max-width: 860px;
+      padding: 48px 48px 120px;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 64px;
+      scroll-margin-top: 32px;
+    }
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .section-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 24px;
+    }
+
+    /* endpoint card */
+    .endpoint {
+      margin-bottom: 56px;
+      scroll-margin-top: 32px;
+    }
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .endpoint-method {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+    .endpoint-path {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .endpoint-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .endpoint-desc {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+
+    /* params table */
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 0.82rem;
+    }
+    .param-table th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border);
+    }
+    .param-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-name {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--sky);
+    }
+    .param-type {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--violet);
+    }
+    .param-req {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--amber);
+      background: rgba(251,191,36,0.1);
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+    .param-opt {
+      font-size: 0.68rem;
+      color: var(--dim);
+    }
+    .param-desc { color: var(--muted); }
+
+    /* code blocks */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: -1px;
+    }
+    .tab-btn {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 7px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      color: var(--dim);
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--border2);
+    }
+    .code-block {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 0 8px 8px 8px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    .code-block pre {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* response block */
+    .resp-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+    .resp-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      overflow-x: auto;
+    }
+    .resp-block pre {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .j-key   { color: var(--sky); }
+    .j-str   { color: var(--green); }
+    .j-num   { color: var(--amber); }
+    .j-bool  { color: var(--violet); }
+    .j-null  { color: var(--red); }
+
+    /* divider */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* alert box */
+    .alert {
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+    }
+    .alert-info {
+      background: rgba(56,189,248,0.07);
+      border: 1px solid rgba(56,189,248,0.2);
+      color: var(--muted);
+    }
+    .alert-icon { flex-shrink: 0; margin-top: 1px; }
+
+    /* rate limit table */
+    .tier-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      margin-bottom: 20px;
+    }
+    .tier-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border);
+    }
+    .tier-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .tier-table tr:last-child td { border-bottom: none; }
+    .tier-table td:first-child { font-weight: 600; color: var(--text); }
+    .tier-price { color: var(--sky); }
+
+    /* field list */
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .field-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 12px 14px;
+    }
+    .field-name {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--sky);
+      margin-bottom: 3px;
+    }
+    .field-desc {
+      font-size: 0.77rem;
+      color: var(--muted);
+    }
+
+    /* top bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      background: rgba(3,7,26,0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 48px;
+      margin-left: var(--sidebar);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+    }
+    .topbar-left { color: var(--dim); }
+    .topbar-right { display: flex; gap: 16px; }
+    .topbar-right a { color: var(--muted); font-size: 0.82rem; }
+    .topbar-right a:hover { color: var(--text); text-decoration: none; }
+
+    /* CTA */
+    .cta-bar {
+      background: linear-gradient(135deg, rgba(56,189,248,0.07) 0%, rgba(129,140,248,0.07) 100%);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+    .cta-text h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .cta-text p  { font-size: 0.83rem; color: var(--muted); }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--grad);
+      color: #03071A;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 10px 22px;
+      border-radius: 7px;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.88; text-decoration: none; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main, .topbar { margin-left: 0; }
+      .main { padding: 24px 20px 80px; }
+      .topbar { padding: 12px 20px; }
+      .field-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <a href="/">GeoClear</a>
+    <a href="/" class="back">← Back to home</a>
+  </div>
+
+  <div class="nav-section">Getting started</div>
+  <a class="nav-link" href="#authentication">Authentication</a>
+  <a class="nav-link" href="#quickstart">Quick start</a>
+  <a class="nav-link" href="#rate-limits">Rate limits</a>
+  <a class="nav-link" href="#errors">Errors</a>
+
+  <div class="nav-section" style="margin-top:12px">Address</div>
+  <a class="nav-link" href="#address-lookup">
+    <span class="method-pill get">GET</span> /api/address
+  </a>
+  <a class="nav-link" href="#address-suggest">
+    <span class="method-pill get">GET</span> /api/suggest
+  </a>
+  <a class="nav-link" href="#address-bulk">
+    <span class="method-pill post">POST</span> /api/address/bulk
+  </a>
+  <a class="nav-link" href="#address-near">
+    <span class="method-pill get">GET</span> /api/near
+  </a>
+
+  <div class="nav-section" style="margin-top:12px">Enrichment</div>
+  <a class="nav-link" href="#enrich">
+    <span class="method-pill get">GET</span> /api/enrich
+  </a>
+
+  <div class="nav-section" style="margin-top:12px">Geography</div>
+  <a class="nav-link" href="#zip-lookup">
+    <span class="method-pill get">GET</span> /api/zip/:zip
+  </a>
+  <a class="nav-link" href="#state-lookup">
+    <span class="method-pill get">GET</span> /api/state/:code
+  </a>
+
+  <div class="nav-section" style="margin-top:12px">Account</div>
+  <a class="nav-link" href="#me">
+    <span class="method-pill get">GET</span> /v1/me
+  </a>
+  <a class="nav-link" href="#signup">
+    <span class="method-pill post">POST</span> /v1/signup
+  </a>
+
+  <div class="nav-section" style="margin-top:12px">Status</div>
+  <a class="nav-link" href="#health">
+    <span class="method-pill get">GET</span> /api/health
+  </a>
+</aside>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <span class="topbar-left">API Reference · v1.0</span>
+  <div class="topbar-right">
+    <a href="/">Home</a>
+    <a href="/portal.html">Portal</a>
+    <a href="/status.html">Status</a>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <!-- INTRO -->
+  <div class="section" id="intro">
+    <div class="section-title">API Reference</div>
+    <div class="section-sub">Base URL: <code>https://geoclear.io</code> &nbsp;·&nbsp; All responses are JSON &nbsp;·&nbsp; All timestamps UTC</div>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="6.5"/>
+          <path d="M8 7v4M8 5.5v.5"/>
+        </svg>
+      </span>
+      <span>Don't have an API key? <a href="/#signup">Sign up free</a> — 10,000 lookups/day, no credit card required.</span>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION -->
+  <div class="section" id="authentication">
+    <div class="section-title">Authentication</div>
+    <p class="section-sub">Pass your API key via header or query parameter on every request.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'auth-header')">Header</button>
+      <button class="tab-btn" onclick="switchTab(this,'auth-query')">Query param</button>
+    </div>
+    <div class="tab-panel active" id="auth-header">
+      <div class="code-block"><pre>curl https://geoclear.io/api/address?street=Main+St&city=Austin&state=TX \
+  -H <span style="color:var(--green)">"X-Api-Key: YOUR_API_KEY"</span></pre></div>
+    </div>
+    <div class="tab-panel" id="auth-query">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/address?street=Main+St&city=Austin&state=TX&key=YOUR_API_KEY"</pre></div>
+    </div>
+  </div>
+
+  <!-- QUICK START -->
+  <div class="section" id="quickstart">
+    <div class="section-title">Quick start</div>
+    <p class="section-sub">Verify an address in under a minute.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'qs-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'qs-node')">Node.js</button>
+      <button class="tab-btn" onclick="switchTab(this,'qs-python')">Python</button>
+    </div>
+    <div class="tab-panel active" id="qs-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/address?number=1600&street=Pennsylvania+Ave&city=Washington&state=DC" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="qs-node">
+      <div class="code-block"><pre>const res = await fetch(
+  'https://geoclear.io/api/address?number=1600&street=Pennsylvania+Ave&city=Washington&state=DC',
+  { headers: { 'X-Api-Key': 'YOUR_API_KEY' } }
+);
+const { data } = await res.json();
+console.log(data[0].full_address, data[0].confidence);</pre></div>
+    </div>
+    <div class="tab-panel" id="qs-python">
+      <div class="code-block"><pre>import requests
+
+r = requests.get(
+    'https://geoclear.io/api/address',
+    params={'number': '1600', 'street': 'Pennsylvania Ave', 'city': 'Washington', 'state': 'DC'},
+    headers={'X-Api-Key': 'YOUR_API_KEY'}
+)
+data = r.json()['data']
+print(data[0]['full_address'], data[0]['confidence'])</pre></div>
+    </div>
+
+    <div class="resp-label">Response</div>
+    <div class="resp-block"><pre>{
+  <span class="j-key">"ok"</span>: <span class="j-bool">true</span>,
+  <span class="j-key">"data"</span>: [{
+    <span class="j-key">"full_address"</span>: <span class="j-str">"1600 Pennsylvania Ave NW, Washington, DC 20500"</span>,
+    <span class="j-key">"add_number"</span>:  <span class="j-str">"1600"</span>,
+    <span class="j-key">"st_name"</span>:     <span class="j-str">"Pennsylvania"</span>,
+    <span class="j-key">"st_pos_typ"</span>:  <span class="j-str">"Ave"</span>,
+    <span class="j-key">"st_pre_dir"</span>:  <span class="j-str">"NW"</span>,
+    <span class="j-key">"city"</span>:        <span class="j-str">"Washington"</span>,
+    <span class="j-key">"state"</span>:       <span class="j-str">"DC"</span>,
+    <span class="j-key">"zip_code"</span>:    <span class="j-str">"20500"</span>,
+    <span class="j-key">"latitude"</span>:    <span class="j-num">38.8977</span>,
+    <span class="j-key">"longitude"</span>:   <span class="j-num">-77.0365</span>,
+    <span class="j-key">"county_fips"</span>: <span class="j-str">"11001"</span>,
+    <span class="j-key">"timezone"</span>:    <span class="j-str">"America/New_York"</span>,
+    <span class="j-key">"residential"</span>: <span class="j-bool">false</span>,
+    <span class="j-key">"confidence"</span>:  <span class="j-num">98</span>
+  }]
+}</pre></div>
+  </div>
+
+  <!-- RATE LIMITS -->
+  <div class="section" id="rate-limits">
+    <div class="section-title">Rate limits</div>
+    <p class="section-sub">Limits are enforced per API key. Exceeding either limit returns <code>429 Too Many Requests</code>.</p>
+
+    <table class="tier-table">
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Price</th>
+          <th>Req / min</th>
+          <th>Req / day</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Free</td>    <td class="tier-price">$0</td>     <td>10</td>    <td>10,000</td></tr>
+        <tr><td>Starter</td> <td class="tier-price">$49/mo</td> <td>100</td>   <td>50,000</td></tr>
+        <tr><td>Growth</td>  <td class="tier-price">$249/mo</td><td>1,000</td> <td>500,000</td></tr>
+        <tr><td>Scale</td>   <td class="tier-price">$999/mo</td><td>9,999</td> <td>Unlimited</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.83rem;color:var(--muted)">Rate limit headers are included in every response: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>.</p>
+  </div>
+
+  <!-- ERRORS -->
+  <div class="section" id="errors">
+    <div class="section-title">Errors</div>
+    <p class="section-sub">All errors return a JSON body with <code>ok: false</code> and an <code>error</code> string.</p>
+
+    <table class="tier-table">
+      <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>400</td><td>Bad request — missing or invalid parameters</td></tr>
+        <tr><td>401</td><td>Missing or invalid API key</td></tr>
+        <tr><td>402</td><td>Enrichment requires a Pro or higher tier</td></tr>
+        <tr><td>429</td><td>Rate limit exceeded (per-minute or per-day)</td></tr>
+        <tr><td>500</td><td>Internal server error</td></tr>
+      </tbody>
+    </table>
+
+    <div class="resp-block"><pre>{
+  <span class="j-key">"ok"</span>:    <span class="j-bool">false</span>,
+  <span class="j-key">"error"</span>: <span class="j-str">"Invalid or revoked API key."</span>
+}</pre></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ADDRESS LOOKUP -->
+  <div class="endpoint" id="address-lookup">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/address</span>
+    </div>
+    <div class="endpoint-title">Address lookup & verification</div>
+    <div class="endpoint-desc">
+      Verify a US address and return matching records with coordinates, county FIPS, timezone, residential flag, and a 0–100 confidence score.
+      Use <code>?fuzzy=true</code> for typo-tolerant matching — "Pensilvania Ave" finds "Pennsylvania Ave".
+    </div>
+
+    <table class="param-table">
+      <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="param-name">number</td>   <td class="param-type">string</td><td class="param-opt">optional</td><td class="param-desc">House/building number (e.g. <code>"1600"</code>)</td></tr>
+        <tr><td class="param-name">street</td>   <td class="param-type">string</td><td class="param-opt">optional</td><td class="param-desc">Street name (e.g. <code>"Pennsylvania Ave"</code>)</td></tr>
+        <tr><td class="param-name">city</td>     <td class="param-type">string</td><td class="param-opt">optional</td><td class="param-desc">City name</td></tr>
+        <tr><td class="param-name">state</td>    <td class="param-type">string</td><td class="param-opt">optional</td><td class="param-desc">2-letter state code (e.g. <code>"DC"</code>)</td></tr>
+        <tr><td class="param-name">zip</td>      <td class="param-type">string</td><td class="param-opt">optional</td><td class="param-desc">ZIP code</td></tr>
+        <tr><td class="param-name">fuzzy</td>    <td class="param-type">boolean</td><td class="param-opt">optional</td><td class="param-desc">Enable typo-tolerant matching. Default: <code>false</code></td></tr>
+        <tr><td class="param-name">limit</td>    <td class="param-type">integer</td><td class="param-opt">optional</td><td class="param-desc">Max results. Default: <code>20</code>, max: <code>100</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'addr-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'addr-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="addr-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/address?number=1600&street=Pennsylvania+Ave&state=DC" \
+  -H "X-Api-Key: YOUR_API_KEY"
+
+<span style="color:var(--dim)"># Fuzzy match</span>
+curl "https://geoclear.io/api/address?street=Pensilvania+Ave&state=DC&fuzzy=true" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="addr-node">
+      <div class="code-block"><pre>const params = new URLSearchParams({ number: '1600', street: 'Pennsylvania Ave', state: 'DC' });
+const res = await fetch(`https://geoclear.io/api/address?${params}`, {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json();</pre></div>
+    </div>
+
+    <div class="resp-label">Response fields</div>
+    <div class="field-grid">
+      <div class="field-item"><div class="field-name">full_address</div><div class="field-desc">Formatted full address string</div></div>
+      <div class="field-item"><div class="field-name">latitude / longitude</div><div class="field-desc">Rooftop or parcel-level coordinates</div></div>
+      <div class="field-item"><div class="field-name">county_fips</div><div class="field-desc">5-digit county FIPS code (state + county)</div></div>
+      <div class="field-item"><div class="field-name">timezone</div><div class="field-desc">IANA timezone string (e.g. <code>America/New_York</code>)</div></div>
+      <div class="field-item"><div class="field-name">residential</div><div class="field-desc">Boolean — residential vs commercial</div></div>
+      <div class="field-item"><div class="field-name">confidence</div><div class="field-desc">Match quality score 0–100</div></div>
+      <div class="field-item"><div class="field-name">nad_uuid</div><div class="field-desc">Stable USDOT NAD record identifier</div></div>
+      <div class="field-item"><div class="field-name">placement</div><div class="field-desc">Coordinate method: Rooftop, Parcel, etc.</div></div>
+    </div>
+  </div>
+
+  <!-- SUGGEST -->
+  <div class="endpoint" id="address-suggest">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/suggest</span>
+    </div>
+    <div class="endpoint-title">Address autocomplete</div>
+    <div class="endpoint-desc">
+      Returns up to 20 address suggestions matching a partial query. Built for live-as-you-type UX — responses cached 5 minutes.
+    </div>
+
+    <table class="param-table">
+      <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="param-name">q</td>     <td class="param-type">string</td> <td class="param-req">required</td><td class="param-desc">Address prefix, min 2 characters</td></tr>
+        <tr><td class="param-name">state</td> <td class="param-type">string</td> <td class="param-opt">optional</td><td class="param-desc">Scope to a state (2-letter code)</td></tr>
+        <tr><td class="param-name">zip</td>   <td class="param-type">string</td> <td class="param-opt">optional</td><td class="param-desc">Scope to a ZIP code</td></tr>
+        <tr><td class="param-name">limit</td> <td class="param-type">integer</td><td class="param-opt">optional</td><td class="param-desc">Max results. Default: <code>10</code>, max: <code>20</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'sug-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'sug-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="sug-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/suggest?q=1600+Penn&state=DC&limit=5" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="sug-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/api/suggest?q=1600+Penn&state=DC', {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json(); // array of address objects</pre></div>
+    </div>
+  </div>
+
+  <!-- BULK -->
+  <div class="endpoint" id="address-bulk">
+    <div class="endpoint-header">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/api/address/bulk</span>
+    </div>
+    <div class="endpoint-title">Bulk address verification</div>
+    <div class="endpoint-desc">
+      Verify and enrich up to 1,000 addresses in a single synchronous request. Each address in the request maps to one result in the response array (same order).
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'bulk-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'bulk-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="bulk-curl">
+      <div class="code-block"><pre>curl -X POST https://geoclear.io/api/address/bulk \
+  -H "X-Api-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "addresses": [
+      { "number": "1600", "street": "Pennsylvania Ave", "state": "DC" },
+      { "number": "350",  "street": "Fifth Ave",        "state": "NY" }
+    ]
+  }'</pre></div>
+    </div>
+    <div class="tab-panel" id="bulk-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/api/address/bulk', {
+  method: 'POST',
+  headers: {
+    'X-Api-Key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    addresses: [
+      { number: '1600', street: 'Pennsylvania Ave', state: 'DC' },
+      { number: '350',  street: 'Fifth Ave',        state: 'NY' }
+    ]
+  })
+});
+const { results } = await res.json();</pre></div>
+    </div>
+
+    <div class="resp-label">Response</div>
+    <div class="resp-block"><pre>{
+  <span class="j-key">"ok"</span>: <span class="j-bool">true</span>,
+  <span class="j-key">"results"</span>: [
+    { <span class="j-key">"full_address"</span>: <span class="j-str">"1600 Pennsylvania Ave NW, Washington, DC 20500"</span>, <span class="j-key">"confidence"</span>: <span class="j-num">98</span>, <span class="j-key">"..."</span>: <span class="j-str">"..."</span> },
+    { <span class="j-key">"full_address"</span>: <span class="j-str">"350 Fifth Ave, New York, NY 10118"</span>, <span class="j-key">"confidence"</span>: <span class="j-num">97</span>, <span class="j-key">"..."</span>: <span class="j-str">"..."</span> }
+  ]
+}</pre></div>
+  </div>
+
+  <!-- NEAR -->
+  <div class="endpoint" id="address-near">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/near</span>
+    </div>
+    <div class="endpoint-title">Proximity search</div>
+    <div class="endpoint-desc">
+      Returns addresses within a given radius of a lat/lon coordinate. Useful for reverse geocoding, delivery routing, or finding nearby points of interest.
+    </div>
+
+    <table class="param-table">
+      <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="param-name">lat</td>       <td class="param-type">number</td> <td class="param-req">required</td><td class="param-desc">Latitude (decimal degrees)</td></tr>
+        <tr><td class="param-name">lon</td>       <td class="param-type">number</td> <td class="param-req">required</td><td class="param-desc">Longitude (decimal degrees)</td></tr>
+        <tr><td class="param-name">radius_km</td> <td class="param-type">number</td> <td class="param-opt">optional</td><td class="param-desc">Search radius in km. Default: <code>1.0</code></td></tr>
+        <tr><td class="param-name">limit</td>     <td class="param-type">integer</td><td class="param-opt">optional</td><td class="param-desc">Max results. Default: <code>20</code>, max: <code>500</code></td></tr>
+      </tbody>
+    </table>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'near-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'near-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="near-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/near?lat=38.8977&lon=-77.0365&radius_km=0.5&limit=10" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="near-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/api/near?lat=38.8977&lon=-77.0365&radius_km=0.5', {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json();</pre></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ENRICH -->
+  <div class="endpoint" id="enrich">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/enrich</span>
+    </div>
+    <div class="endpoint-title">Point enrichment</div>
+    <div class="endpoint-desc">
+      Returns census tract, block group, and FEMA flood zone for a lat/lon coordinate or NAD UUID.
+      Pulls live data from the US Census Bureau Geocoder API and FEMA NFHL — no separate subscriptions needed.
+      Results are cached in-process (~10K LRU entries).
+    </div>
+
+    <table class="param-table">
+      <thead><tr><th>Parameter</th><th>Type</th><th></th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="param-name">lat</td>      <td class="param-type">number</td><td class="param-opt">optional*</td><td class="param-desc">Latitude (use with <code>lon</code>)</td></tr>
+        <tr><td class="param-name">lon</td>      <td class="param-type">number</td><td class="param-opt">optional*</td><td class="param-desc">Longitude (use with <code>lat</code>)</td></tr>
+        <tr><td class="param-name">nad_uuid</td> <td class="param-type">string</td><td class="param-opt">optional*</td><td class="param-desc">NAD UUID from an address lookup result (alternative to lat/lon)</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.78rem;color:var(--dim);margin-bottom:20px">* Either <code>lat</code>+<code>lon</code> or <code>nad_uuid</code> is required.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'enr-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'enr-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="enr-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/enrich?lat=38.8977&lon=-77.0365" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="enr-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/api/enrich?lat=38.8977&lon=-77.0365', {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json();</pre></div>
+    </div>
+
+    <div class="resp-label">Response</div>
+    <div class="resp-block"><pre>{
+  <span class="j-key">"ok"</span>: <span class="j-bool">true</span>,
+  <span class="j-key">"data"</span>: {
+    <span class="j-key">"census"</span>: {
+      <span class="j-key">"tract"</span>:       <span class="j-str">"010100"</span>,
+      <span class="j-key">"block_group"</span>: <span class="j-str">"1"</span>,
+      <span class="j-key">"geoid"</span>:       <span class="j-str">"110010101001"</span>
+    },
+    <span class="j-key">"fema"</span>: {
+      <span class="j-key">"flood_zone"</span>: <span class="j-str">"X"</span>,
+      <span class="j-key">"sfha"</span>:       <span class="j-bool">false</span>,
+      <span class="j-key">"panel"</span>:      <span class="j-str">"1100010001B"</span>
+    },
+    <span class="j-key">"coordinates"</span>: {
+      <span class="j-key">"latitude"</span>:  <span class="j-num">38.8977</span>,
+      <span class="j-key">"longitude"</span>: <span class="j-num">-77.0365</span>
+    }
+  }
+}</pre></div>
+
+    <div class="alert alert-info" style="margin-top:16px">
+      <span class="alert-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="6.5"/>
+          <path d="M8 7v4M8 5.5v.5"/>
+        </svg>
+      </span>
+      <span>FEMA flood zone codes: <strong style="color:var(--text)">X</strong> = minimal risk &nbsp;·&nbsp; <strong style="color:var(--text)">AE / A</strong> = high risk (SFHA) &nbsp;·&nbsp; <strong style="color:var(--text)">VE</strong> = coastal high risk</span>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ZIP -->
+  <div class="endpoint" id="zip-lookup">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/zip/:zip</span>
+    </div>
+    <div class="endpoint-title">ZIP code lookup</div>
+    <div class="endpoint-desc">Returns address count and metadata for a ZIP code.</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'zip-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'zip-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="zip-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/zip/20500" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="zip-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/api/zip/20500', {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json();</pre></div>
+    </div>
+  </div>
+
+  <!-- STATE -->
+  <div class="endpoint" id="state-lookup">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/state/:code</span>
+    </div>
+    <div class="endpoint-title">State summary</div>
+    <div class="endpoint-desc">Returns address count, county count, city count, and ZIP count for a US state.</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'state-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'state-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="state-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/api/state/TX" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="state-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/api/state/TX', {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json();</pre></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ME -->
+  <div class="endpoint" id="me">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/v1/me</span>
+    </div>
+    <div class="endpoint-title">API key status</div>
+    <div class="endpoint-desc">Returns your key's tier, rate limits, and usage counters.</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'me-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'me-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="me-curl">
+      <div class="code-block"><pre>curl "https://geoclear.io/v1/me" \
+  -H "X-Api-Key: YOUR_API_KEY"</pre></div>
+    </div>
+    <div class="tab-panel" id="me-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/v1/me', {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});
+const { data } = await res.json();</pre></div>
+    </div>
+
+    <div class="resp-label">Response</div>
+    <div class="resp-block"><pre>{
+  <span class="j-key">"ok"</span>: <span class="j-bool">true</span>,
+  <span class="j-key">"data"</span>: {
+    <span class="j-key">"tier"</span>:        <span class="j-str">"starter"</span>,
+    <span class="j-key">"req_per_min"</span>: <span class="j-num">100</span>,
+    <span class="j-key">"req_per_day"</span>: <span class="j-num">50000</span>,
+    <span class="j-key">"usage_today"</span>: <span class="j-num">1243</span>,
+    <span class="j-key">"usage_total"</span>: <span class="j-num">87241</span>,
+    <span class="j-key">"is_active"</span>:   <span class="j-bool">true</span>
+  }
+}</pre></div>
+  </div>
+
+  <!-- SIGNUP -->
+  <div class="endpoint" id="signup">
+    <div class="endpoint-header">
+      <span class="endpoint-method post">POST</span>
+      <span class="endpoint-path">/v1/signup</span>
+    </div>
+    <div class="endpoint-title">Free tier signup</div>
+    <div class="endpoint-desc">
+      Issue a free API key with 10,000 lookups/day. No credit card required. Key is emailed to the address provided and returned in the response.
+      Rate limited to 5 signups per hour per IP.
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'sig-curl')">curl</button>
+      <button class="tab-btn" onclick="switchTab(this,'sig-node')">Node.js</button>
+    </div>
+    <div class="tab-panel active" id="sig-curl">
+      <div class="code-block"><pre>curl -X POST https://geoclear.io/v1/signup \
+  -H "Content-Type: application/json" \
+  -d '{ "email": "you@example.com" }'</pre></div>
+    </div>
+    <div class="tab-panel" id="sig-node">
+      <div class="code-block"><pre>const res = await fetch('https://geoclear.io/v1/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'you@example.com' })
+});
+const { key } = await res.json();</pre></div>
+    </div>
+
+    <div class="resp-label">Response</div>
+    <div class="resp-block"><pre>{
+  <span class="j-key">"ok"</span>:  <span class="j-bool">true</span>,
+  <span class="j-key">"key"</span>: <span class="j-str">"gc_free_a1b2c3d4..."</span>
+}</pre></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- HEALTH -->
+  <div class="endpoint" id="health">
+    <div class="endpoint-header">
+      <span class="endpoint-method get">GET</span>
+      <span class="endpoint-path">/api/health</span>
+    </div>
+    <div class="endpoint-title">Health check</div>
+    <div class="endpoint-desc">Returns service status and total address count. No authentication required.</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(this,'hlt-curl')">curl</button>
+    </div>
+    <div class="tab-panel active" id="hlt-curl">
+      <div class="code-block"><pre>curl https://geoclear.io/api/health</pre></div>
+    </div>
+
+    <div class="resp-label">Response</div>
+    <div class="resp-block"><pre>{
+  <span class="j-key">"status"</span>:    <span class="j-str">"ok"</span>,
+  <span class="j-key">"addresses"</span>: <span class="j-num">198657535</span>,
+  <span class="j-key">"version"</span>:   <span class="j-str">"1.0.0"</span>
+}</pre></div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-bar">
+    <div class="cta-text">
+      <h3>Ready to start?</h3>
+      <p>Free tier — 10,000 lookups/day. No credit card.</p>
+    </div>
+    <a href="/#signup" class="btn-primary">Get free API key →</a>
+  </div>
+
+</main>
+
+<script>
+  function switchTab(btn, panelId) {
+    const container = btn.closest('.endpoint, .section');
+    container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    container.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  }
+
+  // Highlight active nav link on scroll
+  const links = document.querySelectorAll('.nav-link[href^="#"]');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const match = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  document.querySelectorAll('.section[id], .endpoint[id]').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
