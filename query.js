@@ -38,11 +38,12 @@ class NADQuery {
   constructor(dbPath = DEFAULT_DB) {
     try {
       this.db = new Database(dbPath, { readonly: true });
-      // mmap maps the file into process address space — on warm OS page cache (same
-      // Render machine, same disk) the file open drops from ~60s to <5s.
-      this.db.pragma('mmap_size = 30000000000'); // 30 GB
-      this.db.pragma('cache_size = -2000000');    // 2 GB LRU page cache
-      this.db.pragma('temp_store = MEMORY');
+      // Keep memory footprint within Render Starter plan (512MB).
+      // mmap still speeds up warm-cache opens without pinning RAM pages;
+      // a 64MB mmap window is enough for index pages without OOMing.
+      this.db.pragma('mmap_size = 67108864');   // 64 MB mmap window
+      this.db.pragma('cache_size = -65536');    // 64 MB LRU page cache
+      this.db.pragma('temp_store = FILE');      // spill temp tables to disk
     } catch (err) {
       console.warn(`[NADQuery] DB not available at ${dbPath}: ${err.message}`);
       this.db = null;
