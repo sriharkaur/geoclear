@@ -840,8 +840,14 @@ app.patch('/v1/admin/data-sources/:source_id', adminAuth, (req, res) => {
 //   disaster       — FEMA flood zone (live); USFS wildfire + NOAA storm (pending data import)
 //   vacancy        — zero-query signal + addr_class heuristic
 app.get('/v1/risk', async (req, res) => {
-  // Require Professional or higher
-  if (!req.keyInfo?.limits?.enrichment) {
+  // Inline auth for /v1/ routes (apiAuth middleware only covers /api/)
+  const _riskKey = req.headers['x-api-key'] || req.query.key;
+  if (!_riskKey) return res.status(401).json({ ok: false, error: 'API key required.' });
+  const _riskInfo = keys.validate(_riskKey);
+  if (!_riskInfo) return res.status(401).json({ ok: false, error: 'Invalid or revoked API key.' });
+  req.keyInfo = _riskInfo;
+
+  if (!req.keyInfo.limits?.enrichment) {
     return res.status(402).json({
       ok: false,
       error: 'risk_requires_professional',
@@ -879,7 +885,7 @@ app.get('/v1/risk', async (req, res) => {
 
   // ── 2. Fetch signals in parallel ─────────────────────────────────
   const countyFips5 = enriched.fips || null;
-  const [femaResult, signalRow, velocityRow, wildfireRow, stormRow] = await Promise.all([
+  const [femaResult, signalRow, velocityRow, wildfireRow, stormRow, outcomeStats] = await Promise.all([
     (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
     Promise.resolve(keys.db.prepare(
       `SELECT query_count, fraud_signal_count FROM address_signals WHERE nad_uuid = ?`
@@ -891,6 +897,7 @@ app.get('/v1/risk', async (req, res) => {
     ).get()),
     Promise.resolve(countyFips5 ? riskData.getWildfireRisk(countyFips5) : null),
     Promise.resolve(countyFips5 ? riskData.getStormRisk(countyFips5)    : null),
+    Promise.resolve(keys.getOutcomeStats(addr.nad_uuid)),
   ]);
 
   // CAL FIRE: CA addresses only, lat/lon required
@@ -899,20 +906,29 @@ app.get('/v1/risk', async (req, res) => {
 
   // ── 3. Score each dimension ───────────────────────────────────────
 
-  // Deliverability (0–1): confidence + placement + query activity
-  const confNorm      = (enriched.confidence || 50) / 100;
+  // Deliverability (0–1)
+  // v2: outcome-backed when delivery outcomes exist for this address (drone/postal feedback)
+  // v1: confidence + placement + query activity heuristic
+  const confNorm       = (enriched.confidence || 50) / 100;
   const placementBoost = { 'Structure - Rooftop': 0.15, Rooftop: 0.15, Parcel: 0.05 }[addr.placement] ?? 0;
-  // Addresses queried ≥10 times are behaviorally confirmed deliverable
-  const activityBoost = Math.min((signalRow.query_count || 0) / 20, 0.1);
-  const deliverability = Math.min(1, Math.max(0,
-    confNorm * 0.75 + placementBoost + activityBoost
-  ));
+  const activityBoost  = Math.min((signalRow.query_count || 0) / 20, 0.1);
+  const heuristicDelivery = Math.min(1, confNorm * 0.75 + placementBoost + activityBoost);
 
-  // Fraud (0–1): fraud signals + velocity anomaly
+  const deliveryOutcomes = (outcomeStats.delivery_success || 0) + (outcomeStats.delivery_failed || 0);
+  const deliverability = deliveryOutcomes >= 3
+    ? outcomeStats.delivery_rate                                       // v2: outcome-backed (min 3 attempts)
+    : Math.min(1, Math.max(0, heuristicDelivery));                     // v1: heuristic fallback
+
+  // Fraud (0–1)
+  // v2: outcome-backed when fraud labels exist; v1: signal count + velocity heuristic
   const fraudSignals  = signalRow.fraud_signal_count || 0;
-  const velocityScore = Math.min((velocityRow?.n || 0) / 50, 0.3); // 50+ distinct keys = max velocity
-  const fraudBase     = Math.min(fraudSignals / 5, 0.7);           // 5 signals = 0.7 score
-  const fraud         = Math.min(1, Math.max(0, fraudBase + velocityScore));
+  const velocityScore = Math.min((velocityRow?.n || 0) / 50, 0.3);
+  const fraudHeuristic = Math.min(1, Math.max(0, Math.min(fraudSignals / 5, 0.7) + velocityScore));
+
+  const fraudOutcomes = (outcomeStats.fraud_confirmed || 0) + (outcomeStats.fraud_cleared || 0);
+  const fraud = fraudOutcomes >= 2
+    ? Math.min(1, (outcomeStats.fraud_rate || 0) + Math.min((outcomeStats.chargeback || 0) / 3, 0.3))
+    : fraudHeuristic;
 
   // Disaster (0–1): FEMA flood + USFS wildfire + NOAA storm + CAL FIRE FHSZ
   let disasterFlood = 0;
@@ -937,12 +953,23 @@ app.get('/v1/risk', async (req, res) => {
   const disasterWildfireFinal = Math.max(disasterCalFire, disasterWildfire);
   const disaster = Math.min(1, Math.max(0, disasterFlood * 0.6 + disasterWildfireFinal * 0.25 + disasterStorm * 0.15));
 
-  // Vacancy (0–1): zero queries = potential vacancy; addr_class heuristic
-  const neverQueried  = (signalRow.query_count || 0) === 0 ? 0.3 : 0;
-  const classVacancy  = (addr.addr_class || '').toLowerCase().includes('vacant') ? 0.5 : 0;
-  const vacancy       = Math.min(1, Math.max(0, neverQueried + classVacancy));
+  // Vacancy (0–1)
+  // v2: delivery_failed rate is a strong vacancy signal (drone/postal confirmed inaccessible)
+  // v1: zero-query heuristic + addr_class flag
+  const neverQueried = (signalRow.query_count || 0) === 0 ? 0.3 : 0;
+  const classVacancy = (addr.addr_class || '').toLowerCase().includes('vacant') ? 0.5 : 0;
+  const failedDeliverySignal = deliveryOutcomes >= 3
+    ? Math.min((outcomeStats.delivery_failed || 0) / deliveryOutcomes * 0.8, 0.8)
+    : 0;
+  const vacancy = Math.min(1, Math.max(0,
+    failedDeliverySignal > 0 ? failedDeliverySignal : neverQueried + classVacancy
+  ));
 
-  // ── 4. Build response ─────────────────────────────────────────────
+  // ── 4. Determine score version ────────────────────────────────────
+  const hasOutcomes = outcomeStats.total_outcomes > 0;
+  const scoreVersion = (deliveryOutcomes >= 3 || fraudOutcomes >= 2) ? 'v2' : 'v1';
+
+  // ── 5. Build response ─────────────────────────────────────────────
   ok(res, {
     nad_uuid:  addr.nad_uuid,
     address:   enriched.full_address || `${addr.add_number || ''} ${addr.st_name || ''}`.trim(),
@@ -962,16 +989,81 @@ app.get('/v1/risk', async (req, res) => {
       wildfire_class:      wildfireRow?.whp_class      || calFireRow?.fhsz_label || null,
       storm_events_10yr:   stormRow?.event_count       || null,
       cal_fire_fhsz:       calFireRow?.fhsz_label      || null,
+      ...(hasOutcomes && {
+        outcomes: {
+          total:            outcomeStats.total_outcomes,
+          delivery_success: outcomeStats.delivery_success,
+          delivery_failed:  outcomeStats.delivery_failed,
+          fraud_confirmed:  outcomeStats.fraud_confirmed,
+          chargeback:       outcomeStats.chargeback,
+        },
+      }),
     },
     data_coverage: {
-      fema_flood:   femaResult !== null,
-      wildfire:     wildfireRow !== null,
-      storm:        stormRow    !== null,
-      cal_fire:     calFireRow  !== null,
-      ground_truth: (signalRow.query_count || 0) > 0,
+      fema_flood:    femaResult   !== null,
+      wildfire:      wildfireRow  !== null,
+      storm:         stormRow     !== null,
+      cal_fire:      calFireRow   !== null,
+      ground_truth:  (signalRow.query_count || 0) > 0,
+      outcome_feedback: hasOutcomes,
     },
-    version: '1.0-beta',
+    score_version: scoreVersion,
+    version: '2.0',
   });
+});
+
+// POST /v1/outcomes — Submit delivery / fraud / chargeback outcome for an address.
+// Requires Professional+. Body: { nad_uuid, outcome_type, outcome_value?, metadata? }
+// Outcome types: delivery_success | delivery_failed | fraud_confirmed | fraud_cleared | chargeback | claim_filed
+app.post('/v1/outcomes', async (req, res) => {
+  const _outKey = req.headers['x-api-key'] || req.query.key;
+  if (!_outKey) return res.status(401).json({ ok: false, error: 'API key required.' });
+  const _outInfo = keys.validate(_outKey);
+  if (!_outInfo) return res.status(401).json({ ok: false, error: 'Invalid or revoked API key.' });
+  req.keyInfo = _outInfo;
+
+  if (!req.keyInfo.limits?.enrichment) {
+    return res.status(402).json({
+      ok: false,
+      error: 'outcomes_require_professional',
+      message: 'Outcome feedback requires a Professional plan or higher.',
+      upgrade_url: `${BASE_URL}/portal.html`,
+    });
+  }
+
+  const { nad_uuid, outcome_type, outcome_value, metadata } = req.body || {};
+
+  if (!nad_uuid)     return err(res, 'nad_uuid is required.');
+  if (!outcome_type) return err(res, 'outcome_type is required.');
+  if (!KeyStore.VALID_OUTCOME_TYPES.has(outcome_type)) {
+    return err(res, `Invalid outcome_type. Valid values: ${[...KeyStore.VALID_OUTCOME_TYPES].join(', ')}`);
+  }
+
+  // Validate nad_uuid exists in our DB (rate-limit abuse prevention)
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+  const exists = nad.db.prepare('SELECT 1 FROM addresses WHERE nad_uuid = ? LIMIT 1').get(nad_uuid);
+  if (!exists) return err(res, 'nad_uuid not found in address database.', 404);
+
+  // Per-key rate limit: max 10K outcome submissions per day
+  const todayCount = keys.db.prepare(`
+    SELECT COUNT(*) AS n FROM address_outcomes
+    WHERE key_id = ? AND reported_at >= date('now')
+  `).get(req.keyInfo.id).n;
+  if (todayCount >= 10000) {
+    return res.status(429).json({ ok: false, error: 'outcome_rate_limit', message: 'Max 10,000 outcome submissions per day per key.' });
+  }
+
+  keys.recordOutcome(req.keyInfo.id, nad_uuid, outcome_type,
+    outcome_value != null ? parseFloat(outcome_value) : null,
+    metadata || null);
+
+  res.status(201).json({ ok: true, data: { nad_uuid, outcome_type, recorded: true } });
+});
+
+// GET /v1/admin/outcomes — Outcome feedback summary (admin only)
+app.get('/v1/admin/outcomes', adminAuth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit || '50'), 200);
+  ok(res, keys.getOutcomeSummary(limit));
 });
 
 app.get('/v1/admin/keys', adminAuth, (req, res) => {
@@ -1537,6 +1629,9 @@ app.get('/compliance', (req, res) => {
 });
 app.get('/sitemap.xml', (req, res) => {
   res.type('application/xml').sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+});
+app.get('/bulk', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'bulk.html'));
 });
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));

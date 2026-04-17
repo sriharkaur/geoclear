@@ -88,7 +88,7 @@ _Last updated: 2026-04-17 (session 23 — comprehensive testing framework spec a
 > Target: $5,000 MRR, NRR > 100%, ECPC growing week-over-week.
 
 - [ ] **Create Bulk Credits Pack in Stripe** — 1M credits for $199 one-time; 5M for $799. No expiry. No enrichment (preserves Pro upsell). Add "Clean a list?" CTA to pricing page. *Only after CSV upload exists or is scheduled.*
-- [ ] **Build `/bulk` landing page** — H1: "Clean your address list. No subscription." Framing: upload CSV → validate → download. Pricing: 1M / $199. File: `public/bulk.html`
+- [x] **Build `/bulk` landing page** ✅ 2026-04-17 — `public/bulk.html` + `/bulk` route. Drag-drop CSV upload zone, 3-step how-it-works, input/output column table, pricing grid (free/$199 1M/$799 5M), FAQ, signup modal. Wired to `POST /api/address/csv`. Bulk credits `buyBulk()` stub ready — needs Stripe price IDs from dashboard.
 - [ ] **Compliance outreach batch 3 (30 targets)** — apply learnings from batches 1 + 2.
 - [ ] **G2 listing** — Category: "Address Verification Software". Content in `AddressAPIBusinessGTM.md`. Keywords: "bulk address validation", "CRM data quality".
 - [ ] **Capterra listing** — same content as G2. Category: "Address Verification".

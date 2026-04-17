@@ -8,6 +8,10 @@
 ---
 
 ## Unreleased
+
+- **`/bulk` landing page** — drag-drop CSV upload zone wired to `POST /api/address/csv`; 3-step how-it-works; input/output column table; pricing grid (free / $199 1M / $799 5M one-time); FAQ accordion; signup modal. Route `/bulk` added to `web-server.js`. File: `public/bulk.html`
+- **`/sitemap.xml`** — 8-URL sitemap covering all public pages; `application/xml` content-type; explicit route added before catch-all. Google Search Console: geoclear.io Domain property verified via Cloudflare DNS TXT integration (automatic); sitemap submitted with status Success, 7 URLs discovered.
+- **Render auto-deploy fix** — documented manual trigger via `POST /v1/services/srv-d7ep7bfavr4c73d46gng/deploys`; logged in COMMS.md #4 for dashboard investigation.
 > Features merged to main but not yet cut into a version.
 
 - **Landing page — full rewrite** — H1/H2/CTA updated; FEMA anchor copy above pricing; tier rename (Starter→Builder, Growth→Professional, Most Popular badge moved to Professional); Enterprise banner ($2,000/mo + Contact us CTA); data provenance section (4 sources); competitive comparison table (GeoClear vs SmartyStreets vs Lob vs Melissa)

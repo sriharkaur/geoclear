@@ -180,6 +180,7 @@ All require `X-Admin-Secret` header.
 
 | Page | Path | Description |
 |------|------|-------------|
+| Bulk address cleaning | `/bulk` → `public/bulk.html` | Drag-drop CSV upload; wired to `POST /api/address/csv`; pricing grid ($199/1M, $799/5M one-time); FAQ; signup modal |
 | Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, pricing grid, free signup modal. Route: `/` → `landing.html`, `/explorer` → `index.html` |
 | Trust layer | landing page | Sri Yantra ghost watermark (5% opacity, screen blend); data sources strip (USDOT NAD r22, Overture Maps, Census TIGER/Line, FEMA NFHL); Stripe secured badge + cancel-anytime note under pricing; 99.9% uptime badge → `/status` |
 | Scroll fade-up animations | landing page | IntersectionObserver-driven fade+translateY on all sections; 75ms stagger on grid cards (feat-grid, steps, enrich-grid, pricing-grid) |

@@ -87,7 +87,174 @@ class KeyStore {
         fraud_signal_count  INTEGER NOT NULL DEFAULT 0
       );
       CREATE INDEX IF NOT EXISTS idx_signals_count ON address_signals(query_count DESC);
+
+      CREATE TABLE IF NOT EXISTS address_outcomes (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        nad_uuid       TEXT    NOT NULL,
+        key_id         INTEGER NOT NULL REFERENCES api_keys(id),
+        outcome_type   TEXT    NOT NULL,
+        outcome_value  REAL,
+        metadata_json  TEXT,
+        reported_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_outcomes_uuid ON address_outcomes(nad_uuid);
+      CREATE INDEX IF NOT EXISTS idx_outcomes_key  ON address_outcomes(key_id);
+      CREATE INDEX IF NOT EXISTS idx_outcomes_type ON address_outcomes(outcome_type, nad_uuid);
+
+      CREATE TABLE IF NOT EXISTS data_sources (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_id        TEXT    NOT NULL UNIQUE,
+        name             TEXT    NOT NULL,
+        publisher        TEXT    NOT NULL,
+        license          TEXT,
+        role             TEXT    NOT NULL,
+        description      TEXT,
+        coverage         TEXT,
+        api_url          TEXT,
+        format           TEXT,
+        auth_required    INTEGER NOT NULL DEFAULT 0,
+        pipeline_script  TEXT,
+        attributes_json  TEXT,
+        use_cases        TEXT,
+        last_sourced_at  TEXT,
+        next_refresh_at  TEXT,
+        refresh_cadence  TEXT,
+        row_count        INTEGER,
+        status           TEXT    NOT NULL DEFAULT 'active',
+        notes            TEXT,
+        created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
+        updated_at       TEXT    NOT NULL DEFAULT (datetime('now'))
+      );
     `);
+
+    // ── Seed data_sources ─────────────────────────────────────────
+    const seedSources = this.db.prepare(`
+      INSERT OR IGNORE INTO data_sources
+        (source_id, name, publisher, license, role, description, coverage, api_url, format,
+         auth_required, pipeline_script, attributes_json, use_cases,
+         last_sourced_at, next_refresh_at, refresh_cadence, row_count, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const seedTx = this.db.transaction(() => {
+      seedSources.run(
+        'nad', 'National Address Database (NAD r22)', 'US Department of Transportation (USDOT)',
+        'Public domain', 'foundational',
+        'Primary US address corpus. ~47 states, 120M+ addresses. Updated quarterly by USDOT.',
+        '47 states, 120,160,305 addresses',
+        'https://data.transportation.gov/download/fc2s-wawr/application/x-zip-compressed',
+        'CSV, UTF-8 BOM, 60 columns (~38 GB uncompressed, NAD_r22.txt)',
+        0, 'download.js',
+        JSON.stringify(['add_number','st_name','unit','post_city','inc_muni','state','zip_code','plus4','county','latitude','longitude','placement','addr_type','deliver_typ','parcel_src','parcel_id','anom_status','add_auth']),
+        'Address search (/api/address), autocomplete (/api/suggest), proximity (/api/near), geographic hierarchy, confidence scoring, residential classification',
+        '2026-04-14', '2026-07-15', 'Quarterly (USDOT ~4x/year)', 120160305, 'active',
+        'NAD r22. Next: r23 expected ~Q3 2026. Monitor data.transportation.gov.'
+      );
+      seedSources.run(
+        'overture', 'Overture Maps Foundation Addresses (2026-02-18.0)', 'Overture Maps Foundation',
+        'CDLA Permissive 2.0', 'foundational',
+        'Open-source address gap-fill for states with incomplete NAD coverage. Apache 2.0 contributors: Apple, Meta, Microsoft, Amazon.',
+        '16+ states, 64,900,000 addresses',
+        's3://overturemaps-us-west-2/release/2026-02-18.0/theme=addresses/type=address',
+        'GeoParquet (.zstd.parquet), partitioned by bounding box',
+        0, 'overture-import.js',
+        JSON.stringify(['id','number','street','unit','postal_city','region','postcode','latitude','longitude','bbox','sources','version']),
+        'Gap-fill for FL, MI, NJ, NV, NH, CA, PA, GA and more. Combined corpus: 198,657,535 addresses.',
+        '2026-04-14', null, 'Quarterly; align with NAD refresh', 64900000, 'active',
+        'release 2026-02-18.0. Monitor overturemaps.org for new releases. Dedup key: nad_uuid = overture id.'
+      );
+      seedSources.run(
+        'census_tiger', 'US Census Bureau TIGER/Line Geocoder', 'US Census Bureau',
+        'Public domain', 'enrichment_live',
+        'Federal geocoding API returning census geography (tracts, block groups, GEOIDs) for any lat/lon.',
+        'All US addresses',
+        'https://geocoding.geo.census.gov/geocoder/geographies/coordinates',
+        'JSON REST API',
+        0, null,
+        JSON.stringify(['census_tract','census_block_grp','census_geoid','state_fips','county_fips','block_code']),
+        '/api/enrich (census_tract, census_block_grp, census_geoid). HMDA and CRA compliance reporting.',
+        null, null, 'Live API — no refresh needed; vintage updated annually by Census', null, 'active',
+        'LRU cache ~10K entries. Census tract boundaries change every 10 years (next: 2030).'
+      );
+      seedSources.run(
+        'fema_nfhl', 'FEMA National Flood Hazard Layer (NFHL)', 'FEMA',
+        'Public domain', 'enrichment_live',
+        'Authoritative FEMA flood hazard zones for insurance, lending, and NFIP compliance. Primary competitive differentiator for GeoClear.',
+        'All US addresses',
+        'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query',
+        'ArcGIS FeatureServer JSON (layer 28: S_FLD_HAZ_AR)',
+        0, null,
+        JSON.stringify(['flood_zone','flood_sfha','community_name','dfirm_panel','flood_ar_id']),
+        '/api/enrich (flood_zone, flood_sfha, flood_community). Risk score disaster dimension. NFIP compliance. Insurance underwriting. Mortgage origination.',
+        null, null, 'Live API — FEMA updates NFHL continuously; no action needed', null, 'active',
+        'Primary value prop. Manual flood determination = $3-$15/address; we return it free. LRU cache ~10K entries.'
+      );
+      seedSources.run(
+        'usgs_3dep', 'USGS 3D Elevation Program (3DEP) EPQS', 'US Geological Survey (USGS)',
+        'Public domain', 'enrichment_live',
+        'Ground elevation data from 1m lidar (where available) or 10m fallback for any US lat/lon.',
+        'All US addresses',
+        'https://epqs.nationalmap.gov/v1/json',
+        'JSON REST API',
+        0, null,
+        JSON.stringify(['elevation_ft']),
+        '/api/enrich (elevation_ft). Disaster risk context. Insurance underwriting. Construction/development compliance.',
+        null, null, 'Live API — USGS updates 3DEP lidar coverage continuously; no action needed', null, 'active',
+        '1m lidar resolution where available, ~10m fallback. LRU cache ~10K entries.'
+      );
+      seedSources.run(
+        'usfs_whp', 'USFS Wildfire Hazard Potential (WHP)', 'US Forest Service (USFS) via Esri Living Atlas',
+        'Public domain', 'enrichment_cached',
+        'County-level wildfire risk assessment on a 1-5 scale (Very Low to Very High). Imported into risk.db.',
+        '3,108 US counties',
+        'https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/USA_Wildfire_Hazard_Potential/FeatureServer/2/query',
+        'ArcGIS FeatureServer JSON, 1,000-row pagination',
+        0, 'wildfire-import.js',
+        JSON.stringify(['county_fips','county_name','state_abbrev','whp_class','whp_mean','whp_majority','whp_median']),
+        '/v1/risk (data.wildfire dimension). County-level wildfire risk for insurance underwriting, real estate disclosure, lender risk.',
+        '2026-04-17', '2026-10-01', 'Annual (USFS updates WHP ~Q4 each year)', 3108, 'active',
+        'Stored in risk.db table county_wildfire. Next refresh: 2026-10-01. Cross-reference with CAL FIRE for CA addresses.'
+      );
+      seedSources.run(
+        'noaa_storm', 'NOAA Storm Events Database', 'NOAA National Centers for Environmental Information (NCEI)',
+        'Public domain', 'enrichment_cached',
+        '10-year rolling aggregate of storm events (tornado, hurricane, hail, flood) by county. Imported into risk.db.',
+        '3,257 US counties',
+        'https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/',
+        'Gzipped CSV per year (StormEvents_details-ftp_v1.0_d{YEAR}_c{YEAR+1}*.csv.gz)',
+        0, 'storm-import.js',
+        JSON.stringify(['county_fips','state_code','county_name','event_count','tornado_count','hurricane_count','hail_count','flood_count','years_covered']),
+        '/v1/risk (data.storm dimension). County-level storm frequency for insurance underwriting, property risk, lender diligence.',
+        '2026-04-17', '2027-03-01', 'Annual (NOAA publishes full-year data ~Q1 of following year)', 3257, 'active',
+        '10-year window: 2015-2024. Stored in risk.db table county_storm. Next refresh 2027-03-01 for 2026 data. Roll window: drop oldest year, add new.'
+      );
+      seedSources.run(
+        'calfire_fhsz', 'CAL FIRE Fire Hazard Severity Zones (FHSZ)', 'California Department of Forestry and Fire Protection (CAL FIRE)',
+        'Public domain (California state)', 'enrichment_cached',
+        'Parcel-level fire hazard severity zones for California. More granular than USFS WHP for CA addresses. Grid-rasterized for O(1) lat/lon lookup.',
+        'California only',
+        'https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/FHSZ_SRA/FeatureServer/0/query',
+        'ArcGIS FeatureServer JSON with polygon geometry (SRA + LRA layers)',
+        0, 'calfire-import.js',
+        JSON.stringify(['fhsz_class','county','source_type']),
+        '/v1/risk (data.cal_fire dimension). California fire hazard risk for insurance, real estate disclosure (CA law requires FHSZ disclosure at sale).',
+        null, null, 'Ad hoc — triggered by CAL FIRE re-designation events (every 3-5 years)', null, 'blocked',
+        'BLOCKED: ArcGIS endpoint (services1.arcgis.com/jUJYIo9tSA7EHvfZ) returning Invalid URL as of 2026-04-17. Need updated URL from gis.data.ca.gov.'
+      );
+      seedSources.run(
+        'openaddresses', 'OpenAddresses', 'OpenAddresses community (global contributors)',
+        'ODbL — Open Data Commons Open Database License', 'planned',
+        'Community-sourced address dataset covering ~50M additional US addresses not in NAD or Overture.',
+        '~50M additional US addresses',
+        'https://batch.openaddresses.io/api/collections',
+        'Gzipped CSV per state (LON,LAT,NUMBER,STREET,UNIT,CITY,DISTRICT,REGION,POSTCODE,ID,HASH)',
+        0, 'openaddresses-import.js',
+        JSON.stringify(['longitude','latitude','number','street','unit','city','district','region','postcode','id','hash']),
+        'Planned: expand corpus to ~250M total addresses. Improve rural ZIP+4 coverage.',
+        null, null, 'Continuous community updates; snapshot every ~6 months', 50000000, 'planned',
+        'PENDING: ODbL share-alike may complicate commercial API usage. Legal review required before import.'
+      );
+    });
+    seedTx();
 
     // ── Migrations ────────────────────────────────────────────────
     try { this.db.exec(`ALTER TABLE api_keys ADD COLUMN stripe_subscription_id TEXT`); } catch (_) {}
@@ -382,6 +549,95 @@ class KeyStore {
       ORDER BY query_count DESC
       LIMIT ?
     `).all(limit);
+  }
+
+  getDataSources(status = null) {
+    const q = status
+      ? `SELECT * FROM data_sources WHERE status = ? ORDER BY role, source_id`
+      : `SELECT * FROM data_sources ORDER BY role, source_id`;
+    const rows = status ? this.db.prepare(q).all(status) : this.db.prepare(q).all();
+    return rows.map(r => ({ ...r, attributes_json: JSON.parse(r.attributes_json || '[]') }));
+  }
+
+  updateDataSource(sourceId, fields) {
+    const allowed = ['last_sourced_at','next_refresh_at','row_count','status','notes'];
+    const updates = Object.entries(fields).filter(([k]) => allowed.includes(k));
+    if (!updates.length) return null;
+    const set = updates.map(([k]) => `${k} = ?`).join(', ');
+    const vals = [...updates.map(([, v]) => v), sourceId];
+    return this.db.prepare(
+      `UPDATE data_sources SET ${set}, updated_at = datetime('now') WHERE source_id = ?`
+    ).run(...vals);
+  }
+
+  // ── Outcome feedback (Risk Score v2) ─────────────────────────────
+
+  static VALID_OUTCOME_TYPES = new Set([
+    'delivery_success', 'delivery_failed',
+    'fraud_confirmed',  'fraud_cleared',
+    'chargeback',       'claim_filed',
+  ]);
+
+  recordOutcome(keyId, nadUuid, outcomeType, outcomeValue = null, metadata = null) {
+    this.db.prepare(`
+      INSERT INTO address_outcomes (nad_uuid, key_id, outcome_type, outcome_value, metadata_json)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(nadUuid, keyId, outcomeType, outcomeValue, metadata ? JSON.stringify(metadata) : null);
+
+    // Side-effects on address_signals for fraud/chargeback
+    if (outcomeType === 'fraud_confirmed' || outcomeType === 'chargeback') {
+      this.recordFraudSignal(nadUuid);
+    }
+  }
+
+  // Returns aggregate outcome stats for one address — used by /v1/risk v2 scoring
+  getOutcomeStats(nadUuid) {
+    const rows = this.db.prepare(`
+      SELECT outcome_type, COUNT(*) AS n
+      FROM address_outcomes WHERE nad_uuid = ?
+      GROUP BY outcome_type
+    `).all(nadUuid);
+
+    const counts = {};
+    for (const r of rows) counts[r.outcome_type] = r.n;
+
+    const deliveries = (counts.delivery_success || 0) + (counts.delivery_failed || 0);
+    const fraudTotal = (counts.fraud_confirmed  || 0) + (counts.fraud_cleared   || 0);
+    return {
+      total_outcomes:    rows.reduce((s, r) => s + r.n, 0),
+      delivery_success:  counts.delivery_success  || 0,
+      delivery_failed:   counts.delivery_failed   || 0,
+      fraud_confirmed:   counts.fraud_confirmed   || 0,
+      fraud_cleared:     counts.fraud_cleared     || 0,
+      chargeback:        counts.chargeback        || 0,
+      claim_filed:       counts.claim_filed       || 0,
+      delivery_rate:     deliveries > 0 ? (counts.delivery_success || 0) / deliveries : null,
+      fraud_rate:        fraudTotal  > 0 ? (counts.fraud_confirmed  || 0) / fraudTotal  : null,
+    };
+  }
+
+  // Admin: outcome volume by type + top addresses by outcome count
+  getOutcomeSummary(limit = 50) {
+    const byType = this.db.prepare(`
+      SELECT outcome_type, COUNT(*) AS n
+      FROM address_outcomes GROUP BY outcome_type ORDER BY n DESC
+    `).all();
+
+    const byKey = this.db.prepare(`
+      SELECT k.key_prefix, k.email, k.tier, COUNT(o.id) AS submissions
+      FROM address_outcomes o JOIN api_keys k ON k.id = o.key_id
+      GROUP BY o.key_id ORDER BY submissions DESC LIMIT ?
+    `).all(limit);
+
+    const topAddresses = this.db.prepare(`
+      SELECT nad_uuid, COUNT(*) AS total,
+        SUM(CASE WHEN outcome_type='delivery_failed' THEN 1 ELSE 0 END) AS failed,
+        SUM(CASE WHEN outcome_type='fraud_confirmed'  THEN 1 ELSE 0 END) AS fraud
+      FROM address_outcomes
+      GROUP BY nad_uuid ORDER BY total DESC LIMIT ?
+    `).all(limit);
+
+    return { by_type: byType, by_key: byKey, top_addresses: topAddresses };
   }
 
   /** Store a Stripe Checkout session (pre-payment) */
