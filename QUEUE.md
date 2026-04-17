@@ -52,8 +52,8 @@ _Last updated: 2026-04-17 (session 21 — data catalog created at docs/DATA-CATA
 - [x] **Build welcome email drip (3 emails, SendGrid)** ✅ 2026-04-17 — Day 1: existing keyEmail on signup. Day 3: sent if first_call_at set (shows enrichment curl example). Day 7: upgrade prompt for free/starter, feature roundup for paid. Daily cron at 01:00 UTC. `drip_sent` column tracks state. Manual trigger: `POST /v1/admin/drip/run`. — Day 1: key + 5-min quickstart curl example; Day 3 (only if ≥ 1 API call made): "you've made X calls — here's what enrichment looks like"; Day 7: upgrade to Professional for unlimited enrichment. Personalise with `GET /v1/me` usage data.
 - [x] **Product Hunt listing** ✅ 2026-04-17 — Draft saved at `producthunt.com/products/geoclear-address-intelligence-api`. Name: "GeoClear — Address Intelligence API", tagline: "Address API with FEMA flood zone + census tract. Free." (54 chars), description + maker comment filled, tags: Developer Tools + API, pricing: Paid with free tier, bootstrapped, gallery: landing page screenshot. Ready to schedule launch date.
 - [ ] **Compliance outreach batch 2 (15 new targets)** — apply learnings from batch 1. If flood zone subject got replies: keep. If not: test `"Quick question about your flood zone workflow"` or `"HMDA census tract API — $249/mo, no sales call"`.
-- [ ] **Set up KPI cadence** — (a) bookmark daily pulse: `/v1/admin/keys/stats`, Stripe subscriptions, SendGrid activity; (b) create `sessions/KPI-WEEKLY-LOG.md`; (c) set Stripe notifications at $1, $500, $2,500, $5,000 MRR.
-- [ ] **Set calendar reminders** — Month 3 checkpoint: 2026-07-16. Month 5 investment trigger ($5K MRR). Month 6 review: 2026-10-16.
+- [x] **Set up KPI cadence** ✅ 2026-04-17 — `sessions/KPI-WEEKLY-LOG.md` with bookmarks (daily pulse, analytics, Stripe, SendGrid, uptime) + weekly metrics template. Stripe MRR notifications checklist included.
+- [x] **Set calendar reminders** ✅ 2026-04-17 — Google Calendar events created: Month 3 (2026-07-16, red), Month 5 investment trigger (2026-09-16, orange), Month 6 strategic review (2026-10-16, blue). Each with full assessment checklist.
 
 ### Day 30 Checkpoint
 
