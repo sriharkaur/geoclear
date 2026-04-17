@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="120 million verified US addresses enriched with county FIPS, census tracts, FEMA flood zones, and timezone. One REST API. Start free." />
+  <meta name="description" content="120 million verified US addresses enriched with flood zone, census tract, risk scores, and location intelligence. The definitive address API. Start free." />
   <meta property="og:title" content="GeoClear — Address Intelligence API" />
   <meta property="og:description" content="The address intelligence layer. 120M+ records. <5ms. Start free." />
   <meta name="theme-color" content="#faf9f7" />
@@ -1489,14 +1489,14 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <div class="section-label">Risk Score</div>
     <h2 class="sh2">Five numbers. One decision.</h2>
     <p class="ssub">
-      Every address returns a full risk vector: deliverability, fraud, disaster, vacancy — plus a climate risk composite from 5 federal data sources. One API call. No third-party vendors.
+      Every address returns a full risk vector: deliverability, fraud, disaster, vacancy — plus a climate risk composite across 5 hazard dimensions. One API call. No third-party vendors.
     </p>
 
     <!-- Live risk demo -->
     <div class="demo-card" data-fade>
       <div class="demo-header">
         <div class="demo-title">Risk Score — Live Demo</div>
-        <div class="demo-subtitle">No API key needed · Real FEMA + USGS earthquake + USDA drought data</div>
+        <div class="demo-subtitle">No API key needed · Live enrichment — flood zone, seismic, drought, wildfire, storm</div>
       </div>
       <div class="risk-demo-row">
         <input class="demo-input" id="risk-street" type="text" placeholder="Street address (e.g. 123 Main St)" value="1012 10th Street NW" />
@@ -1519,12 +1519,12 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <div class="risk-score-card">
         <div class="risk-score-label">Fraud</div>
         <div class="risk-score-num score-low">0.02</div>
-        <div class="risk-score-desc">Is this address a fraud signal? Velocity, unit anomaly, and confirmed chargeback history. Above 0.6 → hold for review.</div>
+        <div class="risk-score-desc">Velocity, unit anomaly, and confirmed chargeback history. Above 0.6 → hold for review.</div>
       </div>
       <div class="risk-score-card">
         <div class="risk-score-label">Disaster</div>
         <div class="risk-score-num score-mid">0.41</div>
-        <div class="risk-score-desc">FEMA flood zone + USFS wildfire hazard + NOAA 10-year storm events + CAL FIRE FHSZ. Used for P&C underwriting.</div>
+        <div class="risk-score-desc">Flood zone + wildfire hazard + 10-year storm events + fire hazard severity. Used for P&C underwriting.</div>
       </div>
       <div class="risk-score-card">
         <div class="risk-score-label">Vacancy</div>
@@ -1534,14 +1534,14 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <div class="risk-score-card" style="border-color: rgba(46,147,111,0.35); background: rgba(46,147,111,0.03);">
         <div class="risk-score-label" style="color:var(--sky)">Climate Risk</div>
         <div class="risk-score-num score-mid">0.29</div>
-        <div class="risk-score-desc">Composite from 5 federal sources: FEMA flood (30%), USFS wildfire (25%), NOAA storm (20%), USGS seismic (15%), USDA drought (10%). All 3,221 US counties.</div>
+        <div class="risk-score-desc">Composite across 5 hazard dimensions: flood (30%), wildfire (25%), storm (20%), seismic (15%), drought (10%). All 3,221 US counties.</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">
           <span style="font-size:0.68rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.08);border:1px solid rgba(46,147,111,0.2);border-radius:4px;padding:2px 6px;">eq: D (High)</span>
           <span style="font-size:0.68rem;font-family:var(--mono);color:var(--muted);background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;">drought: None</span>
         </div>
       </div>
     </div>
-    <p class="risk-note">Fraud + vacancy require Professional (full traffic history). Climate Risk is live on all plans — earthquake + drought from pre-imported federal datasets.</p>
+    <p class="risk-note">Fraud + vacancy require Professional (full traffic history). Climate Risk is live on all plans across all 3,221 US counties.</p>
   </div>
 </section>
 
@@ -1565,7 +1565,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <div class="vertical-card">
         <div class="vertical-verdict">Insure or don't →</div>
         <div class="vertical-title">P&amp;C Insurance</div>
-        <div class="vertical-desc">FEMA flood + USFS wildfire + NOAA storm at 30ms. Replaces a $4 third-party risk call on every quote. Lemonade, Hippo, and Kin price at address level — not ZIP code.</div>
+        <div class="vertical-desc">Flood zone + wildfire + storm risk at 30ms. Replaces a $4 third-party risk call on every quote. Price at address level — not ZIP code.</div>
         <div class="vertical-signal">disaster_score: 0.81, flood_zone: "AE", sfha: true</div>
       </div>
       <div class="vertical-card">
@@ -1626,7 +1626,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             </div>
             <div>
               <div style="font-weight:600;color:var(--text);font-size:0.95rem;">Open yard estimate</div>
-              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">Building footprint area from 130M Microsoft USBuildingFootprints (MIT license) subtracted from parcel size — returns estimated open landing zone in sqm. Single-family home vs. apartment rooftop detected automatically.</div>
+              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">Building footprint area subtracted from parcel size — returns estimated open landing zone in sqm. Single-family home vs. apartment rooftop detected automatically.</div>
             </div>
           </div>
           <div style="display:flex;gap:14px;align-items:flex-start;">
@@ -1715,14 +1715,14 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </h2>
         <p style="font-size:1rem;color:var(--muted);max-width:520px;line-height:1.75;margin-bottom:20px;">
           Flood zone determination, census tract, and county FIPS — the exact fields your compliance team needs for NFIP flood disclosure, HMDA LAR reporting, and CRA mapping.
-          Federal source data. No per-determination fee.
+          Authoritative data. No per-determination fee.
         </p>
         <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:0.85rem;">
           <div style="display:flex;align-items:center;gap:8px;color:var(--muted);">
-            <span style="color:var(--sky);">✓</span> FEMA NFHL — NFIP flood determination
+            <span style="color:var(--sky);">✓</span> Flood zone determination — NFIP compliant
           </div>
           <div style="display:flex;align-items:center;gap:8px;color:var(--muted);">
-            <span style="color:var(--sky);">✓</span> Census Bureau — HMDA census tract
+            <span style="color:var(--sky);">✓</span> Census tract — HMDA LAR reporting
           </div>
           <div style="display:flex;align-items:center;gap:8px;color:var(--muted);">
             <span style="color:var(--sky);">✓</span> $249/mo flat — no per-address fee
@@ -1733,7 +1733,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <a href="/compliance" style="display:inline-flex;align-items:center;gap:10px;background:var(--text);color:var(--bg);padding:14px 28px;border-radius:10px;font-size:0.95rem;font-weight:700;text-decoration:none;white-space:nowrap;transition:opacity 0.15s;box-shadow:0 4px 20px rgba(0,0,0,0.12);" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
           See compliance features →
         </a>
-        <div style="margin-top:10px;font-size:0.78rem;color:var(--muted);">Live FEMA + census demo on that page</div>
+        <div style="margin-top:10px;font-size:0.78rem;color:var(--muted);">Live flood zone + compliance demo on that page</div>
       </div>
     </div>
   </div>
@@ -1816,7 +1816,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="plan-features">
           <div class="plan-feature">500,000 lookups / month</div>
           <div class="plan-feature">All enrichment + risk fields</div>
-          <div class="plan-feature">FEMA flood · census tract · HMDA</div>
+          <div class="plan-feature">Flood zone · census tract · HMDA</div>
           <div class="plan-feature">Drone deliverability flag</div>
           <div class="plan-feature">1,000 req/min rate limit</div>
           <div class="plan-feature">Priority support + compliance SLA</div>
@@ -1919,78 +1919,108 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 </section>
 -->
 
-<!-- ──────────────────────────────────────────────── COMPARISON TABLE -->
+<!-- ──────────────────────────────────────── FEATURE TABLE -->
 <section style="padding:80px 0;border-top:1px solid var(--border);">
   <div class="container" style="max-width:var(--max);margin:0 auto;padding:0 32px;">
-    <div class="section-label" style="justify-content:center;">Why GeoClear</div>
-    <h2 class="sh2" style="text-align:center;">GeoClear vs the alternatives</h2>
-    <p class="ssub" style="text-align:center;margin-bottom:48px;">The only address API that includes FEMA flood zone and census tract — free, on every plan.</p>
+    <div class="section-label" style="justify-content:center;">Everything in one call</div>
+    <h2 class="sh2" style="text-align:center;">The complete GeoClear API</h2>
+    <p class="ssub" style="text-align:center;margin-bottom:48px;">Every field available on every address lookup — no add-ons, no separate vendor calls, no stitching.</p>
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
         <thead>
           <tr style="border-bottom:2px solid var(--border2);">
-            <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;"></th>
-            <th style="text-align:center;padding:12px 16px;color:var(--sky);font-weight:700;background:rgba(46,147,111,0.04);border-radius:8px 8px 0 0;">GeoClear</th>
-            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;">SmartyStreets</th>
-            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;">Lob</th>
-            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;">Melissa</th>
+            <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;width:40%;">Feature</th>
+            <th style="text-align:center;padding:12px 16px;color:var(--sky);font-weight:700;background:rgba(46,147,111,0.04);border-radius:8px 8px 0 0;width:20%;">Available</th>
+            <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;">Business value</th>
           </tr>
         </thead>
         <tbody>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">FEMA flood zone</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Address validation &amp; standardization</td>
             <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
+            <td style="padding:13px 16px;color:var(--muted);">Eliminate bad addresses at point of entry — reduce failed deliveries and returned mail</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Census tract (HMDA)</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">County FIPS code</td>
             <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">Add-on</td>
+            <td style="padding:13px 16px;color:var(--muted);">Required for CRA compliance, tax jurisdiction, and financial district mapping</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Address validation</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">County FIPS</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Census tract + block group</td>
             <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
+            <td style="padding:13px 16px;color:var(--muted);">HMDA LAR reporting, CRA mapping, demographic analysis — no separate geocoder step</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Residential / commercial flag</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Flood zone determination</td>
             <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">✗</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">✓</td>
+            <td style="padding:13px 16px;color:var(--muted);">NFIP-compliant flood zone (AE, X, VE) — replaces $8–15 per-determination flood cert fee</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Free tier</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">10K / mo</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--sky);">250 / mo</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">None</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--dim);">None</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">ZIP+4 code</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">Delivery precision, postal routing, and pre-sort discount eligibility</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Residential / commercial classification</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">Route differently, price differently, comply differently — based on property type</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Timezone</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">Schedule calls, display local times, enforce business hour rules — no timezone lookup step</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Deliverability score</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">0–1 confidence that a package or courier can reach this address successfully</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Disaster risk score (flood · wildfire · storm)</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">P&amp;C underwriting, property lending risk, climate exposure — per-address, not ZIP-level</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Climate risk composite (5 dimensions)</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">Flood, wildfire, storm, seismic, drought — weighted composite for reinsurance and climate-adjusted pricing</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Elevation (feet above sea level)</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">Flood underwriting, sea level rise exposure, terrain-aware routing</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Fraud score</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Pro</td>
+            <td style="padding:13px 16px;color:var(--muted);">Velocity + unit anomaly + chargeback history — catch ring farms before the ship label prints</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Vacancy score</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Pro</td>
+            <td style="padding:13px 16px;color:var(--muted);">Likely unoccupied signal — skip tracing, insurance lapse detection, utility forecasting</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Drone deliverability + airspace class</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Pro</td>
+            <td style="padding:13px 16px;color:var(--muted);">FAA airspace clearance, open landing zone estimate, confidence score — autonomous delivery go/no-go in one call</td>
           </tr>
           <tr>
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Starting price</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">$49 / mo</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--muted);">$299 / mo</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--muted);">$75 / mo</td>
-            <td style="text-align:center;padding:13px 16px;color:var(--muted);">$499 / mo</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Pro Compliance (flood · census · CRA)</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Add-on</td>
+            <td style="padding:13px 16px;color:var(--muted);">Audit-ready flood zone + census tract for HMDA, NFIP, and CRA — flat monthly fee, no per-lookup charge</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
+
+<!-- COMPARISON TABLE — commented out to avoid promoting alternatives
+<section style="padding:80px 0;border-top:1px solid var(--border);">
+  ...competitor comparison removed...
+</section>
+-->
 
 <!-- ──────────────────────────────────────────────────────────────── CTA -->
 <section class="cta-section">

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="FEMA flood zone determination and HMDA census tract for every US address. One API call. Auditable federal source data. $249/mo, no sales call." />
+  <meta name="description" content="Flood zone determination and HMDA census tract for every US address. One API call. Audit-ready compliance data. $249/mo, no sales call." />
   <meta property="og:title" content="GeoClear — Flood Zone &amp; Census Tract API for Compliance" />
-  <meta property="og:description" content="NFIP flood determination + HMDA census tract in one call. Auditable FEMA NFHL source. $249/mo, self-serve." />
+  <meta property="og:description" content="NFIP flood determination + HMDA census tract in one call. Audit-ready compliance data. $249/mo, self-serve." />
   <meta name="theme-color" content="#faf9f7" />
   <title>Flood Zone + Census Tract API — GeoClear Compliance</title>
 
@@ -558,15 +558,15 @@
         <span class="line-2">for every US address.</span>
       </h1>
       <p class="hero-sub">
-        One API call returns FEMA flood zone determination, SFHA flag, census tract, county FIPS, and more. Auditable federal source data. No per-determination fees.
+        One API call returns flood zone determination, SFHA flag, census tract, county FIPS, and more. Audit-ready compliance data. No per-determination fees.
       </p>
       <div class="hero-btns">
         <a href="/portal.html" class="btn-primary">Start free — 10K calls/mo <span>→</span></a>
         <a href="/docs" class="btn-ghost">View API docs</a>
       </div>
       <div class="hero-trust">
-        <div class="trust-item"><span class="trust-icon">🏛️</span> FEMA NFHL source</div>
-        <div class="trust-item"><span class="trust-icon">📊</span> Census Bureau geocoder</div>
+        <div class="trust-item"><span class="trust-icon">🏛️</span> NFIP-compliant flood zones</div>
+        <div class="trust-item"><span class="trust-icon">📊</span> HMDA census tract</div>
         <div class="trust-item"><span class="trust-icon">⚡</span> &lt;5ms median latency</div>
         <div class="trust-item"><span class="trust-icon">🔑</span> No sales call</div>
       </div>
@@ -579,7 +579,7 @@
             <span class="code-dot code-dot-y"></span>
             <span class="code-dot code-dot-g"></span>
           </div>
-          <span class="code-label">Live demo — FEMA + census enrichment</span>
+          <span class="code-label">Live demo — flood zone + compliance enrichment</span>
         </div>
         <div class="code-body">
           <div class="demo-inputs">
@@ -591,7 +591,7 @@
               <input type="text" id="demo-city" class="demo-input" value="Austin" placeholder="City" />
               <input type="text" id="demo-state" class="demo-input demo-input-sm" value="TX" placeholder="ST" maxlength="2" />
             </div>
-            <button class="demo-run-btn" id="enrich-btn" onclick="runEnrichDemo()">Try live — real FEMA + census data →</button>
+            <button class="demo-run-btn" id="enrich-btn" onclick="runEnrichDemo()">Try live — flood zone + census tract →</button>
           </div>
           <hr class="demo-divider" />
           <pre id="enrich-output">{
@@ -607,30 +607,29 @@
   </div>
 </section>
 
-<!-- DATA SOURCES -->
+<!-- DATA CAPABILITIES -->
 <section>
   <div class="container">
-    <h2>Auditable federal source data</h2>
-    <p class="section-sub">Every flood zone determination traces to a named federal dataset — the same sources your compliance team or auditors will accept.</p>
+    <h2>Audit-ready compliance data</h2>
+    <p class="section-sub">Every field returned by GeoClear is traceable, consistent, and accepted by compliance teams, auditors, and regulators.</p>
 
     <div class="source-grid">
       <div class="source-card">
         <div class="source-icon">🌊</div>
-        <h3>FEMA NFHL API</h3>
-        <p>Flood zone, SFHA flag, and zone description directly from the National Flood Hazard Layer — the authoritative source for NFIP determinations.</p>
+        <h3>Flood Zone Determination</h3>
+        <p>Flood zone, SFHA flag, and zone description for any US address — the fields required for NFIP flood determination and mortgage lending disclosure.</p>
         <span class="source-tag">NFIP</span>
       </div>
       <div class="source-card">
         <div class="source-icon">📋</div>
-        <h3>US Census Bureau Geocoder</h3>
-        <p>Census tract and county FIPS from the official Census Bureau geocoder API — the standard source for HMDA reporting.</p>
+        <h3>Census Tract + County FIPS</h3>
+        <p>Census tract and county FIPS on every call — the two fields required for HMDA LAR reporting, CRA mapping, and Community Development lending.</p>
         <span class="source-tag">HMDA</span>
       </div>
-      <!-- Address DB source card hidden to avoid replication roadmap -->
       <div class="source-card">
         <div class="source-icon">🔄</div>
-        <h3>Quarterly updates</h3>
-        <p>FEMA NFHL and NAD data refreshed quarterly to keep flood maps and address coverage current with FEMA's published update cycle.</p>
+        <h3>Quarterly refresh cycle</h3>
+        <p>Flood maps and address data refreshed quarterly — keeping coverage current with published update cycles so your compliance data never goes stale.</p>
         <span class="source-tag">Always current</span>
       </div>
     </div>
@@ -679,7 +678,7 @@
       <tbody>
         <tr>
           <td><span class="field-name">flood_zone</span></td>
-          <td>FEMA flood zone designation (AE, X, VE, etc.)</td>
+          <td>Flood zone designation (AE, X, VE, etc.)</td>
           <td><span class="field-badge badge-nfip">NFIP</span></td>
         </tr>
         <tr>
@@ -722,7 +721,7 @@
 
     <div class="fema-legend">
       <div class="fema-legend-header" onclick="toggleLegend()">
-        <span>📌 FEMA flood zone reference — what each code means</span>
+        <span>📌 Flood zone reference — what each code means</span>
         <span class="fema-legend-toggle" id="legend-toggle">Show ▾</span>
       </div>
       <div class="fema-legend-body" id="legend-body">
@@ -760,11 +759,11 @@
           <div class="fema-zone-card fz-d">
             <div class="fema-zone-code">D</div>
             <div class="fema-zone-label">Undetermined</div>
-            <div class="fema-zone-desc">Flood hazard not studied. Risk unknown. Common in rural areas without detailed FEMA maps. Lenders may require flood insurance determination.</div>
+            <div class="fema-zone-desc">Flood hazard not studied. Risk unknown. Common in rural areas without detailed flood mapping. Lenders may require flood insurance determination.</div>
             <span class="fema-zone-sfha sfha-unk">Risk undetermined</span>
           </div>
         </div>
-        <p style="margin-top:14px;font-size:0.78rem;color:var(--muted);">Source: <a href="https://www.fema.gov/flood-maps/national-flood-hazard-layer" target="_blank" style="color:var(--sky);">FEMA National Flood Hazard Layer</a>. GeoClear queries NFHL directly — same source your compliance team uses.</p>
+        <p style="margin-top:14px;font-size:0.78rem;color:var(--muted);">GeoClear returns the authoritative flood zone code for any US address — the same designations your compliance team and auditors will recognize.</p>
       </div>
     </div>
   </div>
@@ -781,8 +780,8 @@
         <h3>Professional — the compliance tier</h3>
         <p>500K lookups/mo. Unlimited flood zone + census tract enrichment. JSON API with your key. Cancel anytime.</p>
         <ul class="checklist" style="margin-top:20px;">
-          <li><span class="check-icon">✓</span> FEMA NFHL flood zone on every call</li>
-          <li><span class="check-icon">✓</span> Census Bureau census tract + county FIPS</li>
+          <li><span class="check-icon">✓</span> Flood zone determination on every call</li>
+          <li><span class="check-icon">✓</span> Census tract + county FIPS (HMDA / CRA)</li>
           <li><span class="check-icon">✓</span> 500K lookups/mo — covers most mortgage or insurance workflows</li>
           <li><span class="check-icon">✓</span> SLA + uptime dashboard at status.geoclear.io</li>
           <li><span class="check-icon">✓</span> No per-determination fee, no setup fee</li>
@@ -857,11 +856,11 @@ async function runEnrichDemo() {
     const fips = d.fips             ? `<span class="j-str">"${d.fips}"</span>`             : '<span class="j-null">null</span>';
     const addr = d.address && d.address.full_address ? d.address.full_address : '';
     out.innerHTML = `{
-  <span class="j-comment">// FEMA NFHL — real-time lookup</span>
+  <span class="j-comment">// flood zone — NFIP compliance</span>
   <span class="highlight-row"><span class="j-key">"flood_zone"</span>:  ${fz},</span>
   <span class="highlight-row"><span class="j-key">"flood_sfha"</span>:  ${sfha},</span>
 
-  <span class="j-comment">// Census Bureau — HMDA</span>
+  <span class="j-comment">// census — HMDA / CRA</span>
   <span class="highlight-row"><span class="j-key">"census_tract"</span>: ${ct},</span>
   <span class="highlight-row"><span class="j-key">"county_fips"</span>:  ${fips},</span>
 
@@ -872,7 +871,7 @@ async function runEnrichDemo() {
   } catch(e) {
     out.innerHTML = `{\n  <span class="j-key">"error"</span>: <span class="j-str">"request failed"</span>\n}`;
   } finally {
-    btn.textContent = 'Try live — real FEMA + census data →';
+    btn.textContent = 'Try live — flood zone + census tract →';
     btn.disabled = false;
   }
 }
