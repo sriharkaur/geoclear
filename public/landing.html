@@ -1607,7 +1607,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     </div>
 
     <!-- Static explainer cards -->
-    <div class="risk-scores-grid" data-fade-group>
+    <div class="risk-scores-grid" id="risk-static-grid" data-fade-group>
       <div class="risk-score-card">
         <div class="risk-score-label">Deliverability</div>
         <div class="risk-score-num score-low">0.94</div>
@@ -2702,14 +2702,14 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     const city    = document.getElementById('risk-city').value.trim();
     const state   = document.getElementById('risk-state').value.trim();
     const results = document.getElementById('risk-results');
-    if (!street) { results.innerHTML = '<div class="demo-placeholder" style="color:var(--red)">Enter a street address.</div>'; return; }
-
+    const staticGrid = document.getElementById('risk-static-grid');
+    if (!street) { staticGrid.style.display = ''; results.innerHTML = '<div class="demo-placeholder" style="color:var(--red)">Enter a street address.</div>'; return; }
     results.innerHTML = '<div class="demo-placeholder">Scoring…</div>';
     try {
       const params = new URLSearchParams({ street, city, state });
       const r = await fetch(`/api/demo/risk?${params}`);
       const body = await r.json();
-      if (!r.ok) { results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">${body.error || 'Not found'}</div>`; return; }
+      if (!r.ok) { staticGrid.style.display = ''; results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">${body.error || 'Not found'}</div>`; return; }
       const d = body.data;
       const sc = d.scores;
       const sig = d.signals;
@@ -2727,6 +2727,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 
       const addr = d.address;
       const addrLine = [addr.address_number, addr.street_name, addr.city, addr.state, addr.zip_code].filter(Boolean).join(' ');
+      staticGrid.style.display = 'none';
       results.innerHTML = `
         <div style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;font-family:var(--mono)">${addrLine}</div>
         <div class="risk-scores-grid" style="margin:0 0 12px;grid-template-columns:repeat(4,1fr)">
@@ -2776,6 +2777,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </div>` : ''}
       `;
     } catch(e) {
+      staticGrid.style.display = '';
       results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Demo unavailable locally — <a href="https://geoclear.io" style="color:var(--sky)">try it live at geoclear.io</a></div>`;
     }
   }
