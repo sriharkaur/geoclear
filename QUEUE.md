@@ -86,6 +86,7 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 - [ ] **Q-152 · [P1-UPTIME] Staging replica procedure** — Documented in RUNBOOK-DATA.md: verify staging is superset of prod → run imports → validate → upload. No deviation. *Effort: 1 hr doc*
 - [ ] **Q-158 · [P1-UPTIME] UptimeRobot /api/health/detailed keyword monitor** — Keyword check for `"status":"ok"` (not `"degraded"`). Fires on missing tables, stale data, FEMA probe failures. *30 min after Q-147.*
 - [ ] **Q-159 · [P1-UPTIME] UptimeRobot address resolution smoke test** — Already created (ID 802868421). Verify it's firing correctly once Q-147 is up.
+- [ ] **Q-160 · [P1-UPTIME] Set NAD_ADMIN_SECRET on prod** — Prod is currently using the default `nad_admin_localdev` fallback (no `NAD_ADMIN_SECRET` env var set in Render dashboard). Admin endpoints (`/v1/admin/*`) are publicly accessible to anyone who reads the source. Fix: generate a random 64-char secret, set as `NAD_ADMIN_SECRET` in Render prod env vars, update RUNBOOK-ENV-VARS.md. *Effort: 10 min. P1 security.*
 
 ---
 
@@ -598,7 +599,7 @@ Open:
 - [x] **Q-130 · Compliance page — interactive demo + FEMA legend + cost calculator** ✅ 2026-04-17 — Hero-right: live input (number/street/city/state) → real `/api/demo/enrich` response shows `flood_zone`, `flood_sfha`, `census_tract`, `county_fips`. FEMA zone legend (expandable: AE/VE/A/X/D with SFHA status). Cost calculator (slider: N lookups/mo → manual $3–15/ea vs GeoClear $249/mo + % savings). Auth bypass: `req.path.startsWith('/demo')` in API gateway. File: `public/compliance.html`, `web-server.js`.
 - [x] **Q-131 · Landing page compliance callout section** ✅ 2026-04-17 — Prominent section between verticals and pricing: "HMDA, NFIP, and CRA fields. One API call. Auditable source." → links to `/compliance`. Three trust bullets + "See compliance features →" CTA. File: `public/landing.html`.
 - [x] **Q-132 · Climate Risk Score per address — Phase 1** ✅ 2026-04-17 — All 4 county-level risk tables live in prod risk.db: wildfire (3,108 counties USFS WHP), storm (3,257 counties NOAA NCEI 10yr), earthquake (3,221 counties USGS NSHM), drought (3,221 counties USDA). `/api/demo/risk` stable, <4s, no crash loops. Address direction suffix stripping fixed so directional addresses (e.g. "10th Street NW") match NAD. Demo prepopulated with working DC address.
-- [x] **Q-137 · [P3-FEAT] Climate Risk Score — Phase 2** ⏳ IN PROGRESS 2026-04-17 — `nri-import.js` written and committed. FEMA NRI wired into `/api/demo/risk` (v2.2-demo): heat_wave, hurricane, coastal_flood, nri_composite, nri_rating. `getNRIRisk()` in risk-data.js. **Pending: run `node nri-import.js` on staging Render Shell, then upload risk.db chunk to prod + merge.** Until run, `nri_risk` table is empty and NRI fields return null.
+- [x] **Q-137 · [P3-FEAT] Climate Risk Score — Phase 2** ✅ 2026-04-17 — NRI import complete: 3,142 counties in `nri_risk` table. Downloaded via FEMA ArcGIS public service (bulk CSV URL was 301-blocked on Render). risk.db uploaded to prod (1.7MB). Prod `reload-risk-db` confirmed: wildfire ✅ storm ✅ earthquake ✅ drought ✅ nri ✅. Note: FEMA bulk CSV URL (hazards.fema.gov) permanently redirected — future re-imports must use ArcGIS paginated API or pre-download locally.
 
 ---
 
