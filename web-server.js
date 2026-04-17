@@ -1739,7 +1739,7 @@ app.get('/api/demo', demoLimiter, (req, res) => {
   const { street, number, city, state, zip } = req.query;
   if (!street && !zip && !number) return err(res, 'Provide at least street or zip.');
   const raw = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 3 });
-  if (!raw.length) return err(res, 'No addresses found.');
+  if (!raw.length) return res.status(200).json({ ok: false, error: 'No addresses found.' });
   ok(res, raw.map(enrichAddress), { count: raw.length, demo: true });
 });
 
