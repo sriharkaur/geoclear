@@ -1,146 +1,132 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-15 (session 6 — SWOT analysis)_
+_Last updated: 2026-04-17 (session 16 — RapidAPI listing live)_
+
+> **North Star:** $100K MRR in 12 months
+> **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
+> **Rule:** No new strategy sessions until Day 60. No new product features until first paying customer.
+> **Strategy files:** [STRATEGY-INDEX.md](strategy/STRATEGY-INDEX.md) — all 9 analyses with conclusions
 
 ---
 
-## 🎯 SWOT PRIORITIES — Next 30 Days (from 2026-04-15 analysis)
-> Source: `strategy/2026-04-15-swot-analysis.md`
+## 🔴 URGENT — Fix Now (production data issue)
 
-### Top 5 — Do in this order
-
-- [ ] **P1 — RapidAPI marketplace listing** — upload `openapi.yaml`, write enrichment-led description, set pricing tiers. ~60 min. Success: listing live within 7 days, first API call from RapidAPI within 14 days.
-- [x] **P2 — Ship `/docs` page** — full endpoint reference, curl + Node.js examples, sidebar nav, rate limits, errors. ✅
-- [ ] **P3 — Warm outreach to 20 target companies** — logistics, proptech, fintech. Use template in `AddressAPIBusinessGTM.md`. Success: 20 sent, 5 replies, 1 paid trial within 30 days.
-- [x] **P4 — Usage dashboard in customer portal** — quota bar, 70% upgrade CTA, enrichment preview. ✅
-- [ ] **P5 — Complete + announce Overture 185M merge** — verify row count, post HN + LinkedIn announcement. Success: 185M+ confirmed, announcement posted.
-
-### Enrichment Monetization — "Enrichment = Pro" conversion lever (S1 + W2)
-
-- [x] **Return enrichment fields as `null` for free/starter** — `census_tract`, `flood_zone`, `flood_sfha` + `_enrichment` upgrade hint on every `/api/address` response for non-pro tiers. ✅
-- [x] **Soft-gate `/api/enrich` for free/starter** — 402 with example response + `upgrade_url` for free/starter/metered. ✅
-- [x] **Enrichment preview in portal** — live enrichment field preview in `/portal.html`; shows real values for pro, `null — Pro required` for others. ✅
-- [x] **Reframe pricing page** — portal pricing grid now leads with enrichment access; census tract + FEMA flood zone as primary differentiator. ✅
-- [ ] **Fintech/insurance vertical outreach** — FEMA flood zone is a compliance line item for mortgage lenders (NFIP), property insurers, proptech. Outreach message: "flood zone determination API, self-serve, $249/mo" — not generic "address API." Target: lenders, insurers, proptech platforms.
-
-### Infrastructure — CDN & Availability (T3)
-
-> **Context:** Current setup is Cloudflare DNS-only (grey cloud) → Render origin. This means every request hits Render directly — no edge caching, no DDoS mitigation, no failover. Fine for launch, but a liability once paying customers depend on uptime. The fix is enabling Cloudflare proxy (orange cloud), but it has one hard prerequisite that will cause an outage if skipped.
->
-> **Critical SSL prerequisite before enabling proxy:** Cloudflare's default SSL mode is "Flexible" — it encrypts browser→Cloudflare but sends plain HTTP to the origin. Render's custom domain cert expects HTTPS end-to-end. If you flip the orange cloud with Flexible SSL, the Render cert chain breaks and the site goes down. Set SSL/TLS mode to **Full (strict)** in Cloudflare dashboard *before* enabling proxy. Verify on `geoclear-staging.onrender.com` first — staging has the same Render cert setup.
-
-- [x] **Enable Cloudflare proxy (orange cloud) on geoclear.io** ✅
-  - SSL/TLS set to Full (strict), both DNS records proxied, CF-Ray header confirmed in smoke test
-
-- [x] **Add Cloudflare cache rules for read-only API responses** ✅
-  - Rule: "GeoClear read-only API cache" — matches `/api/stats`, `/api/states`, `/api/health`
-  - TTL: 5 minutes (300s), ignore cache-control header — 1 of 10 active Cache Rules used
-
-- [ ] **Evaluate Render autoscaling or standby instance** *(defer until first enterprise customer)*
-  - Current single-instance setup: a deploy or process crash = 30–60s downtime
-  - Render paid plans support multiple instances with zero-downtime deploys
-  - Not urgent until an enterprise customer signs an uptime SLA — flag for T2 milestone
+- ✅ **FK relink on prod** — DONE 2026-04-17. MI/NJ/NV/NH/FL/CA now show correct counts (FL: 41.7M, CA: 15M, MI: 9.5M, NJ: 10M, NV: 2.3M, NH: 870K). Fixed via `POST /v1/admin/refresh-counts` after adding `refresh-counts-worker.js`.
 
 ---
 
-## 🚀 LAUNCH BLOCKERS — ALL DONE ✅
+## PHASE 1 — Days 1–30: Ship the 7 GTM Assets
+> Every item here is a prerequisite for the first paying customer. Do in sequence. No detours.
 
-- [x] Render Web Service deployed (`srv-d7ep7bfavr4c73d46gng`) ✅
-- [x] GitHub repo: `sriharkaur/geoclear` — Render auto-deploys on push ✅
-- [x] Persistent disk at `/data` — nad.db (91GB, 120M addresses) ✅
-- [x] All env vars set on Render ✅
-- [x] Cloudflare CNAME `geoclear.io → geoclear.onrender.com` ✅
-- [x] SSL via Render custom domain ✅
-- [x] Smoke test passing: `https://geoclear.io/api/health` ✅
+### Week 1 — Foundation (Days 1–7)
 
-### Stripe Setup — ALL DONE ✅
-- [x] Live Stripe secret key, webhook secret, price IDs set in Render ✅
-- [x] Live webhook registered: `https://geoclear.io/v1/webhook/stripe` ✅
-- [x] Metered billing live: `STRIPE_METER_ID` + `STRIPE_PRICE_METERED` (live meter) ✅
-- [x] Free tier self-serve signup (`POST /v1/signup`) ✅
-- [x] `customer.subscription.deleted` → downgrade to free ✅
-- [x] `customer.subscription.updated` → key tier synced on plan change ✅
-- [x] `invoice.payment_failed` → dunning email sent ✅
-- [x] Upgrade-in-place — existing key upgraded, no duplicate issued ✅
+- [x] **RapidAPI listing** ✅ 2026-04-17 — GeoClear live at `rapidapi.com/auduuai/api/geoclear`. OpenAPI spec imported, all endpoints (Address/Enrichment/Geography/Account/Status), base URL `https://geoclear.io`, X-Api-Key auth, Category: Data, visibility: Public.
+- [ ] **`/compliance` landing page** — H1: "Flood zone + census tract for every US address. NFIP-ready." Body: FEMA NFHL as primary source (auditable for legal), HMDA census tract, self-serve $249/mo, no sales call. Show live JSON response with `flood_zone`, `flood_sfha`, `census_tract`. CTA: "Start free." File: `public/compliance.html`, route in `web-server.js`. *Destination for all compliance outreach emails — zero Claire conversions without this.*
+- [ ] **Google Search Console setup** — add geoclear.io as property, verify via Cloudflare DNS TXT record, submit sitemap. 20 min. *Prerequisite for all SEO traction.*
+- [ ] **Build compliance outreach list — 15 targets** — LinkedIn: "VP Product" OR "Head of Engineering" + "mortgage" OR "insurance" OR "proptech". Targets: Encompass, BytePro, Maxwell, Blend, Qualia, Snapdocs, Hippo Insurance, Kin Insurance, Better.com, Morty, Neptune Flood, Openly, Lemonade. Add name + direct email to `AddressAPIBusinessGTM.md`.
+- [ ] **Send compliance outreach batch 1 (15 emails)** — plain text, < 150 words. Subject: `"Flood zone determination API — NFIP-ready, self-serve, $249/mo"`. Body: NFIP compliance framing → live API JSON showing `flood_zone: "AE"`, `flood_sfha: true`, `census_tract` → link to `/compliance`. *Do not send until /compliance page is live.*
 
-### Legal & Trust — ALL DONE ✅
-- [x] Privacy Policy — `GET /privacy` ✅
-- [x] Terms of Service — `GET /terms` ✅
-- [x] Status page — UptimeRobot monitors live, shown on landing page + `/status.html` ✅
+### Week 2 — Launch (Days 8–14)
+
+- [ ] **Post "Show HN: GeoClear"** — title: `"Show HN: GeoClear – US address API with FEMA flood zone + census tract in one call"`. Post Tuesday or Wednesday 9am PT. First comment: data pipeline (NAD + Overture + FEMA NFHL + Census Bureau), enrichment fields, free tier limits, link to /docs. *Post after RapidAPI listing is live.*
+- [ ] **Write `/docs/vs-smartystreets` comparison page** — capability table (flood zone ✅ vs ❌, census tract, pricing, free tier), migration guide. SEO target: "SmartyStreets alternative", "address API with flood zone". File: `public/docs/vs-smartystreets.html`.
+- [ ] **Write `/docs/flood-zone-api` SEO page** — "What is FEMA flood zone data?", FEMA zone codes (AE, X, VE), how to get it via API, curl example. SEO target: "FEMA flood zone API", "NFIP flood determination API". Submit both new pages to GSC.
+- [ ] **Follow up compliance outreach batch 1** — Day 5 after send (~Day 10–12). One sentence: "Did you get a chance to see the flood zone response? Happy to do a 15-min call." Max 2 touchpoints total.
+- [ ] **LinkedIn founder post — FEMA anchor** — "Manual flood zone determination costs $3–$15 per address. We built an API that returns it for free (up to 1K/day)." Screenshot of API response showing `flood_zone`. Tag PropTech + mortgage tech communities.
+
+### Week 3 — Messaging + Instrumentation (Days 15–21)
+
+- [ ] **Rewrite landing page H1/H2/CTA** — H1: `"US address intelligence. One call. Everything included."` H2: `"Validate, geocode, and enrich US addresses with census tract, FEMA flood zone, and timezone — from a free API key."` CTA: `"Get your free key"`. File: `public/landing.html`
+- [ ] **Add FEMA anchor copy to pricing section** — above the pricing grid: `"Manual flood zone determination costs $3–$15 per address. GeoClear Pro includes unlimited flood zone lookups for $249/mo."` File: `public/landing.html`
+- [ ] **Rename tiers on pricing page + portal** — display names only (internal keys unchanged): Starter → Builder, Pro → Professional. File: `public/landing.html`, `public/portal.html`
+- [ ] **Set "Most Popular" badge on Professional tier** — move visual highlight to the $249 card; make pricing slider default-land on Professional on page load. File: `public/landing.html`
+- [ ] **Add Enterprise "Starting at $2,000/mo"** — removes ambiguity; adds "Contact us" CTA. File: `public/landing.html`
+- [ ] **Add data provenance section to landing page** — all three personas ask "where does this data come from?" Four sources with logos + one-liner each: USDOT NAD r22, Overture Maps, FEMA NFHL API, US Census Bureau Geocoder. File: `public/landing.html`
+- [ ] **Add competitive comparison table to landing page** — GeoClear vs SmartyStreets vs Lob vs Melissa. Key row: FEMA flood zone (✅ free vs ❌ vs ❌ vs ❌). File: `public/landing.html`
+- [ ] **Add `first_call_at` timestamp to `api_keys` table** — set on first successful API call per key. Migration: `ALTER TABLE api_keys ADD COLUMN first_call_at INTEGER`. Set in auth middleware. Files: `schema.sql`, `web-server.js`
+- [ ] **Add `latency_ms` + `tier` columns to `usage_log`** — required for KPI tracking. Migration: `ALTER TABLE usage_log ADD COLUMN latency_ms INTEGER; ADD COLUMN tier TEXT`. Files: `schema.sql`, `web-server.js`
+
+### Week 4 — Convert + Retain (Days 22–30)
+
+- [ ] **Build `GET /v1/admin/analytics` endpoint** — 30-day breakdown: requests/day by tier, top 10 keys by volume, error rate, new signups/day, upgrades/downgrades. Required for daily pulse + weekly KPI review. File: `web-server.js`
+- [ ] **Build welcome email drip (3 emails, SendGrid)** — Day 1: key + 5-min quickstart curl example; Day 3 (only if ≥ 1 API call made): "you've made X calls — here's what enrichment looks like"; Day 7: upgrade to Professional for unlimited enrichment. Personalise with `GET /v1/me` usage data.
+- [ ] **Launch on Product Hunt** — gallery: landing page screenshot + API response screenshot + comparison table. Tagline: "US address intelligence. Flood zone + census tract in one call." Launch day after HN if HN performed well.
+- [ ] **Compliance outreach batch 2 (15 new targets)** — apply learnings from batch 1. If flood zone subject got replies: keep. If not: test `"Quick question about your flood zone workflow"` or `"HMDA census tract API — $249/mo, no sales call"`.
+- [ ] **Set up KPI cadence** — (a) bookmark daily pulse: `/v1/admin/keys/stats`, Stripe subscriptions, SendGrid activity; (b) create `sessions/KPI-WEEKLY-LOG.md`; (c) set Stripe notifications at $1, $500, $2,500, $5,000 MRR.
+- [ ] **Set calendar reminders** — Month 3 checkpoint: 2026-07-16. Month 5 investment trigger ($5K MRR). Month 6 review: 2026-10-16.
+
+### Day 30 Checkpoint
+
+- [ ] **[Day 30] $500 MRR check** — if yes: identify winning channel, double down in Phase 2. If no: email every free signup personally ("what were you trying to build?") before adding any new channels. Offer founding-customer pricing ($149/mo, locked 12 months) to first 5 customers.
+
+### War Room Triggers
+
+- [ ] **[Day 7] Outreach reply rate** — if 0 replies after 15 emails: check spam first; if fine, rewrite body to question-first opener.
+- [ ] **[HN day] < 10 upvotes** — do not repost. Immediately cross-post to dev.to + r/webdev + r/programming.
 
 ---
 
-## T0 — DATA & CORE
+## PHASE 2 — Days 30–60: Scale What Worked
+> Don't add new channels. Scale the one that produced the first customer.
 
-- [x] Overture Maps gap-fill — FL, MI, NJ, NV, NH ✅
-- [x] `inc_muni` vs `post_city` bug fixed ✅
-- [x] Address confidence score 0–100 on every response ✅
-- [x] Fuzzy / typo matching — `?fuzzy=true` on `/api/address` ✅
-- [x] Staging Render service (`srv-d7f6rh58nd3s73cve8dg`, `geoclear-staging.onrender.com`) — 100GB disk, autoDeploy OFF — data import environment, no local disk needed ✅
-- [x] `create-dev-db.js` — generates `data/dev.db` (572MB, 20K addrs/state) for local dev without 91GB nad.db ✅
-- [x] `POST /v1/admin/stream-upload` — streams large files to `/data` without buffering ✅
-- [x] `POST /v1/admin/upload-chunk` — resumable chunked upload for 37GB+ files (bypasses Render HTTP timeout) ✅
-- [x] `POST /v1/admin/merge` — merges a SQLite DB into nad.db in background (INSERT OR IGNORE, 10K-row batches) — fixed to use writable DB connection (session 6) ✅
-- [x] `sync-staging-to-prod.sh` — documents and guides staging → prod data promotion workflow ✅
-- [x] `POST /v1/admin/import-tsv-gz-cached` — re-run import from cached `/data/overture.tsv.gz`; now runs in `worker_threads` (non-blocking) ✅
-- [x] `import-worker.js` — standalone worker_threads module; offloads all SQLite bulk-insert work from main event loop ✅
-- [x] `GET /v1/admin/db-probe` — diagnostic endpoint: tests write access, schema inspection, test INSERT ✅
-- [x] Fixed write endpoints (`import-tsv-gz`, `import-tsv-gz-cached`, `merge`) — nad.db was opened readonly; now open separate writable connection per operation ✅
-- [x] **Overture full gap-fill import** — 64.9M addresses across FL(16.1M), CA(27.1M), MI(4.7M), NJ(4.9M), PA(2.3M), MS(2.3M), SC, GA, SD, HI, LA, NV, NH + more — in `overture-additions.db` (37GB) ✅
-- [x] **Merge Overture data into prod** — 198,657,535 addresses in nad.db. All 16 indexes rebuilt (completed 01:59 UTC 2026-04-16). ✅
-- [ ] Fill remaining state gaps via state GIS portals (AL, AK — not in Overture)
-- [x] Address disambiguation — `match_type` scoring in `findAddress()`; results ranked by specificity ✅
-- [x] Coverage declaration per response — `coverage` field on every `/api/address` result; `coverage` + `coverage_source` on `/api/state/:code` ✅
-- [x] OpenAddresses import script — `openaddresses-import.js` ready; run on staging when needed ✅
-- [ ] **FK relink on prod** — run `POST /v1/admin/relink-fks` after deploy to fix /api/states 0-counts for MI, NJ, NV, NH, FL, CA (64.9M Overture rows missing state_id) ⏳ IN PROGRESS
+- [ ] **Create Pro Compliance tier at $499 in Stripe** — new price ID; same feature flags as Professional + `sla: true`. Write 1-page SLA PDF: 99.9% uptime, < 4hr email support, data source attestation ("flood zone from FEMA NFHL — same primary source as FEMA flood map service center"). Save as `docs/geoclear-compliance-sla.pdf`. Add to `/compliance` landing. *Ship as soon as first Claire reply received.*
+- [ ] **Add "Why GeoClear vs SmartyStreets" section to `/docs`** — 3-row table. Drives SEO for "SmartyStreets alternative". File: `/docs`
+- [ ] **Add tagline to `/docs` page header** — `"198M US addresses. Census tract, FEMA flood zone, and timezone — one API call."`
+- [ ] **Add 500 enrichment calls/mo to Builder tier** — `enrichment_monthly_limit: 500` in `keys.js`; 402 + upgrade prompt when limit hit. Bridges $49→$249 gap; moves free-to-paid conversion ~8%→12%. Files: `keys.js`, auth middleware.
+- [ ] **Fix activation funnel if signup → first call rate < 40%** — add 30-second curl to welcome email day-1; add "5-min quickstart" to top of /docs; add upgrade prompt at 80% of daily rate limit.
+- [ ] **Scale winning channel** — if outreach: batch 3 (30 targets) + testimonial request from first customer. If RapidAPI/HN: 2 more SEO pages + submit to developer newsletters (TLDR, Bytes.dev).
+- [ ] **LinkedIn founder post — "one call" developer angle** — curl example returning `flood_zone` + `census_tract` + `timezone` + `residential`. "Free tier. No credit card." Cross-post to dev.to + r/webdev.
+- [ ] **"Why GeoClear" SEO content plan** — 10 target keywords from GSC data; map to pages/posts; schedule 1 post/week for 8 weeks.
+
+### Day 60 Checkpoint
+
+- [ ] **[Day 60] $2,500 MRR check + first monthly strategic review** — MRR, NRR, ECPC (North Star), CAC by channel, activation rate, cohort retention. Schedule breakeven review. Next strategy session at this point.
+
+---
+
+## PHASE 3 — Days 60–90: Execute to PMF Signal
+> Target: $5,000 MRR, NRR > 100%, ECPC growing week-over-week.
+
+- [ ] **Create Bulk Credits Pack in Stripe** — 1M credits for $199 one-time; 5M for $799. No expiry. No enrichment (preserves Pro upsell). Add "Clean a list?" CTA to pricing page. *Only after CSV upload exists or is scheduled.*
+- [ ] **Build `/bulk` landing page** — H1: "Clean your address list. No subscription." Framing: upload CSV → validate → download. Pricing: 1M / $199. File: `public/bulk.html`
+- [ ] **Compliance outreach batch 3 (30 targets)** — apply learnings from batches 1 + 2.
+- [ ] **G2 listing** — Category: "Address Verification Software". Content in `AddressAPIBusinessGTM.md`. Keywords: "bulk address validation", "CRM data quality".
+- [ ] **Capterra listing** — same content as G2. Category: "Address Verification".
+- [ ] **Begin CASS certification research** — USPS application requirements, engineering estimate, timeline. Add to T3 with start date. The 3–6 month process means starting late is costly.
+- [ ] **Set Crunchbase + Google alerts** — Crunchbase: "address verification" + "geocoding" + "property data" funding rounds. Google alerts: "Lob address enrichment", "Google Maps census tract", "SmartyStreets flood zone".
+- [ ] **Monthly check: SmartyStreets pricing page** — watch for flood zone or census tract appearing at any tier. If yes: reassess Pro tier pricing and GTM messaging immediately.
+
+### Day 90 Checkpoint
+
+- [ ] **[Day 90] Full assessment** — (1) $5K MRR? (2) ECPC growing week-over-week? (3) Which ICP converted most reliably? (4) Anyone churn — if yes, exit interview. (5) NRR > 100%? Schedule next 90-day plan.
+
+---
+
+## PRODUCT BACKLOG — Revenue-Blocking (do after first paying customer)
+
+- [ ] **CSV upload → enriched CSV download** — Ops Owen is entirely blocked without this. Input: CSV with address columns. Output: same CSV + `confidence`, `flood_zone`, `census_tract`, `residential`, `fips` appended. Endpoint: `POST /api/address/csv`. UI: drag-drop in portal. *Unblocks entire Ops Owen persona + Bulk Credits Pack.*
+- [ ] **Add metered cost calculator to pricing slider** — "500K addresses × $0.002 = $1,000." Add "one-time cleanup" framing alongside monthly subscription. File: `public/landing.html`
+- [ ] **Usage dashboard for customers** — self-serve usage over time in portal (calls/day, quota used, cost accrued for metered). File: `public/portal.html`
+- [ ] **API usage analytics endpoint** — `GET /v1/admin/analytics`: requests/day by tier, top keys by volume, error rate. *(also in Phase 1 Week 4 — done there, remove when complete)*
+- [ ] **Add 500-call enrichment taste to Builder tier** — *(also in Phase 2 — remove this entry when done)*
+- [ ] **FCC broadband tier by address** — $42B BEAD program demand. Enrichment field addition.
+- [ ] **Address standardization** — normalize to USPS format.
+- [ ] **Bulk async + webhooks** — for 10M+ record jobs (current bulk is sync, max 1K).
+
+---
+
+## T0 — DATA & CORE STATUS
+
+✅ Complete: NAD r22 (120M), Overture full gap-fill (64.9M), total 198,657,535 addresses, all 16 indexes live (2026-04-16).
+
+Open:
+- ✅ **FK relink on prod** — DONE 2026-04-17. All target states now showing correct counts.
+- [ ] Fill remaining state gaps — AL, AK (not in Overture — need state GIS portals)
 - [ ] NAD r23 quarterly update (~June 2026) — run on staging, merge to prod
 
 ---
 
-## T1 — REVENUE UNLOCKING (first paying customers)
-
-### Data Enrichment — ALL DONE ✅
-- [x] Census tract + block group — `GET /api/enrich` ✅
-- [x] County FIPS code — on every `/api/address` response ✅
-- [x] FEMA flood zone — `GET /api/enrich` ✅
-- [x] RDI — residential/commercial flag on every `/api/address` response ✅
-- [x] Timezone — on every `/api/address` response ✅
-- [ ] FCC broadband tier by address ($42B BEAD program demand)
-
-### API Completeness — MOSTLY DONE ✅
-- [x] Autocomplete / typeahead — `GET /api/suggest` ✅
-- [x] Proximity / reverse geocoding — `GET /api/near` + `GET /api/enrich` ✅
-- [x] Bulk address verify — `POST /api/address/bulk` (max 1,000 sync) ✅
-- [ ] Address standardization (normalize to USPS format)
-- [ ] Bulk async + webhooks (for 10M+ record jobs — current bulk is sync, max 1K)
-- [ ] CSV upload → enriched CSV download (web UI, no-code users)
-
-### Infrastructure — MOSTLY DONE
-- [x] Metered flush cron — self-scheduling at midnight UTC in server process ✅
-- [x] Per-lookup metered billing — `metered` tier, Stripe Billing Meter ✅
-- [x] Rate limit tiers per API key — `req_per_min` + `req_per_day` per-key ✅
-- [x] API key portal — `public/portal.html` ✅
-- [x] Landing page with live demo widget — `public/landing.html` ✅
-- [x] Status page — UptimeRobot + `/api/status` proxy + `/status.html` ✅
-- [x] OpenAPI spec — `openapi.yaml` at repo root (OAS 3.0, all public endpoints) ✅
-- [ ] Usage dashboard for API customers (self-serve usage over time)
-- [ ] **API usage analytics** — (a) add `latency_ms` + `tier` columns to `usage_log`; (b) build `GET /v1/admin/analytics` returning 30-day breakdown (requests/day by tier, top keys by volume, error rate); (c) wire Stripe dashboard for revenue metrics — no external tool needed at this stage
-
-### Launch Announcement — Pre-HN Gates
-- [ ] **Docs page** `/docs` — full endpoint reference with curl + Node.js examples. Blocker for HN post.
-- [ ] **15 warm outreach emails** — PropTech/Mortgage SaaS (Encompass, BytePro, Maxwell, Blend, Qualia, Snapdocs). Template in `AddressAPIBusinessGTM.md`. Include a live API key. Goal: 3 paying customers before HN.
-- [ ] **Hacker News Show HN** — Tuesday or Wednesday 9am PT after docs are live. Title + first-comment template in `AddressAPIBusinessGTM.md`.
-- [ ] **Product Hunt** — same day as HN.
-
-### Passive Channels (set up once)
-- [ ] **RapidAPI listing** — `openapi.yaml` ready. Steps: rapidapi.com → Provider Hub → Add New API → upload `openapi.yaml` → base URL `https://geoclear.io` → auth: `X-Api-Key`.
-- [ ] **G2 listing** — Category: "Address Verification Software". Content in `AddressAPIBusinessGTM.md`.
-- [ ] **Capterra listing** — same content as G2. Category: "Address Verification".
-- [ ] **SEO** — blog post targeting "SmartyStreets alternative", "US address verification API". Write after first 3 customers.
-
----
-
-## T2 — DIFFERENTIATION (days 30–90)
+## T2 — DIFFERENTIATION (after $10K MRR)
 
 ### Distribution
 - [ ] Node.js SDK (`npm install geoclear`)
@@ -151,12 +137,12 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 - [ ] Salesforce AppExchange listing
 
 ### Enterprise
-- [ ] 99.9% uptime SLA + credits policy (legal doc)
-- [ ] SOC 2 Type II audit — start process now (takes 6–12 months)
+- [ ] SOC 2 Type II audit — start process (takes 6–12 months); begin at $10K MRR
 - [ ] NCOA integration (address change detection — 40M Americans move/year)
 - [ ] Mortgage compliance bundle (HMDA + CRA + census tract + FIPS + flood in 1 call)
 - [ ] White-label / OEM API option
 - [ ] Data licensing tier (flat file download, $10K–$100K/yr)
+- [ ] Render autoscaling / standby instance — only when first enterprise customer signs SLA
 
 ### Address Intelligence
 - [ ] School district boundaries (top homebuyer question)
@@ -168,10 +154,10 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 
 ## T3 — MOAT (months 3–6)
 
-- [ ] USPS CASS certification (required for $10B direct mail market — 3–6 month process)
+- [ ] USPS CASS certification — required for $10B direct mail market; 3–6 month process; begin research Phase 3
 - [ ] DPV — Delivery Point Validation (bundled with CASS)
 - [ ] Automated quarterly NAD update pipeline (cron → detect → download → re-import)
-- [ ] Address change webhook service (push when address in DB changes)
+- [ ] Address change webhook service
 - [ ] International: Canada (Overture has CA data, 15M addresses)
 - [ ] International: UK (Ordnance Survey open data, 32M addresses)
 - [ ] Parcel ID / property tax linkage
@@ -181,7 +167,7 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 
 ## T4 — BIG SWINGS (6–18 months)
 
-- [ ] Physical World Graph API — address nodes connected to businesses, schools, flood zones, etc.
+- [ ] Physical World Graph API — address nodes connected to businesses, schools, flood zones
 - [ ] Climate Risk Score per address (FEMA + CAL FIRE + NOAA + USGS)
 - [ ] National 911 Address Layer — partner with NENA ($10B NG911 funding)
 - [ ] Autonomous Address Deduplication-as-a-Service (AI agent for CRM cleanup)
@@ -189,33 +175,38 @@ _Last updated: 2026-04-15 (session 6 — SWOT analysis)_
 
 ---
 
-## DOMAIN & INFRA STATUS
+## INFRA & DOMAIN STATUS
 
 | Item | Status |
 |------|--------|
-| geoclear.io DNS | ✅ Cloudflare CNAME → geoclear.onrender.com |
-| Render prod | ✅ Live — `srv-d7ep7bfavr4c73d46gng` (`geoclear.onrender.com`) |
-| Render staging | ✅ Live — `srv-d7f6rh58nd3s73cve8dg` (`geoclear-staging.onrender.com`) — 100GB disk, autoDeploy OFF |
-| GitHub repo | ✅ `sriharkaur/geoclear` — auto-deploys on push |
+| geoclear.io DNS | ✅ Cloudflare proxy (orange cloud), Full (strict) SSL |
+| Render prod | ✅ `srv-d7ep7bfavr4c73d46gng` — auto-deploys on push |
+| Render staging | ✅ `srv-d7f6rh58nd3s73cve8dg` — 100GB disk, autoDeploy OFF |
+| GitHub | ✅ `sriharkaur/geoclear` |
+| Cloudflare cache | ✅ `/api/stats`, `/api/states`, `/api/health` — 5min TTL |
 | auduu.com | ✅ Transfer to Cloudflare initiated |
-| auduu.ai | 🔒 Locked at GoDaddy, auto-renew OFF, expires Feb 25 2027 |
-| axiomprotocol.ai | 🔒 Locked at GoDaddy, auto-renew OFF, expires Jan 13 2028 |
+| auduu.ai | 🔒 GoDaddy, auto-renew OFF, expires 2027-02-25 |
+| axiomprotocol.ai | 🔒 GoDaddy, auto-renew OFF, expires 2028-01-13 |
 
 ---
 
-## PRICING (current plan)
+## PRICING (updated 2026-04-16)
 
-| Tier | Price | Lookups/mo |
-|------|-------|-----------|
-| Free | $0 | 10K/day |
-| Starter | $49/mo | 50K/day |
-| Growth | $249/mo | 500K/day |
-| Scale | $999/mo | 5M/day |
-| Enterprise | Custom | Unlimited |
-| Data License | $10K–$100K/yr | Local copy |
+| Tier | Display name | Price | Lookups/day | Enrichment | Notes |
+|------|-------------|-------|-------------|-----------|-------|
+| `free` | Free | $0 | 1,000 | No (nulled) | No credit card |
+| `starter` | Builder | $49/mo | 50,000 | 500 calls/mo taste | Bridges to Professional |
+| `pro` | Professional | $249/mo | 500,000 | Unlimited | Most Popular |
+| `pro_compliance` | Pro Compliance | $499/mo | 500,000 | Unlimited + SLA | Claire persona |
+| `scale` | Scale | $999/mo | 5,000,000 | Unlimited | Volume anchor |
+| `enterprise` | Enterprise | $2,000+/mo | Unlimited | Unlimited + custom | Contact us |
+| `metered` | Pay-as-you-go | per lookup | Unlimited | No | Ops Owen one-time |
+| — | Bulk Credits | $199/$799 one-time | — | No | 1M / 5M credits |
 
-**North Star:** $100K MRR in 12 months (20 Scale or 2 Enterprise customers)
+> **Financial facts:** Break-even = 1 Professional customer. Gross margin ~98%. LTV Professional $4,980 / Pro Compliance $16,633.
+
+**North Star:** $100K MRR in 12 months
 
 ---
 
-_Reference docs: `FEATURES.md` (what's built), `RELEASES.md` (version history), `AddressAPIBusinessGTM.md` (GTM playbook)_
+_Reference: `FEATURES.md` (built), `RELEASES.md` (history), `AddressAPIBusinessGTM.md` (GTM playbook), `strategy/` (9 analyses)_
