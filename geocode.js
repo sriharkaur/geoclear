@@ -36,6 +36,7 @@ const elevationCache  = new Map();
 const structuresCache = new Map();
 const gnisCache       = new Map();
 const nhdCache        = new Map();
+const calfireCache    = new Map();
 
 function pruneCache(map) {
   if (map.size > CACHE_MAX) {
@@ -208,6 +209,14 @@ async function getElevation(lat, lon) {
   return result;
 }
 
+// ── WGS84 ↔ Web Mercator (for services that require WKID 3857) ──
+function toWebMercator(lat, lon) {
+  return {
+    x: lon * 20037508.34 / 180,
+    y: Math.log(Math.tan((90 + lat) * Math.PI / 360)) * 20037508.34 / Math.PI,
+  };
+}
+
 // ── ArcGIS spatial helpers ────────────────────────────────────────
 
 function haversineMi(lat1, lon1, lat2, lon2) {
@@ -354,19 +363,54 @@ async function getNearestWaterway(lat, lon) {
   return result;
 }
 
+// ── CAL FIRE Fire Hazard Severity Zone ───────────────────────────
+// Live polygon lookup — no import needed. CA-only; null outside California.
+// FHSZ9 values: SRA_High, SRA_VeryHigh, LRA_High, LRA_VeryHigh, FRA_High, FRA_VeryHigh
+// Moderate zones are NOT in this dataset; null = moderate, outside CA, or unclassified.
+// Service requires Web Mercator geometry + envelope (point queries return 0 features).
+
+async function getCALFireFHSZ(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = cacheKey(lat, lon);
+  if (calfireCache.has(key)) return calfireCache.get(key);
+
+  let result = null;
+  try {
+    const { x, y } = toWebMercator(lat, lon);
+    const D = 100; // ±100m bounding box in Web Mercator units
+    const env = encodeURIComponent(JSON.stringify({
+      xmin: x - D, ymin: y - D, xmax: x + D, ymax: y + D,
+      spatialReference: { wkid: 3857 },
+    }));
+    const url = `https://egis.fire.ca.gov/arcgis/rest/services/FRAP/HHZ_ref_FHSZ/MapServer/0/query` +
+      `?geometry=${env}&geometryType=esriGeometryEnvelope&inSR=3857` +
+      `&spatialRel=esriSpatialRelEnvelopeIntersects` +
+      `&outFields=FHSZ9&returnGeometry=false&f=json&resultRecordCount=1`;
+    const body = await httpGet(url, 6000);
+    if (body?.features?.length) {
+      result = { fhsz_class: body.features[0].attributes?.FHSZ9 || null };
+    }
+  } catch (_) {}
+
+  pruneCache(calfireCache);
+  calfireCache.set(key, result);
+  return result;
+}
+
 // ── Combined point enrichment ─────────────────────────────────────
 /**
  * Calls all six APIs in parallel and returns merged enrichment object.
  * Never throws — missing APIs return null fields.
  */
 async function enrichPoint(lat, lon) {
-  const [census, fema, elev, structs, gnis, nhd] = await Promise.allSettled([
+  const [census, fema, elev, structs, gnis, nhd, calfire] = await Promise.allSettled([
     getCensusTract(lat, lon),
     getFEMAFloodZone(lat, lon),
     getElevation(lat, lon),
     getNearestStructures(lat, lon),
     getNearestGNIS(lat, lon),
     getNearestWaterway(lat, lon),
+    getCALFireFHSZ(lat, lon),
   ]);
 
   const c  = census.status  === 'fulfilled' ? census.value  : null;
@@ -375,6 +419,7 @@ async function enrichPoint(lat, lon) {
   const s  = structs.status === 'fulfilled' ? structs.value : null;
   const g  = gnis.status    === 'fulfilled' ? gnis.value    : null;
   const w  = nhd.status     === 'fulfilled' ? nhd.value     : null;
+  const cf = calfire.status === 'fulfilled' ? calfire.value : null;
 
   return {
     census_tract:              c?.tract        || null,
@@ -385,6 +430,7 @@ async function enrichPoint(lat, lon) {
     flood_sfha:                f?.sfha         ?? null,
     flood_community:           f?.community    || null,
     elevation_ft:              e,
+    cal_fire_fhsz:             cf?.fhsz_class  || null,
     nearest_hospital_name:     s?.nearest_hospital_name      || null,
     nearest_hospital_mi:       s?.nearest_hospital_mi        ?? null,
     nearest_fire_station_name: s?.nearest_fire_station_name  || null,
@@ -400,6 +446,6 @@ async function enrichPoint(lat, lon) {
 
 module.exports = {
   getCensusTract, getFEMAFloodZone, getElevation,
-  getNearestStructures, getNearestGNIS, getNearestWaterway,
+  getNearestStructures, getNearestGNIS, getNearestWaterway, getCALFireFHSZ,
   enrichPoint,
 };

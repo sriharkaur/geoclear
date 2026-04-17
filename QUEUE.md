@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 20 — storm ✅ 3,257 counties, wildfire ✅ 3,108 counties; both on prod risk.db; CAL FIRE ArcGIS URL still broken)_
+_Last updated: 2026-04-17 (session 21 — data catalog created at docs/DATA-CATALOG.md; CAL FIRE ArcGIS URL still broken)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -115,6 +115,12 @@ _Last updated: 2026-04-17 (session 20 — storm ✅ 3,257 counties, wildfire ✅
 
 ---
 
+## ENGINEERING INFRASTRUCTURE
+
+- [x] **Data Catalog** ✅ 2026-04-17 — `docs/DATA-CATALOG.md` created. Comprehensive inventory of all 9 data sources (NAD, Overture, Census, FEMA, USGS, USFS WHP, NOAA Storm, CAL FIRE FHSZ, OpenAddresses). Each entry covers: publisher, license, role, coverage, last sourced, next refresh date, cadence, API endpoint, pipeline, all attributes extracted, use cases powered. Includes refresh calendar (2026-07-15 NAD, 2026-10-01 USFS, 2027-03-01 NOAA). Update this file whenever a source is added or refreshed.
+
+---
+
 ## T0 — DATA & CORE STATUS
 
 ✅ Complete: NAD r22 (120M), Overture full gap-fill (64.9M), total 198,657,537 addresses, all 16 indexes live (2026-04-16).
@@ -145,7 +151,7 @@ Open:
 - [x] **Risk Score v1 — `/v1/risk` endpoint** ✅ 2026-04-17 — `GET /v1/risk` (Professional+). Resolves address by nad_uuid / street+city+state / lat+lon. Returns 4 scores (0–1): deliverability (confidence+placement+query_count), fraud (fraud_signal_count+velocity), disaster (live FEMA NFHL), vacancy (zero-query+addr_class). `data_coverage` flags show which dimensions have real data vs pending imports. File: `web-server.js` — single call returns four numbers: `deliverability` (0–1, from RDI + query patterns), `fraud` (0–1, from velocity + unit anomaly + FTC lists), `disaster` (0–1, from FEMA + USFS wildfire + NOAA), `vacancy` (0–1, from Census ACS + USPS No-Stat proxy + zero-query signal). Ship free to all $249+ customers. Data sources: USFS wildfire risk (free import), NOAA severe weather (free), Census ACS vacancy by tract (already have), internal query logs. No open-source dependency required. *This is the bundle kill — replaces Melissa + LexisNexis + RiskMeter in one call.*
 - [x] **Import USFS Wildfire Risk data** ✅ 2026-04-17 — `wildfire-import.js` rewritten to use USFS/Esri "USA Wildfire Hazard Potential" FeatureServer (layer 2 = county). 3,108 counties with WHP class (Very Low–Very High) + MEAN score. Source: `services.arcgis.com/jIL9msH9OI208GCb/.../USA_Wildfire_Hazard_Potential/FeatureServer/2`. Uploaded to prod risk.db. `/v1/risk` returns `data_coverage.wildfire: true`.
 - [x] **Import NOAA severe weather history** ✅ 2026-04-17 — Storm data imported locally (NOAA NCEI CSV files). 3,257 counties, 338,864 storm events, 10-year window (2017–2026). Uploaded to prod `/data/risk.db` (316KB). `/v1/risk` now returns `data_coverage.storm: true` with real county storm counts. Script: `storm-import.js`.
-- [ ] **Import CAL FIRE FHSZ (Fire Hazard Severity Zones)** — Script ready: `calfire-import.js`. ⚠️ CAL FIRE ArcGIS endpoint (`services1.arcgis.com/jUJYIo9tSA7EHvfZ`) returns "Invalid URL" — service moved or renamed. Need updated URL from CA Open Data portal (gis.data.ca.gov). Grid-based lat/lon lookup (0.001° cells). CA addresses only.
+- [x] **CAL FIRE FHSZ live lookup** ✅ 2026-04-17 — `cal_fire_fhsz` field on `/api/enrich`. Live polygon lookup via `egis.fire.ca.gov/arcgis/rest/services/FRAP/HHZ_ref_FHSZ/MapServer/0` (CAL FIRE's own ArcGIS server, discovered from `egis.fire.ca.gov`). CA only, null for non-CA. High+Very High zones: SRA_High, SRA_VeryHigh, LRA_High, LRA_VeryHigh, FRA_High, FRA_VeryHigh. No import to risk.db needed — live API call like FEMA NFHL. Requires ±100m Web Mercator envelope (service rejects point geometry).
 - [ ] **Import Microsoft Building Footprints** — 130M US building polygons, free MIT license. **Run on staging Render Shell → verify → upload-chunk → merge to prod.** Enables: open yard area calculation (parcel - building = landing zone), roof type, building size. *Prerequisite for drone-deliverable flag. Also improves address confidence scoring.*
 - [ ] **Integrate FAA LAANC API** — real-time airspace class + altitude ceiling per lat/lon. Free FAA DroneZone API. Response time < 100ms. *Live API call at query time — no staging data pipeline needed.*
 - [ ] **Drone-deliverable flag — `/v1/enrich` extension** — add `drone` object to enrichment response: `{ deliverable: bool, airspace_class: "G"|"B"|"C"|"D", legal_altitude_ft: 400, estimated_open_sqm: 180, property_type: "single_family"|"multi_family"|"commercial", no_fly_zone: bool, confidence: "high"|"medium"|"low" }`. Data: FAA LAANC API + Microsoft Building Footprints + Overture parcel geometry (already have). *Target customers: Wing, Zipline, Starship, Amazon Prime Air, last-mile 3PLs. Pricing: $0.005/call add-on.*

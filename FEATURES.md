@@ -61,6 +61,7 @@ Enrichments via separate call (`GET /api/enrich?lat=&lon=` or `?nad_uuid=`):
 | `nearest_waterway_name` | NHD+ HR (TNM) | Nearest named stream or river |
 | `nearest_waterway_ftype` | NHD+ HR (TNM) | NHD feature type code (e.g. 558=ArtificialPath, 460=LakePond) |
 | `nearest_waterway_mi` | NHD+ HR (TNM) | Distance to nearest waterway in miles |
+| `cal_fire_fhsz` | CAL FIRE FHSZ (egis.fire.ca.gov) | CA only — fire hazard severity zone class: SRA_High, SRA_VeryHigh, LRA_High, LRA_VeryHigh, FRA_High, FRA_VeryHigh; null outside CA or in moderate/unclassified areas |
 
 All APIs are US federal — no key, no cost. Results cached in-process (LRU, ~10K entries per source).
 
