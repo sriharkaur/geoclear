@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 27 — Q-102/103/104/105 complete. Q-132 Phase 1 complete. Stripe prices created ($199/$499/$999) and Render env vars live. All session 27 bug fixes shipped: address direction-suffix matching, demo/enrich 502 timeout, /status redirect, Sign In nav → portal.html, nad_admin_localdev removed from portal, CMO/UX hero copy + pricing reframe.)_
+_Last updated: 2026-04-17 (session 28 — Q-132 risk.db rebuilt with all 4 tables and re-uploaded to prod. WHP float key bug fixed (Q-138). Data quality issues Q-139–Q-142 identified and added to queue. Demo address updated to Globe AZ for full risk dimension coverage.)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -455,6 +455,19 @@ Open:
 - [x] **Q-131 · Landing page compliance callout section** ✅ 2026-04-17 — Prominent section between verticals and pricing: "HMDA, NFIP, and CRA fields. One API call. Auditable source." → links to `/compliance`. Three trust bullets + "See compliance features →" CTA. File: `public/landing.html`.
 - [x] **Q-132 · Climate Risk Score per address — Phase 1** ✅ 2026-04-17 — All 4 county-level risk tables live in prod risk.db: wildfire (3,108 counties USFS WHP), storm (3,257 counties NOAA NCEI 10yr), earthquake (3,221 counties USGS NSHM), drought (3,221 counties USDA). `/api/demo/risk` stable, <4s, no crash loops. Address direction suffix stripping fixed so directional addresses (e.g. "10th Street NW") match NAD. Demo prepopulated with working DC address.
 - [x] **Q-137 · Climate Risk Score — Phase 2** ⏳ IN PROGRESS 2026-04-17 — `nri-import.js` written and committed. FEMA NRI wired into `/api/demo/risk` (v2.2-demo): heat_wave, hurricane, coastal_flood, nri_composite, nri_rating. `getNRIRisk()` in risk-data.js. **Pending: run `node nri-import.js` on staging Render Shell, then upload risk.db chunk to prod + merge.** Until run, `nri_risk` table is empty and NRI fields return null.
+
+---
+
+## RISK SCORE — DATA QUALITY
+
+- [x] **Q-138 · Fix WHP wildfire score lookup using float key** ✅ 2026-04-17 — `WHP_SCORE[4.02]` returned undefined → 0 because the lookup table uses integer keys (1–5) but `whp_score` stores a float MEAN from the USFS FeatureServer (e.g. 4.02). Fixed with `Math.round(wildfireRow.whp_score)` in both `/v1/risk` and `/api/demo/risk`. Was silently zeroing wildfire scores for all High/Very High counties. Files: `web-server.js`.
+- [ ] **Q-139 · FEMA NFHL returns OUTSIDE for all prod addresses** — every `/api/demo/risk` and `/api/demo/enrich` call returns `flood_zone: OUTSIDE` from prod even for confirmed AE/VE zone addresses (verified: 4111 Breakwood Dr Houston = AE, 29.6811/-95.4445). Direct calls from local Mac return correct zones. Root cause: likely Render datacenter IP range is rate-limited or receiving empty feature sets from FEMA's ArcGIS server. Impact: flood dimension is always 0 in prod — kills the flood risk signal entirely. Fix options: (1) add `Referer` + `User-Agent` headers to FEMA request; (2) retry with different FEMA endpoint URL; (3) proxy FEMA calls through a residential IP or CDN; (4) pre-import FEMA NFHL polygons into risk.db (eliminates live call dependency). Option 4 is the long-term fix (also unlocks offline enrichment).
+- [ ] **Q-140 · CA Overture addresses missing county_fips** — ~29.5M CA addresses imported from Overture have `fips: null` in the address row. FIPS-dependent risk lookups (earthquake, drought, wildfire) all return null for these addresses, making `/v1/risk` useless for CA. Fix: (1) run a post-import FIPS backfill on staging — spatial join against TIGER county polygons to assign `county_fips` for all Overture rows with lat/lon; (2) or derive FIPS at query time via in-memory TIGER county lookup (lighter but ~50ms latency). Same issue likely affects other Overture-only states (FL, MI, NJ, NV, NH). Blocking for CA risk score use cases.
+- [ ] **Q-141 · Import CAL FIRE FHSZ into risk.db** — `calfire-import.js` exists and is ready but was never run. `calfire_fhsz` table absent from risk.db. CAL FIRE FHSZ is more granular than USFS WHP (polygon-level vs county-level) for CA wildfire risk and is the primary signal used in the `/v1/risk` CA wildfire score. Run on staging Render Shell: `node calfire-import.js --db=/data/risk.db` (SRA + LRA sources). Then re-upload risk.db to prod. Dependency: Q-140 (CA addresses need county_fips for the combined wildfire score to be useful).
+- [ ] **Q-142 · Galveston TX address coverage gap** — ZIP 77550 (Galveston Island) addresses return "No addresses found" from all lookup attempts. Galveston is a high-priority flood zone demo target (coastal VE/AE zones confirmed via FEMA API). NAD r22 likely has sparse Galveston coverage. Fix: check Overture parquet for Galveston County (FIPS 48167) — if present, import via staging pipeline. Also check Texas GLO (General Land Office) for coastal address data.
+
+---
+
 - [ ] Q-133 · Physical World Graph API — address nodes connected to businesses, schools, flood zones
 - [ ] Q-134 · National 911 Address Layer — partner with NENA ($10B NG911 funding)
 - [ ] Q-135 · Autonomous Address Deduplication-as-a-Service (AI agent for CRM cleanup)
