@@ -1000,7 +1000,7 @@ app.get('/v1/risk', async (req, res) => {
 
   // Wildfire: WHP class 1–5 → 0–0.4 contribution
   const WHP_SCORE = { 1: 0.0, 2: 0.05, 3: 0.15, 4: 0.30, 5: 0.40 };
-  const disasterWildfire = wildfireRow ? (WHP_SCORE[wildfireRow.whp_score] ?? 0) : 0;
+  const disasterWildfire = wildfireRow ? (WHP_SCORE[Math.round(wildfireRow.whp_score)] ?? 0) : 0;
 
   // CAL FIRE: overrides wildfire score for CA (more granular)
   const CAL_FIRE_SCORE = { Moderate: 0.15, High: 0.30, 'Very High': 0.45 };
@@ -1681,7 +1681,7 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   const CAL_FIRE_SCORE = { Moderate: 0.15, High: 0.30, 'Very High': 0.45 };
   const disasterWildfire = Math.max(
     calFireRow ? (CAL_FIRE_SCORE[calFireRow.fhsz_label] ?? 0) : 0,
-    wildfireRow ? (WHP_SCORE[wildfireRow.whp_score] ?? 0) : 0
+    wildfireRow ? (WHP_SCORE[Math.round(wildfireRow.whp_score)] ?? 0) : 0
   );
   const disasterStorm = stormRow ? Math.min((stormRow.event_count || 0) / 200, 0.3) : 0;
   const disaster = Math.min(1, Math.max(0, disasterFlood * 0.6 + disasterWildfire * 0.25 + disasterStorm * 0.15));
