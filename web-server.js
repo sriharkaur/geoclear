@@ -433,7 +433,7 @@ app.get('/api/address', (req, res) => {
   if (!raw.length) return err(res, 'No addresses found.', 404);
   const results = raw.map(enrichAddress);
   if (!req.keyInfo?.limits?.enrichment) {
-    const hint = { census_tract: null, flood_zone: null, flood_sfha: null,
+    const hint = { census_tract: null, flood_zone: null, flood_sfha: null, elevation_ft: null,
       _enrichment: { available: true, required_tier: 'professional', upgrade_url: 'https://geoclear.io/portal.html' } };
     results.forEach(r => Object.assign(r, hint));
   }
@@ -463,7 +463,7 @@ app.post('/api/address/bulk', (req, res) => {
     return found.length ? enrichAddress(found[0]) : { verified: false, input: { street, number, city, state, zip } };
   });
   if (!req.keyInfo?.limits?.enrichment) {
-    const hint = { census_tract: null, flood_zone: null, flood_sfha: null,
+    const hint = { census_tract: null, flood_zone: null, flood_sfha: null, elevation_ft: null,
       _enrichment: { available: true, required_tier: 'pro', upgrade_url: 'https://geoclear.io/portal.html' } };
     results.forEach(r => { if (r.verified !== false) Object.assign(r, hint); });
   }

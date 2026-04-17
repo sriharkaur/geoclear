@@ -50,8 +50,9 @@ Enrichments via separate call (`GET /api/enrich?lat=&lon=` or `?nad_uuid=`):
 | `flood_zone` | FEMA NFHL API | X = minimal, AE = high risk, etc. |
 | `flood_sfha` | FEMA NFHL API | `true` if in Special Flood Hazard Area |
 | `flood_community` | FEMA NFHL API | Community name |
+| `elevation_ft` | USGS 3DEP EPQS | Ground elevation in feet; 1m lidar resolution where available |
 
-Both APIs are US federal — no key, no cost. Results cached in-process (LRU, ~10K entries).
+All APIs are US federal — no key, no cost. Results cached in-process (LRU, ~10K entries).
 
 ---
 

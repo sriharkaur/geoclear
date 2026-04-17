@@ -1,32 +1,34 @@
 'use strict';
 /**
- * NAD Point Enrichment — Census Tract + FEMA Flood Zone
- * ======================================================
- * Calls two free public APIs to enrich any lat/lon point.
- * Both are US Federal Government APIs — no key, no rate limit contract,
- * but cache aggressively to be polite.
+ * NAD Point Enrichment — Census Tract + FEMA Flood Zone + Elevation
+ * =================================================================
+ * Three free US Federal Government APIs called in parallel. No keys.
  *
  * Census Bureau Geocoder (TIGER/Line):
  *   https://geocoding.geo.census.gov/geocoder/geographies/coordinates
  *   Returns: census tract, block group, block code, GEOID, county FIPS
  *
  * FEMA NFHL (National Flood Hazard Layer):
- *   https://msc.fema.gov/arcgis/rest/services/NFHL/Current_NFHL_API/FeatureServer/28/query
+ *   https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query
  *   Returns: flood zone code (AE, X, AH…), SFHA flag, community name
+ *
+ * USGS 3DEP Elevation Point Query Service (EPQS):
+ *   https://epqs.nationalmap.gov/v1/json?x={lon}&y={lat}&units=Feet
+ *   Returns: ground elevation in feet, 1m lidar resolution where available
  *
  * Usage:
  *   const { getCensusTract, getFEMAFloodZone, enrichPoint } = require('./geocode.js');
  *   const result = await enrichPoint(38.878, -77.175);
- *   // { tract:'4518.01', block_group:'1', block:'1002', geoid:'51059451801',
- *   //   flood_zone:'X', sfha:false, flood_community:'FAIRFAX COUNTY' }
+ *   // { tract:'4518.01', flood_zone:'X', sfha:false, elevation_ft:72.24 }
  */
 
 const https = require('https');
 
 // Simple in-memory LRU with ~10K entries (coordinates rounded to 4 decimals → ~11m grid)
 const CACHE_MAX = 10_000;
-const censusCache = new Map();
-const femaCache   = new Map();
+const censusCache     = new Map();
+const femaCache       = new Map();
+const elevationCache  = new Map();
 
 function pruneCache(map) {
   if (map.size > CACHE_MAX) {
@@ -174,19 +176,46 @@ async function getFEMAFloodZone(lat, lon) {
   return result;
 }
 
+/**
+ * Returns ground elevation in feet for a lat/lon using USGS 3DEP EPQS.
+ * Resolution: 1m lidar where available, 1/3 arc-second (~10m) elsewhere.
+ * @returns {number|null}
+ */
+async function getElevation(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = cacheKey(lat, lon);
+  if (elevationCache.has(key)) return elevationCache.get(key);
+
+  const url = `https://epqs.nationalmap.gov/v1/json?x=${lon}&y=${lat}&units=Feet&includeDate=false`;
+  let result = null;
+  try {
+    const body = await httpGet(url, 6000);
+    const val = body?.value ?? body?.result;
+    if (val !== null && val !== undefined && val !== -1000000) {
+      result = Math.round(parseFloat(val) * 10) / 10; // 1 decimal
+    }
+  } catch (_) {}
+
+  pruneCache(elevationCache);
+  elevationCache.set(key, result);
+  return result;
+}
+
 // ── Combined point enrichment ─────────────────────────────────────
 /**
- * Calls both APIs in parallel and returns merged enrichment object.
+ * Calls all three APIs in parallel and returns merged enrichment object.
  * Never throws — missing APIs return null fields.
  */
 async function enrichPoint(lat, lon) {
-  const [census, fema] = await Promise.allSettled([
+  const [census, fema, elev] = await Promise.allSettled([
     getCensusTract(lat, lon),
     getFEMAFloodZone(lat, lon),
+    getElevation(lat, lon),
   ]);
 
   const c = census.status === 'fulfilled' ? census.value : null;
   const f = fema.status   === 'fulfilled' ? fema.value   : null;
+  const e = elev.status   === 'fulfilled' ? elev.value   : null;
 
   return {
     census_tract:     c?.tract     || null,
@@ -196,7 +225,8 @@ async function enrichPoint(lat, lon) {
     flood_zone:       f?.flood_zone || null,
     flood_sfha:       f?.sfha ?? null,
     flood_community:  f?.community  || null,
+    elevation_ft:     e,
   };
 }
 
-module.exports = { getCensusTract, getFEMAFloodZone, enrichPoint };
+module.exports = { getCensusTract, getFEMAFloodZone, getElevation, enrichPoint };
