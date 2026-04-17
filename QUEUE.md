@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 16 — RapidAPI listing live)_
+_Last updated: 2026-04-17 (session 18 — Strategic Intelligence Layer: Risk Score v1, Drone flag, Ground-Truth Graph added to T2/T3/T4)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -50,7 +50,7 @@ _Last updated: 2026-04-17 (session 16 — RapidAPI listing live)_
 
 - [ ] **Build `GET /v1/admin/analytics` endpoint** — 30-day breakdown: requests/day by tier, top 10 keys by volume, error rate, new signups/day, upgrades/downgrades. Required for daily pulse + weekly KPI review. File: `web-server.js`
 - [ ] **Build welcome email drip (3 emails, SendGrid)** — Day 1: key + 5-min quickstart curl example; Day 3 (only if ≥ 1 API call made): "you've made X calls — here's what enrichment looks like"; Day 7: upgrade to Professional for unlimited enrichment. Personalise with `GET /v1/me` usage data.
-- [ ] **Launch on Product Hunt** — gallery: landing page screenshot + API response screenshot + comparison table. Tagline: "US address intelligence. Flood zone + census tract in one call." Launch day after HN if HN performed well.
+- [x] **Product Hunt listing** ✅ 2026-04-17 — Draft saved at `producthunt.com/products/geoclear-address-intelligence-api`. Name: "GeoClear — Address Intelligence API", tagline: "Address API with FEMA flood zone + census tract. Free." (54 chars), description + maker comment filled, tags: Developer Tools + API, pricing: Paid with free tier, bootstrapped, gallery: landing page screenshot. Ready to schedule launch date.
 - [ ] **Compliance outreach batch 2 (15 new targets)** — apply learnings from batch 1. If flood zone subject got replies: keep. If not: test `"Quick question about your flood zone workflow"` or `"HMDA census tract API — $249/mo, no sales call"`.
 - [ ] **Set up KPI cadence** — (a) bookmark daily pulse: `/v1/admin/keys/stats`, Stripe subscriptions, SendGrid activity; (b) create `sessions/KPI-WEEKLY-LOG.md`; (c) set Stripe notifications at $1, $500, $2,500, $5,000 MRR.
 - [ ] **Set calendar reminders** — Month 3 checkpoint: 2026-07-16. Month 5 investment trigger ($5K MRR). Month 6 review: 2026-10-16.
@@ -117,16 +117,34 @@ _Last updated: 2026-04-17 (session 16 — RapidAPI listing live)_
 
 ## T0 — DATA & CORE STATUS
 
-✅ Complete: NAD r22 (120M), Overture full gap-fill (64.9M), total 198,657,535 addresses, all 16 indexes live (2026-04-16).
+✅ Complete: NAD r22 (120M), Overture full gap-fill (64.9M), total 198,657,537 addresses, all 16 indexes live (2026-04-16).
+
+✅ FK relink + count refresh complete (2026-04-17):
+- 180.3M rows fully linked (state_id → county_id → city_id → zip_code_id)
+- 18.3M rows permanently unlinked (Overture rows imported with state=NULL — no state field in source data, cannot relink)
+- All major states now show correct counts on /api/states (FL: 41.7M, CA: 15M, MI: 9.5M, NJ: 10M, NV: 2.3M, NH: 870K)
+- New endpoints: POST /v1/admin/relink-fks (idempotent), POST /v1/admin/refresh-counts
 
 Open:
-- ✅ **FK relink on prod** — DONE 2026-04-17. All target states now showing correct counts.
 - [ ] Fill remaining state gaps — AL, AK (not in Overture — need state GIS portals)
 - [ ] NAD r23 quarterly update (~June 2026) — run on staging, merge to prod
 
 ---
 
 ## T2 — DIFFERENTIATION (after $10K MRR)
+
+### Strategic Intelligence Layer
+> Outcome: GeoClear becomes the ground-truth layer of American commerce, not just an address lookup.
+
+- [ ] **Ground-Truth Graph (internal, start immediately)** — log every query outcome: which addresses get repeated lookups (active), which are never queried (potentially vacant/fraud). Add `query_count`, `last_queried_at`, `fraud_signal_count` columns to addresses table. No API surface change — purely internal enrichment that compounds over time. *Start this before v1/risk — it seeds the fraud score.*
+- [ ] **Risk Score v1 — `/v1/risk` endpoint** — single call returns four numbers: `deliverability` (0–1, from RDI + query patterns), `fraud` (0–1, from velocity + unit anomaly + FTC lists), `disaster` (0–1, from FEMA + USFS wildfire + NOAA), `vacancy` (0–1, from Census ACS + USPS No-Stat proxy + zero-query signal). Ship free to all $249+ customers. Data sources: USFS wildfire risk (free import), NOAA severe weather (free), Census ACS vacancy by tract (already have), internal query logs. No open-source dependency required. *This is the bundle kill — replaces Melissa + LexisNexis + RiskMeter in one call.*
+- [ ] **Import USFS Wildfire Risk data** — USFS publishes National Risk Assessment (FSIM) by census tract. Download, parse, load into enrichment layer. Endpoint: expose as `wildfire_risk_class` on `/v1/enrich`. *Prerequisite for Risk Score disaster dimension.*
+- [ ] **Import NOAA severe weather history** — county-level severe weather events (tornado, hurricane, hail). Free NOAA Storm Events Database. Adds `storm_risk` field. *Prerequisite for Risk Score disaster dimension.*
+- [ ] **Import CAL FIRE FHSZ (Fire Hazard Severity Zones)** — California-specific, more granular than USFS national data. Free state dataset from CA DOF. Covers all 15M CA addresses in your DB. Adds `fire_hazard_severity` field (Moderate/High/Very High). *Prerequisite for Risk Score disaster dimension — meaningful for 12.5% of your address corpus.*
+- [ ] **Drone-deliverable flag — `/v1/enrich` extension** — add `drone` object to enrichment response: `{ deliverable: bool, airspace_class: "G"|"B"|"C"|"D", legal_altitude_ft: 400, estimated_open_sqm: 180, property_type: "single_family"|"multi_family"|"commercial", no_fly_zone: bool, confidence: "high"|"medium"|"low" }`. Data: FAA LAANC API (free, 1-day integration) + Microsoft Building Footprints (free, 130M US buildings) + Overture parcel geometry (already have). *Target customers: Wing, Zipline, Starship, Amazon Prime Air, last-mile 3PLs. Pricing: $0.005/call add-on.*
+- [ ] **Import Microsoft Building Footprints** — 130M US building polygons, free MIT license. Enables: open yard area calculation (parcel - building = landing zone), roof type, building size. *Prerequisite for drone-deliverable flag. Also improves address confidence scoring.*
+- [ ] **Integrate FAA LAANC API** — real-time airspace class + altitude ceiling per lat/lon. Free FAA DroneZone API. Response time < 100ms. *Prerequisite for drone-deliverable flag.*
+- [ ] **Pricing reframe — floor to $199** — grandfather all current $49/Starter customers at their rate (contractual, never raise). All new signups: floor is $199. Update Stripe product, pricing page, portal. *Elon framing: $49 attracts hobbyists and support load. Value is in avoided loss, not per-row cost.*
 
 ### Distribution
 - [ ] Node.js SDK (`npm install geoclear`)
@@ -154,7 +172,8 @@ Open:
 
 ## T3 — MOAT (months 3–6)
 
-- [ ] USPS CASS certification — required for $10B direct mail market; 3–6 month process; begin research Phase 3
+- [ ] **Parcel boundary polygons** — county assessor data for all 3,000+ US counties. Expensive to aggregate (commercial vendors: Regrid ~$15K/yr, PreciselyData). Unlocks high-confidence drone landing zone detection and parcel-level fraud scoring. *Required for Risk Score confidence: "high" tier. Worth it after first drone company customer.*
+- [ ] **USPS CASS certification** — required for $10B direct mail market; 3–6 month process; begin research Phase 3
 - [ ] DPV — Delivery Point Validation (bundled with CASS)
 - [ ] Automated quarterly NAD update pipeline (cron → detect → download → re-import)
 - [ ] Address change webhook service
@@ -167,6 +186,7 @@ Open:
 
 ## T4 — BIG SWINGS (6–18 months)
 
+- [ ] **GeoClear Risk Score v2** — add outcome feedback loop: customers send delivery/fraud/chargeback webhooks → label individual addresses → train per-address scores (not just tract-level). This is the Ground-Truth Graph fully realized. Moat: no competitor can buy this dataset — earned from live traffic.
 - [ ] Physical World Graph API — address nodes connected to businesses, schools, flood zones
 - [ ] Climate Risk Score per address (FEMA + CAL FIRE + NOAA + USGS)
 - [ ] National 911 Address Layer — partner with NENA ($10B NG911 funding)
