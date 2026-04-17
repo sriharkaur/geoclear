@@ -470,6 +470,138 @@ app.post('/api/address/bulk', (req, res) => {
   ok(res, results, { count: results.length });
 });
 
+// ── CSV helpers ───────────────────────────────────────────────────
+
+// RFC 4180-compliant CSV parser. Handles quoted fields, escaped quotes, CRLF + LF.
+function parseCSV(text) {
+  const rows = [];
+  let field = '';
+  let inQuote = false;
+  let row = [];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuote) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } // escaped quote
+        else inQuote = false;
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"') {
+      inQuote = true;
+    } else if (ch === ',') {
+      row.push(field); field = '';
+    } else if (ch === '\n' || (ch === '\r' && text[i + 1] === '\n')) {
+      if (ch === '\r') i++; // consume \n after \r
+      row.push(field); field = '';
+      if (row.length > 0 && !(row.length === 1 && row[0] === '')) rows.push(row);
+      row = [];
+    } else {
+      field += ch;
+    }
+  }
+  if (field || row.length) { row.push(field); if (row.length > 0) rows.push(row); }
+  return rows;
+}
+
+// Serialize rows (array of arrays) to CSV string.
+function toCSV(rows) {
+  return rows.map(row =>
+    row.map(v => {
+      const s = v == null ? '' : String(v);
+      return /[,"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',')
+  ).join('\n');
+}
+
+// Map known header aliases to canonical field names.
+const CSV_COL_ALIASES = {
+  number:  ['number', 'street_number', 'house_number', 'hn', 'add_number', 'num', 'house', 'bldg'],
+  street:  ['street', 'street_name', 'street_address', 'addr', 'address'],
+  city:    ['city', 'city_name', 'place', 'municipality'],
+  state:   ['state', 'state_code', 'state_abbr', 'province'],
+  zip:     ['zip', 'zipcode', 'zip_code', 'postal_code', 'postal', 'postalcode'],
+};
+
+function detectColumns(headers) {
+  const lower = headers.map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'));
+  const map = {};
+  for (const [canon, aliases] of Object.entries(CSV_COL_ALIASES)) {
+    for (let i = 0; i < lower.length; i++) {
+      // Exact match first; then startsWith only for aliases ≥ 4 chars (prevents 'st' matching 'street')
+      if (aliases.some(a => lower[i] === a || (a.length >= 4 && lower[i].startsWith(a)))) {
+        map[canon] = i; break;
+      }
+    }
+  }
+  return map;
+}
+
+// ── CSV address verification endpoint ────────────────────────────
+// POST /api/address/csv
+// Content-Type: text/csv (or application/csv)
+// Body: CSV with headers (max 5,000 rows)
+// Returns: same CSV + geo_verified, nad_uuid, confidence, residential, fips, timezone, coverage, match_type columns
+app.post('/api/address/csv', (req, res) => {
+  // Read raw body directly — avoids express.json() body-consumption ordering issues.
+  const chunks = [];
+  req.on('data', c => chunks.push(c));
+  req.on('error', () => err(res, 'Body read error.'));
+  req.on('end', () => {
+    const body = Buffer.concat(chunks).toString('utf8');
+    if (!body.trim()) return err(res, 'Empty CSV body.');
+
+    const parsed = parseCSV(body.trim());
+    if (parsed.length < 2) return err(res, 'CSV must have a header row and at least one data row.');
+    if (parsed.length > 5001) return err(res, 'Max 5,000 rows per CSV request.');
+
+    const headers = parsed[0];
+    const colMap  = detectColumns(headers);
+
+    if (colMap.street === undefined) {
+      return err(res, 'Could not detect a "street" or "address" column. Required: street (or address), city, state.');
+    }
+
+    const ENRICHMENT_COLS = ['geo_verified', 'nad_uuid', 'confidence', 'residential', 'fips', 'timezone', 'coverage', 'match_type'];
+    const outHeaders = [...headers, ...ENRICHMENT_COLS];
+    const outRows = [outHeaders];
+
+    const dataRows = parsed.slice(1);
+    for (const row of dataRows) {
+      const get = (col) => (colMap[col] !== undefined ? (row[colMap[col]] || '').trim() : '');
+      const found = nad.findAddress({
+        addNumber:  get('number'),
+        streetName: get('street'),
+        city:       get('city'),
+        stateCode:  get('state'),
+        zipCode:    get('zip'),
+        limit: 1,
+      });
+      let enriched;
+      if (found.length) {
+        const e = enrichAddress(found[0]);
+        enriched = [
+          true,
+          e.nad_uuid     || '',
+          e.confidence   ?? '',
+          e.residential  || '',
+          e.fips         || '',
+          e.timezone     || '',
+          e.coverage     || '',
+          e.match_type   || '',
+        ];
+      } else {
+        enriched = [false, '', '', '', '', '', '', ''];
+      }
+      outRows.push([...row, ...enriched]);
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="geoclear-verified.csv"');
+    res.send(toCSV(outRows));
+  }); // req.on('end')
+});
+
 // ZIP lookup
 app.get('/api/zip/:zip', (req, res) => {
   const { zip } = req.params;
@@ -683,6 +815,21 @@ app.get('/v1/admin/signals', adminAuth, (req, res) => {
   const total = keys.db.prepare('SELECT COUNT(*) AS n, SUM(query_count) AS hits FROM address_signals').get();
   ok(res, { total_addresses_tracked: total.n, total_query_hits: total.hits, top });
 });
+// GET /v1/admin/data-sources — Data catalog: all data sources with metadata
+// ?status=active|blocked|planned  (optional filter)
+app.get('/v1/admin/data-sources', adminAuth, (req, res) => {
+  const sources = keys.getDataSources(req.query.status || null);
+  ok(res, { count: sources.length, sources });
+});
+
+// PATCH /v1/admin/data-sources/:source_id — Update refresh metadata on a data source
+// Body: { last_sourced_at, next_refresh_at, row_count, status, notes }
+app.patch('/v1/admin/data-sources/:source_id', adminAuth, (req, res) => {
+  const result = keys.updateDataSource(req.params.source_id, req.body);
+  if (!result) return res.status(400).json({ ok: false, error: 'no_valid_fields_or_not_found' });
+  ok(res, { updated: result.changes > 0 });
+});
+
 // GET /v1/risk — Risk Score v1
 // Returns 4 dimensions (0–1) for any address. Available on Professional+ tiers.
 // ?nad_uuid=  OR  ?street=&city=&state=&zip=  OR  ?lat=&lon=
