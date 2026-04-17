@@ -1590,7 +1590,14 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
   const { street, number, city, state, zip } = req.query;
   if (!street && !zip) return err(res, 'Provide street or zip.');
-  const rows = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
+  // Parse "123 Main St" into addNumber=123 + streetName="Main St" if caller didn't split them.
+  // Without addNumber, findAddress falls back to LIKE '%street%' — full table scan on 120M rows.
+  let addNum = number, stName = street;
+  if (!number && street) {
+    const m = street.match(/^(\d+[A-Za-z]?)\s+(.+)/);
+    if (m) { addNum = m[1]; stName = m[2]; }
+  }
+  const rows = nad.findAddress({ addNumber: addNum, streetName: stName, city, stateCode: state, zipCode: zip, limit: 1 });
   if (!rows.length) return err(res, 'No addresses found.', 404);
   const addr     = rows[0];
   const enriched = enrich(addr);
@@ -1685,7 +1692,12 @@ app.get('/api/demo/enrich', demoLimiter, async (req, res) => {
   if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
   const { street, number, city, state, zip } = req.query;
   if (!street && !zip) return err(res, 'Provide street or zip.');
-  const rows = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
+  let addNum = number, stName = street;
+  if (!number && street) {
+    const m = street.match(/^(\d+[A-Za-z]?)\s+(.+)/);
+    if (m) { addNum = m[1]; stName = m[2]; }
+  }
+  const rows = nad.findAddress({ addNumber: addNum, streetName: stName, city, stateCode: state, zipCode: zip, limit: 1 });
   if (!rows.length) return err(res, 'No addresses found.', 404);
   const addr    = rows[0];
   const enriched = enrich(addr);
