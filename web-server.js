@@ -37,7 +37,7 @@ const PORT  = parseInt(
 // ── DB + Cache ───────────────────────────────────────────────────
 const nad      = new NADQuery();
 const keys     = new KeyStore();
-const riskData = new RiskData();
+let riskData = new RiskData();
 const ADMIN_SECRET          = process.env.NAD_ADMIN_SECRET    || 'nad_admin_localdev';
 const STRIPE_SECRET         = process.env.STRIPE_SECRET_KEY   || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -230,6 +230,21 @@ app.post('/v1/admin/stream-upload', (req, res) => {
     console.error('[stream-upload] error:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   });
+});
+
+// POST /v1/admin/reload-risk-db — re-open risk.db connection after upload
+app.post('/v1/admin/reload-risk-db', (req, res) => {
+  const secret = req.headers['x-admin-secret'];
+  if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  try {
+    if (riskData.db) { try { riskData.db.close(); } catch (_) {} }
+    riskData = new RiskData();
+    const coverage = riskData.coverage();
+    console.log('[reload-risk-db] reloaded. coverage:', JSON.stringify(coverage));
+    res.json({ ok: true, coverage });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 // POST /v1/admin/upload-chunk  headers: X-Admin-Secret, X-Upload-Filename, X-Chunk-Offset
