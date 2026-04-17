@@ -86,7 +86,7 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 - [ ] **Q-152 · [P1-UPTIME] Staging replica procedure** — Documented in RUNBOOK-DATA.md: verify staging is superset of prod → run imports → validate → upload. No deviation. *Effort: 1 hr doc*
 - [ ] **Q-158 · [P1-UPTIME] UptimeRobot /api/health/detailed keyword monitor** — Keyword check for `"status":"ok"` (not `"degraded"`). Fires on missing tables, stale data, FEMA probe failures. *30 min after Q-147.*
 - [ ] **Q-159 · [P1-UPTIME] UptimeRobot address resolution smoke test** — Already created (ID 802868421). Verify it's firing correctly once Q-147 is up.
-- [ ] **Q-160 · [P1-UPTIME] Set NAD_ADMIN_SECRET on prod** — Prod is currently using the default `nad_admin_localdev` fallback (no `NAD_ADMIN_SECRET` env var set in Render dashboard). Admin endpoints (`/v1/admin/*`) are publicly accessible to anyone who reads the source. Fix: generate a random 64-char secret, set as `NAD_ADMIN_SECRET` in Render prod env vars, update RUNBOOK-ENV-VARS.md. *Effort: 10 min. P1 security.*
+- [x] **Q-160 · [P1-UPTIME] Set NAD_ADMIN_SECRET on prod** ✅ 2026-04-17 — Generated `nad_admin_` + 56-char random secret, set in Render prod env vars alongside full Neon migration env var restore.
 
 ---
 

@@ -172,7 +172,7 @@ Customers report real-world delivery/fraud/chargeback outcomes per `nad_uuid`. G
 - **Rate limit**: 10,000 outcomes/day per key (prevents score manipulation)
 - **Side effects**: `fraud_confirmed` + `chargeback` automatically increment `fraud_signal_count` in Ground-Truth Graph
 - **Promotion threshold**: `score_version` flips to `v2` when ≥3 delivery outcomes OR ≥2 fraud outcomes exist for an address
-- **Storage**: `address_outcomes` table in `keys.db`; indexed by `nad_uuid`, `key_id`, `(outcome_type, nad_uuid)`
+- **Storage**: `address_outcomes` table in Neon; indexed by `nad_uuid`, `key_id`, `(outcome_type, nad_uuid)`
 
 **Primary use case**: Drone delivery companies (Wing, Zipline, Amazon Prime Air) report delivery success/failure per address → deliverability score becomes ground-truth-backed, not heuristic.
 
@@ -183,10 +183,10 @@ Composite climate risk score (0–1) + per-hazard breakdown. Included in all `/v
 | Dimension | Source | Weight | Storage |
 |-----------|--------|--------|---------|
 | `flood` | FEMA NFHL (live API) | 30% | In-memory cache |
-| `wildfire` | USFS WHP (pre-imported) | 25% | `risk.db wildfire_risk` |
-| `storm` | NOAA Storm Events 10yr (pre-imported) | 20% | `risk.db storm_risk` |
-| `earthquake` | USGS ASCE7-22 by county centroid | 15% | `risk.db earthquake_risk` (import) / live API fallback |
-| `drought` | USDA Drought Monitor 26-week avg | 10% | `risk.db drought_risk` (import) / live API fallback |
+| `wildfire` | USFS WHP (Neon) | 25% | `neon wildfire_risk` (3,108 counties) |
+| `storm` | NOAA Storm Events 10yr (Neon) | 20% | `neon storm_risk` (3,257 counties) |
+| `earthquake` | USGS ASCE7-22 by county centroid | 15% | `neon earthquake_risk` (3,221 counties) / live API fallback |
+| `drought` | USDA Drought Monitor 26-week avg | 10% | `neon drought_risk` (3,221 counties) / live API fallback |
 
 Import scripts: `earthquake-import.js` (USGS, 3,221 counties), `drought-import.js` (USDA, 3,221 counties). Run on staging before upload to prod. Drought data should be refreshed monthly.
 
@@ -213,7 +213,8 @@ Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-G
 | **Prod** hosting | Render Web Service `srv-d7ep7bfavr4c73d46gng` | `geoclear.onrender.com` / `geoclear.io` — Virginia |
 | **Staging** hosting | Render Web Service `srv-d7f6rh58nd3s73cve8dg` | `geoclear-staging.onrender.com` — autoDeploy OFF; 100GB disk — used for heavy imports |
 | Deployment | Auto-deploy on `git push` to `main` (prod); manual trigger only (staging) | `NODE_VERSION=20` pinned on both services |
-| Persistent data (prod) | Render disk at `/data` | nad.db 91GB, keys.db |
+| Persistent data (prod) | Render disk at `/data` | nad.db 91GB only (keys.db + risk.db migrated to Neon) |
+| **Neon PostgreSQL** | `quiet-feather-03541839`, branch `production` | risk data (wildfire/storm/eq/drought/nri/calfire) + API keys/usage; pooler: `ep-crimson-water-an5zvi9z-pooler.c-6.us-east-1.aws.neon.tech` |
 | Persistent data (staging) | Render disk at `/data` (100GB) | Import workspace — Overture parquet → TSV → SQLite; no customer data |
 | DNS | Cloudflare CNAME `geoclear.io → geoclear.onrender.com` | DNS-only (not proxied) |
 | SSL | Render custom domain cert | Auto-issued |
@@ -222,8 +223,7 @@ Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-G
 | Status proxy endpoint | `GET /api/status` | Server-side UptimeRobot proxy — real uptime ratios (1d/7d/30d/90d) + avg 24h response; API key never in browser |
 | Health check | `GET /api/health` | Returns DB status + address count (lazy: null until /api/stats warms cache) |
 | **Env var runbook** | `docs/runbooks/RUNBOOK-ENV-VARS.md` | Required env vars per service, Node pin verification, cache-clear deploy checklist, failure mode table |
-| **risk.db startup log** | `[startup] risk.db: ready/not-found` | Logged in `onListening()` alongside nad.db status |
-| **risk_data_unavailable error** | `/v1/risk`, `/api/demo/risk` | Returns HTTP 503 `{"error":"risk_data_unavailable"}` when risk.db absent; no longer returns silent nulls |
+| **risk.db startup log** | `[startup] risk.db: ✓ Neon PostgreSQL` | Logged in `onListening()` alongside nad.db status |
 | Coverage stats | `GET /api/stats` | Breakdown by state; warms 1-hr address count cache |
 | Demo widget | `GET /api/demo` | IP rate-limited 10/hr, no key required |
 | OpenAPI spec | `openapi.yaml` repo root | OAS 3.0, all public endpoints — ready to upload to RapidAPI Provider Hub |
