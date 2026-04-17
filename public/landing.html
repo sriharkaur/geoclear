@@ -1035,7 +1035,7 @@
     <div class="hero-text">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        Now live — 198M+ verified US addresses
+        Trusted by insurance, fintech, and logistics teams
       </div>
 
       <h1>
@@ -1044,8 +1044,9 @@
       </h1>
 
       <p class="hero-sub">
-        Validate, geocode, and enrich US addresses with census tract, FEMA flood zone,
-        and timezone — from a free API key. 198M addresses. Under 5ms.
+        Stop bad addresses before they cost you. GeoClear validates, geocodes, and enriches
+        any US address with flood zone, census tract, climate risk, and more — in a single
+        API call, under 5ms, from a free key.
       </p>
 
       <div class="hero-btns">
@@ -1653,7 +1654,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </div>
       </div>
       <div class="calc-result">
-        <div class="calc-result-plan" id="calc-plan">Builder</div>
+        <div class="calc-result-plan" id="calc-plan">Starter</div>
         <div class="calc-result-price" id="calc-price">$49 / month</div>
         <div class="calc-result-note" id="calc-note">50,000 lookups included</div>
         <div class="calc-result-metered" id="calc-metered" style="display:none;margin-top:8px;font-size:0.82rem;color:var(--muted);"></div>
@@ -1683,7 +1684,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       </div>
 
       <div class="price-card" data-plan="starter">
-        <div class="plan-name">Builder</div>
+        <div class="plan-name">Starter</div>
         <div class="plan-price-row">
           <span class="plan-price"><sup>$</sup>49</span>
         </div>
@@ -1717,6 +1718,24 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <button class="plan-cta plan-cta-secondary" onclick="openCheckout('growth')">Get started →</button>
       </div>
 
+      <div class="price-card" data-plan="pro_compliance">
+        <div class="plan-name">Pro Compliance</div>
+        <div class="plan-price-row">
+          <span class="plan-price"><sup>$</sup>499</span>
+        </div>
+        <div class="plan-price-note">per month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feature">500,000 lookups / month</div>
+          <div class="plan-feature">FEMA flood zone + SFHA flag</div>
+          <div class="plan-feature">Census tract + block group</div>
+          <div class="plan-feature">HMDA / NFIP / CRA fields</div>
+          <div class="plan-feature">Compliance SLA + audit logs</div>
+          <div class="plan-feature">Priority support</div>
+        </div>
+        <a href="/compliance" class="plan-cta plan-cta-secondary" style="display:block;text-align:center;text-decoration:none;">Learn more →</a>
+      </div>
+
       <div class="price-card" data-plan="scale">
         <div class="plan-name">Scale</div>
         <div class="plan-price-row">
@@ -1736,7 +1755,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     </div>
 
     <p style="text-align:center;font-size:0.82rem;color:var(--dim);margin-top:28px;">
-      Need unpredictable volume? <a href="#pricing" onclick="openCheckout('payg')" style="color:var(--sky);">Pay-as-you-go at $0.001/lookup</a> — no monthly commitment.
+      Need unpredictable volume? <a href="javascript:void(0)" onclick="openCheckout('payg')" style="color:var(--sky);">Pay-as-you-go at $0.001/lookup</a> — no monthly commitment.
     </p>
 
     <div style="margin-top:16px;padding:20px 28px;background:var(--bg-alt);border:1px solid var(--border2);border-radius:var(--rxl);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
@@ -2377,8 +2396,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     { label:'1K',    n:1000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
     { label:'5K',    n:5000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
     { label:'10K',   n:10000,   plan:'Free',         price:'Free',      note:'10,000 lookups/mo cap',     key:'free'       },
-    { label:'25K',   n:25000,   plan:'Builder',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
-    { label:'50K',   n:50000,   plan:'Builder',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
+    { label:'25K',   n:25000,   plan:'Starter',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
+    { label:'50K',   n:50000,   plan:'Starter',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
     { label:'100K',  n:100000,  plan:'Professional', price:'$249 / mo', note:'500,000 lookups included',  key:'growth'     },
     { label:'250K',  n:250000,  plan:'Professional', price:'$249 / mo', note:'500,000 lookups included',  key:'growth'     },
     { label:'500K',  n:500000,  plan:'Scale',        price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },

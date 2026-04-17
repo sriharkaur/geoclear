@@ -244,7 +244,7 @@ Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-G
 | Page | Path | Description |
 |------|------|-------------|
 | Bulk address cleaning | `/bulk` → `public/bulk.html` | Drag-drop CSV upload; wired to `POST /api/address/csv`; pricing grid ($199/1M, $799/5M one-time); FAQ; signup modal; `buyBulk()` wired to `POST /v1/checkout/bulk` → Stripe one-time payment |
-| Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, pricing grid, free signup modal. Route: `/` → `landing.html`, `/explorer` → `index.html` |
+| Landing page + demo | `/` → `public/landing.html` | Dark design (navy/sky/indigo). SVG pin logo mark, live terminal in hero, `/api/demo` widget, 4-tab code examples, pricing grid (Free/Starter/$49, Professional/$249, Pro Compliance/$499, Scale/$999, Enterprise), free signup modal. Outcome-first hero copy. Sign In nav → /portal.html. |
 | Trust layer | landing page | Sri Yantra ghost watermark (5% opacity, screen blend); data sources strip (USDOT NAD r22, Overture Maps, Census TIGER/Line, FEMA NFHL); Stripe secured badge + cancel-anytime note under pricing; 99.9% uptime badge → `/status` |
 | Scroll fade-up animations | landing page | IntersectionObserver-driven fade+translateY on all sections; 75ms stagger on grid cards (feat-grid, steps, enrich-grid, pricing-grid) |
 | Animated metric counters | landing page | 120M+ / 8+ / 10K count up from 0 on scroll-into-view; `<5ms` uses prefix token; 1.4s duration at 60fps |

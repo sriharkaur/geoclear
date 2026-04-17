@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 26 — Climate Risk Score demo live and stable: AbortController wall-clock timeouts, res.on('error') crash fix, address number parsing to avoid full-table-scan, FEMA race cap. No more crash loops. Demo endpoint returns in <4s cached.)_
+_Last updated: 2026-04-17 (session 27 — Q-132 Phase 1 complete: all 4 risk tables live in prod (wildfire 3108, storm 3257, eq 3221, drought 3221). Address matching fixed (direction suffix strip). demo/enrich 502 fixed. /status redirect, Sign In nav → portal.html, nad_admin_localdev removed from portal.)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -11,7 +11,7 @@ _Last updated: 2026-04-17 (session 26 — Climate Risk Score demo live and stabl
 
 ## 🔴 URGENT — Fix Now (production data issue)
 
-- ✅ **Q-001 · FK relink on prod** — DONE 2026-04-17. MI/NJ/NV/NH/FL/CA now show correct counts (FL: 41.7M, CA: 15M, MI: 9.5M, NJ: 10M, NV: 2.3M, NH: 870K). Fixed via `POST /v1/admin/refresh-counts` after adding `refresh-counts-worker.js`.
+- ✅ **Q-001 · FK relink on prod** — DONE 2026-04-17. Final: 194,880,008 linked (98.1%), 3,777,529 permanently unlinked (1.9% — NJ OpenAddresses records with NULL state text + no zip bridge). FL: 41.7M, CA: 29.5M, TX: 11.5M, NJ: 9.98M, MI: 9.49M. `/api/states` sum corrected via `POST /v1/admin/refresh-counts` (was stale by 14.6M). Phase 1b (zip bridge) found 0 new rows — unlinked NJ records have no zip_code either.
 
 ---
 
@@ -442,7 +442,8 @@ Open:
 - [x] **Q-129 · GeoClear Risk Score v2** ✅ 2026-04-17 — `POST /v1/outcomes` endpoint; `address_outcomes` table in `keys.db`; score_version v1→v2 auto-upgrade at ≥3 delivery or ≥2 fraud outcomes; inline key auth on `/v1/risk` and `/v1/outcomes`; `GET /v1/admin/outcomes`; drone delivery use case ground-truthing deliverability. Moat: no competitor can buy this dataset — earned from live traffic.
 - [x] **Q-130 · Compliance page — interactive demo + FEMA legend + cost calculator** ✅ 2026-04-17 — Hero-right: live input (number/street/city/state) → real `/api/demo/enrich` response shows `flood_zone`, `flood_sfha`, `census_tract`, `county_fips`. FEMA zone legend (expandable: AE/VE/A/X/D with SFHA status). Cost calculator (slider: N lookups/mo → manual $3–15/ea vs GeoClear $249/mo + % savings). Auth bypass: `req.path.startsWith('/demo')` in API gateway. File: `public/compliance.html`, `web-server.js`.
 - [x] **Q-131 · Landing page compliance callout section** ✅ 2026-04-17 — Prominent section between verticals and pricing: "HMDA, NFIP, and CRA fields. One API call. Auditable source." → links to `/compliance`. Three trust bullets + "See compliance features →" CTA. File: `public/landing.html`.
-- ⏳ **Q-132 · Climate Risk Score per address** IN PROGRESS (session 26) — Phase 1 ✅: earthquake + drought in risk.db (3,221 counties each). `/api/demo/risk` live and stable (no crash loops). Landing page shows 5th Climate Risk score card. Pending: wildfire + storm tables missing from prod risk.db (only eq+drought uploaded). Need to run `wildfire-import.js` + `storm-import.js` locally against `/tmp/full-risk.db` and re-upload. Phase 2 (FEMA NRI, heat, SLR) not yet started.
+- [x] **Q-132 · Climate Risk Score per address — Phase 1** ✅ 2026-04-17 — All 4 county-level risk tables live in prod risk.db: wildfire (3,108 counties USFS WHP), storm (3,257 counties NOAA NCEI 10yr), earthquake (3,221 counties USGS NSHM), drought (3,221 counties USDA). `/api/demo/risk` stable, <4s, no crash loops. Address direction suffix stripping fixed so directional addresses (e.g. "10th Street NW") match NAD. Demo prepopulated with working DC address.
+- [ ] **Q-137 · Climate Risk Score — Phase 2** — FEMA NRI (National Risk Index, composite county-level hazard score), heat index (NOAA/NWS), sea level rise exposure (NOAA). Unlocks insurance underwriting, climate-adjusted mortgage risk. Start after first paying customer.
 - [ ] Q-133 · Physical World Graph API — address nodes connected to businesses, schools, flood zones
 - [ ] Q-134 · National 911 Address Layer — partner with NENA ($10B NG911 funding)
 - [ ] Q-135 · Autonomous Address Deduplication-as-a-Service (AI agent for CRM cleanup)
