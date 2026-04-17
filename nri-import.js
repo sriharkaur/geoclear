@@ -2,25 +2,14 @@
 /**
  * FEMA National Risk Index (NRI) → risk.db importer
  * ==================================================
+ * Downloads the FEMA NRI bulk CSV (all 3,221 US counties) and imports into risk.db.
+ * Self-contained — does not depend on wildfire_risk or any other table.
+ *
  * Run on STAGING Render Shell (or locally for testing).
  *
- * Source: FEMA NRI — free public dataset, no API key required.
- *   Bulk CSV: https://hazards.fema.gov/nri/Content/StaticDocuments/DataDownload/
- *             NRI_Table_Counties/NRI_Table_Counties.zip
- *   API docs: https://hazards.fema.gov/nri/api
- *
- * Covers all 3,221 US counties with:
- *   - Composite RISK_SCORE (0–100 national percentile)
- *   - HWAV  Heat Wave risk score
- *   - HRCN  Hurricane risk score
- *   - CFLD  Coastal Flooding risk score
- *   - RFLD  Riverine Flooding risk score (complements FEMA NFHL live lookup)
- *   - WFIR  Wildfire (cross-check vs USFS WHP already in risk.db)
- *   - ERQK  Earthquake (cross-check vs USGS NSHM already in risk.db)
- *
  * Usage:
- *   node nri-import.js                   # fetches all 3221 counties via FEMA API
- *   DATA_DIR=/data node nri-import.js    # prod/staging data dir
+ *   node nri-import.js                   # full run — all 3,221 counties
+ *   DATA_DIR=/data node nri-import.js    # explicit data dir
  *   node nri-import.js --limit=100       # test run
  *
  * Schema created in risk.db:
@@ -32,96 +21,85 @@
 'use strict';
 
 const https    = require('https');
+const http     = require('http');
 const path     = require('path');
 const fs       = require('fs');
+const zlib     = require('zlib');
 const Database = require('better-sqlite3');
 
-const DATA_DIR  = process.env.DATA_DIR || path.join(__dirname, 'data');
-const RISK_DB   = path.join(DATA_DIR, 'risk.db');
-const args      = Object.fromEntries(process.argv.slice(2).map(a => a.replace(/^--/, '').split('=')));
-const LIMIT     = args.limit ? parseInt(args.limit) : Infinity;
-const BATCH     = 50; // counties per API call (NRI API supports up to 200)
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const RISK_DB  = path.join(DATA_DIR, 'risk.db');
+const args     = Object.fromEntries(process.argv.slice(2).map(a => a.replace(/^--/, '').split('=')));
+const LIMIT    = args.limit ? parseInt(args.limit) : Infinity;
 
-// All 3,221 county FIPS — read from existing risk.db wildfire_risk table (already has all counties)
-function getCountyFipsList(db) {
-  try {
-    return db.prepare('SELECT DISTINCT county_fips FROM wildfire_risk ORDER BY county_fips').all().map(r => r.county_fips);
-  } catch (_) {
-    // Fallback: generate all FIPS from state list
-    const STATE_FIPS = ['01','02','04','05','06','08','09','10','11','12','13','15','16','17','18','19',
-      '20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38',
-      '39','40','41','42','44','45','46','47','48','49','50','51','53','54','55','56','72','78'];
-    // Can't enumerate without a reference — this path means wildfire_risk table is empty
-    throw new Error('wildfire_risk table is empty — run wildfire-import.js first');
-  }
+// FEMA NRI bulk CSV — all 3,221 counties, ~30MB zip
+const NRI_CSV_URL = 'https://hazards.fema.gov/nri/Content/StaticDocuments/DataDownload/NRI_Table_Counties/NRI_Table_Counties.zip';
+
+function download(url, redirects = 5) {
+  return new Promise((resolve, reject) => {
+    if (redirects === 0) return reject(new Error('Too many redirects'));
+    const mod = url.startsWith('https') ? https : http;
+    const req = mod.get(url, { headers: { 'User-Agent': 'geoclear-importer/1.0' } }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return resolve(download(res.headers.location, redirects - 1));
+      }
+      if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode} from ${url}`));
+      const chunks = [];
+      res.on('data', d => chunks.push(d));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(120000, () => { req.destroy(); reject(new Error('Download timeout')); });
+  });
 }
 
-function httpGet(url, timeoutMs = 15000) {
-  return new Promise((resolve, reject) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => { controller.abort(); reject(new Error('Timeout')); }, timeoutMs);
-    const req = https.get(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } }, res => {
-      const chunks = [];
-      res.on('error', () => {});
-      res.on('data', d => chunks.push(d));
-      res.on('end', () => { clearTimeout(timer); resolve(Buffer.concat(chunks).toString()); });
-    });
-    req.on('error', e => { clearTimeout(timer); if (e.name !== 'AbortError') reject(e); });
-  });
+// Minimal ZIP parser — find first .csv entry and return its bytes
+function unzipFirstCSV(buf) {
+  // ZIP local file header signature: 0x04034b50
+  let offset = 0;
+  while (offset < buf.length - 30) {
+    const sig = buf.readUInt32LE(offset);
+    if (sig !== 0x04034b50) { offset++; continue; }
+    const compression = buf.readUInt16LE(offset + 8);
+    const compSize    = buf.readUInt32LE(offset + 18);
+    const uncompSize  = buf.readUInt32LE(offset + 22);
+    const fnLen       = buf.readUInt16LE(offset + 26);
+    const extraLen    = buf.readUInt16LE(offset + 28);
+    const fname       = buf.slice(offset + 30, offset + 30 + fnLen).toString();
+    const dataStart   = offset + 30 + fnLen + extraLen;
+    if (fname.endsWith('.csv')) {
+      const compressed = buf.slice(dataStart, dataStart + compSize);
+      if (compression === 0) return compressed; // stored
+      if (compression === 8) return zlib.inflateRawSync(compressed); // deflate
+      throw new Error(`Unsupported compression ${compression} for ${fname}`);
+    }
+    offset = dataStart + compSize;
+  }
+  throw new Error('No CSV found in ZIP');
+}
+
+// Parse CSV into array of objects (handles quoted fields)
+function parseCSV(text) {
+  const lines = text.split('\n');
+  if (!lines.length) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    const row = {};
+    headers.forEach((h, j) => { row[h] = vals[j] || ''; });
+    rows.push(row);
+  }
+  return rows;
 }
 
 // NRI score → 0-1 normalized (NRI scores are 0–100 national percentile)
 function norm(score) {
   if (score == null || score === '' || isNaN(score)) return null;
   return +(Math.min(100, Math.max(0, parseFloat(score))) / 100).toFixed(3);
-}
-
-// NRI rating string → 0-1
-const RATING_MAP = {
-  'Very High': 0.9, 'High': 0.7, 'Relatively High': 0.6,
-  'Relatively Moderate': 0.4, 'Moderate': 0.4,
-  'Relatively Low': 0.2, 'Low': 0.1, 'Very Low': 0.05,
-  'Insufficient Data': null, 'Not Applicable': null,
-};
-
-async function fetchNRIBatch(fipsList) {
-  // FEMA NRI API: query by county FIPS (5-digit)
-  // GET https://hazards.fema.gov/nri/rest/api/county?stateId=XX&countyId=YYY
-  // Batch via comma-separated county IDs isn't supported — do individual calls
-  // For bulk: use the county endpoint with FIPS split into stateId + countyId
-  const results = [];
-  for (const fips of fipsList) {
-    const stateId  = fips.slice(0, 2);
-    const countyId = fips.slice(2);
-    try {
-      const url = `https://hazards.fema.gov/nri/rest/api/county?stateId=${stateId}&countyId=${countyId}`;
-      const body = await httpGet(url, 10000);
-      const data = JSON.parse(body);
-      // NRI API returns { county: { ... } } or { counties: [...] }
-      const county = data.county || (data.counties && data.counties[0]) || data;
-      if (!county || !county.STCOFIPS) {
-        results.push(null);
-        continue;
-      }
-      results.push({
-        county_fips:          county.STCOFIPS,
-        risk_score:           norm(county.RISK_SCORE),
-        risk_rating:          county.RISK_RATNG || null,
-        heat_wave_score:      norm(county.HWAV_RISKS),
-        hurricane_score:      norm(county.HRCN_RISKS),
-        coastal_flood_score:  norm(county.CFLD_RISKS),
-        riverine_flood_score: norm(county.RFLD_RISKS),
-        wildfire_score:       norm(county.WFIR_RISKS),
-        earthquake_score:     norm(county.ERQK_RISKS),
-      });
-    } catch (e) {
-      console.warn(`  [${fips}] API error: ${e.message}`);
-      results.push(null);
-    }
-    // Respectful rate limit — 10 req/s
-    await new Promise(r => setTimeout(r, 100));
-  }
-  return results.filter(Boolean);
 }
 
 function setupSchema(db) {
@@ -148,14 +126,18 @@ async function main() {
     process.exit(1);
   }
 
+  console.log(`Downloading FEMA NRI bulk CSV…`);
+  const zipBuf = await download(NRI_CSV_URL);
+  console.log(`Downloaded ${(zipBuf.length / 1024 / 1024).toFixed(1)} MB`);
+
+  const csvBuf = unzipFirstCSV(zipBuf);
+  const rows   = parseCSV(csvBuf.toString('utf8'));
+  console.log(`Parsed ${rows.length} county rows from CSV`);
+
   const db = new Database(RISK_DB);
   db.pragma('journal_mode = WAL');
   db.pragma('synchronous = NORMAL');
   setupSchema(db);
-
-  const allFips = getCountyFipsList(db);
-  const targets = allFips.slice(0, Math.min(allFips.length, LIMIT));
-  console.log(`Importing NRI data for ${targets.length} counties…`);
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO nri_risk
@@ -163,25 +145,34 @@ async function main() {
        coastal_flood_score, riverine_flood_score, wildfire_score, earthquake_score, import_date)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, date('now'))
   `);
-  const insertMany = db.transaction((rows) => {
-    for (const r of rows) {
-      insert.run(r.county_fips, r.risk_score, r.risk_rating, r.heat_wave_score,
-        r.hurricane_score, r.coastal_flood_score, r.riverine_flood_score,
-        r.wildfire_score, r.earthquake_score);
+
+  const targets = rows.slice(0, Math.min(rows.length, LIMIT));
+  const insertMany = db.transaction((batch) => {
+    for (const r of batch) {
+      // CSV column names from FEMA NRI data dictionary
+      const fips = r['STCOFIPS'] || r['stcofips'] || r['FIPS'] || r['fips'];
+      if (!fips || fips.length < 5) continue;
+      insert.run(
+        fips,
+        norm(r['RISK_SCORE']  || r['RISK_SCORE_CMP']),
+        r['RISK_RATNG'] || r['RISK_RATING'] || null,
+        norm(r['HWAV_RISKS']),
+        norm(r['HRCN_RISKS']),
+        norm(r['CFLD_RISKS']),
+        norm(r['RFLD_RISKS']),
+        norm(r['WFIR_RISKS']),
+        norm(r['ERQK_RISKS']),
+      );
     }
   });
 
+  // Insert in batches of 500
   let total = 0;
-  for (let i = 0; i < targets.length; i += BATCH) {
-    const batch = targets.slice(i, i + BATCH);
-    const rows  = await fetchNRIBatch(batch);
-    if (rows.length > 0) {
-      insertMany(rows);
-      total += rows.length;
-    }
-    if ((i + BATCH) % 500 === 0 || i + BATCH >= targets.length) {
-      console.log(`  Progress: ${Math.min(i + BATCH, targets.length)}/${targets.length} counties, ${total} rows inserted`);
-    }
+  for (let i = 0; i < targets.length; i += 500) {
+    const batch = targets.slice(i, i + 500);
+    insertMany(batch);
+    total += batch.length;
+    console.log(`  Inserted ${total}/${targets.length}`);
   }
 
   db.close();
