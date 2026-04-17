@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 28 — Q-132 risk.db rebuilt with all 4 tables and re-uploaded to prod. WHP float key bug fixed (Q-138). Data quality issues Q-139–Q-142 identified and added to queue. Demo address updated to Globe AZ for full risk dimension coverage.)_
+_Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions confirmed prod. DevOps Standards retro completed: 10 incident patterns → 16 queue items Q-144–Q-159 added. UptimeRobot expanded to 5 GeoClear monitors. Full retro: sessions/RETRO-2026-04-17-devops-standards.md)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -465,6 +465,54 @@ Open:
 - [ ] **Q-140 · CA Overture addresses missing county_fips** — ~29.5M CA addresses imported from Overture have `fips: null` in the address row. FIPS-dependent risk lookups (earthquake, drought, wildfire) all return null for these addresses, making `/v1/risk` useless for CA. Fix: (1) run a post-import FIPS backfill on staging — spatial join against TIGER county polygons to assign `county_fips` for all Overture rows with lat/lon; (2) or derive FIPS at query time via in-memory TIGER county lookup (lighter but ~50ms latency). Same issue likely affects other Overture-only states (FL, MI, NJ, NV, NH). Blocking for CA risk score use cases.
 - [ ] **Q-141 · Import CAL FIRE FHSZ into risk.db** — `calfire-import.js` exists and is ready but was never run. `calfire_fhsz` table absent from risk.db. CAL FIRE FHSZ is more granular than USFS WHP (polygon-level vs county-level) for CA wildfire risk and is the primary signal used in the `/v1/risk` CA wildfire score. Run on staging Render Shell: `node calfire-import.js --db=/data/risk.db` (SRA + LRA sources). Then re-upload risk.db to prod. Dependency: Q-140 (CA addresses need county_fips for the combined wildfire score to be useful).
 - [ ] **Q-142 · Galveston TX address coverage gap** — ZIP 77550 (Galveston Island) addresses return "No addresses found" from all lookup attempts. Galveston is a high-priority flood zone demo target (coastal VE/AE zones confirmed via FEMA API). NAD r22 likely has sparse Galveston coverage. Fix: check Overture parquet for Galveston County (FIPS 48167) — if present, import via staging pipeline. Also check Texas GLO (General Land Office) for coastal address data.
+
+---
+
+## 🏗 DEVOPS STANDARDS — Engineering Discipline (retro 2026-04-17)
+> Root cause: 10 incident patterns in one session. Full retro: `sessions/RETRO-2026-04-17-devops-standards.md`
+> Theme split: **Prod Uptime** · **Path to Push** · **Data/Code Separation** · **Data Quality**
+
+### Prod Uptime
+
+- [ ] **Q-144 · Pin all runtime versions in package.json** — `"node": "20.x"` done today. Extend: add `"engines"` check to deploy checklist; document in RUNBOOK that any `node` or native addon version bump requires a cache-clear test deploy on staging before prod. Add pre-deploy note to QUEUE deployment checklist. Prevents P-1 (ABI mismatch) class of failure permanently. *Effort: 30 min*
+
+- [ ] **Q-145 · Env var audit checklist — all services** — Document every required env var per service in `docs/runbooks/RUNBOOK-ENV-VARS.md`. Checklist: `DATA_DIR=/data`, `NAD_DB` (if overriding), `STRIPE_*`, `NAD_ADMIN_SECRET`, `NODE_VERSION=20`. Run audit on every new service creation and every cache-clear deploy. Required vars that are absent = deploy abort. Prevents P-2 (missing DATA_DIR) class. *Effort: 1 hr*
+
+- [ ] **Q-146 · Extend DB readiness gate to risk.db** — `risk-data.js` currently opens risk.db silently and returns null if absent. Add `isReady()` method. `startServer()` in `web-server.js` should log `[startup] risk.db: ready/not-found` alongside nad.db status. If risk.db absent, endpoints that need it return `{"error":"risk_data_unavailable"}` not null — makes the missing-data state explicit. Prevents P-3 extension. *Effort: 1 hr*
+
+- [ ] **Q-147 · /api/health/detailed endpoint** — `GET /api/health/detailed` returns: nad.db status + address count, risk.db table list + row counts + last import dates, external API probe results (FEMA flood zone for a known address, USGS for a known point), Node version. Used by UptimeRobot keyword monitor (Q-158) and pre-deploy smoke test. If any table row count is below minimum threshold, returns `"degraded"` status. *Effort: 2 hr*
+
+### Path to Push
+
+- [ ] **Q-148 · Standardize all import scripts to DATA_DIR env var** — Audit every `*-import.js` for `path.join(__dirname, 'data', ...)` or `path.join(__dirname, ...)` that constructs a DB path. Replace with `path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'risk.db')`. Affected: `wildfire-import.js`, `storm-import.js`, `calfire-import.js` (others already use `--db=` arg which is fine). Add lint rule / grep to CI: fail if `__dirname.*risk.db` appears in any import script. Prevents P-4 class permanently. *Effort: 1 hr*
+
+- [ ] **Q-149 · Import scripts self-contained — no CWD dependency** — Every import script header must document its run invocation: `DATA_DIR=/data NODE_PATH=$(pwd)/node_modules node /data/<script>.js --db=/data/risk.db`. Runner scripts (`run-all-imports.js`) must resolve `NODE_PATH` dynamically via `path.resolve(process.cwd(), 'node_modules')`. Never hardcode `/home/render/...` or any absolute infrastructure path. Add `--help` output to each script showing required env vars. Prevents P-10 class. *Effort: 2 hr*
+
+- [ ] **Q-150 · Pre-upload check script** — `scripts/pre-upload-check.js`: (1) fetches prod data manifest via `GET /v1/admin/data-manifest` (Q-151), (2) fetches staging manifest, (3) diffs — errors if staging is missing any table that prod has, (4) checks every expected table meets minimum row count, (5) prints go/no-go. Run before every `stream-upload` to prod. Prevents P-5 (staging wiping prod tables) class. *Effort: 2 hr. Depends on Q-151.*
+
+### Data / Code Separation
+
+- [ ] **Q-151 · GET /v1/admin/data-manifest endpoint** — Returns JSON: `{tables: [{name, row_count, last_import_date, min_expected, max_expected}], nad_db: {addresses, last_updated}, generated_at}`. Includes min/max expected row counts hardcoded per table (wildfire: 3100–3300, storm: 3200–3300, earthquake: 3200–3250, drought: 3200–3250, nri_risk: 3100–3250). Used by Q-150 pre-upload check and Q-158 UptimeRobot monitor. *Effort: 2 hr*
+
+- [ ] **Q-152 · Staging replica procedure — documented and enforced** — `docs/runbooks/RUNBOOK-DATA.md` section "Before any import run": (1) run `scripts/pre-upload-check.js --target=staging --source=prod` to verify staging has all prod tables, (2) if missing, download prod risk.db to staging via `stream-download` (add this endpoint), (3) then run new imports on staging, (4) validate (Q-153), (5) upload to prod. No deviation from this sequence. Prevents P-5 permanently. *Effort: 2 hr*
+
+### Data Quality
+
+- [ ] **Q-153 · Post-import validation script** — `scripts/validate-import.js --db=/data/risk.db`: (1) checks all expected tables exist; (2) row counts within defined ranges (wildfire: ≥3100, storm: ≥3200, earthquake: ≥3200, drought: ≥3200, nri_risk: ≥3100); (3) null rate <5% on score fields; (4) no scores outside valid range (wildfire 1–5, all normalized fields 0–1); (5) spot-checks 10 known counties with known-good values (e.g. Maricopa AZ wildfire=3, Harris TX storm=high, King WA earthquake=high). Exit 1 on any failure. Must pass before any prod upload. Prevents P-6 (silent 0-county success). *Effort: 3 hr*
+
+- [ ] **Q-154 · Daily synthetic data monitor** — Script `scripts/synthetic-monitor.js`: hits 5 known-good addresses (one strong signal per dimension), asserts each risk dimension returns non-null and non-zero value, asserts response latency <3s. Runs as Render cron job daily at 06:00 UTC. Logs pass/fail to structured log. On failure: POST to a Slack webhook or send email via SendGrid. Catches P-8 (FEMA silent wrong data) same-day instead of weeks later. *Effort: 3 hr*
+
+- [ ] **Q-155 · External API response quality logging** — In `enrich.js` and `web-server.js`, log every external API call with: endpoint, status code, response_size_bytes, first 100 chars of response. Add rolling counter: if `flood_zone=OUTSIDE` appears in >80% of calls in a 1hr window, set a process-level flag `process.env.FEMA_SUSPECTED_BLOCKED=1` and return `flood_zone: null, flood_zone_note: "data_unavailable"` instead of OUTSIDE. Prevents customers seeing systematically wrong flood scores. Addresses P-7 and P-8. *Effort: 3 hr*
+
+- [ ] **Q-156 · Data freshness tracking per table** — `nri_risk`, `wildfire_risk`, `storm_risk` etc. each have `import_date` column. `/api/health/detailed` (Q-147) checks `MAX(import_date)` per table and flags any table not updated in >120 days as `"stale"`. UptimeRobot keyword monitor on `/api/health/detailed` catches stale data before customers notice. Add `import_date` to tables that are missing it (calfire_fhsz, building_footprints). *Effort: 2 hr*
+
+### Monitoring (UptimeRobot)
+
+- [ ] **Q-157 · UptimeRobot — risk demo data quality monitor** ✅ 2026-04-17 — Keyword monitor on `/api/demo/risk?street=200+Pine+St&city=Globe&state=AZ` checking for keyword `"ok":true`. 5-min interval. Fires alert if risk endpoint goes down or returns error. Complements existing health monitor with data-layer coverage. *Set up today.*
+
+- [ ] **Q-158 · UptimeRobot — /api/health/detailed keyword monitor** — Once Q-147 is implemented, add keyword monitor checking for `"status":"ok"` (not `"degraded"`) on `/api/health/detailed`. Catches: missing tables, row counts below threshold, stale import dates, FEMA probe failures. This is the single monitor that captures all data quality regressions in prod. *Effort: 30 min after Q-147.*
+
+- [ ] **Q-159 · UptimeRobot — address resolution smoke test** — Keyword monitor on `/api/demo/enrich?street=1600+Pennsylvania+Ave&city=Washington&state=DC` checking for `"census_tract"` in response. Verifies nad.db is open and returning enrichment data (not just HTTP 200). Complements `/api/health` which only checks server liveness. *Set up after Q-147.*
 
 ---
 
