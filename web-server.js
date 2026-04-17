@@ -1602,10 +1602,8 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
     (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
     Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5)   : null),
     Promise.resolve(fips5 ? riskData.getStormRisk(fips5)      : null),
-    Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null)
-      .then(r => r ?? ((addrLat && addrLon) ? getEarthquakeRisk(addrLat, addrLon).catch(() => null) : null)),
-    Promise.resolve(fips5 ? riskData.getDroughtRisk(fips5)    : null)
-      .then(r => r ?? (fips5 ? getDroughtRisk(fips5).catch(() => null) : null)),
+    Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null),
+    Promise.resolve(fips5 ? riskData.getDroughtRisk(fips5)    : null),
   ]);
   const calFireRow = (addr.state === 'CA' && addrLat && addrLon) ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
 
