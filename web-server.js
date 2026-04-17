@@ -238,7 +238,7 @@ app.post('/v1/admin/stream-upload', (req, res) => {
 app.post('/v1/admin/reload-risk-db', adminAuth, async (req, res) => {
   try {
     const coverage = await riskData.coverage();
-    console.log('[reload-risk-db] Neon — no reload needed. coverage:', JSON.stringify(coverage));
+    console.log('[reload-risk-db] Xata — no reload needed. coverage:', JSON.stringify(coverage));
     res.json({ ok: true, coverage });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -305,7 +305,7 @@ app.get('/status', (req, res) => res.redirect('/status.html'));
 
 // ── API Auth + Rate Limiting ──────────────────────────────────────
 // /api/health, /api/stats, /api/states are open — everything else requires a key
-const OPEN_API_PATHS = new Set(['/health', '/stats', '/states', '/demo', '/status']);
+const OPEN_API_PATHS = new Set(['/health', '/ping', '/stats', '/states', '/demo', '/status']);
 
 async function apiAuth(req, res, next) {
   const rawKey = req.headers['x-api-key'] || req.query.key;
@@ -758,7 +758,7 @@ app.get('/api/enrich', async (req, res) => {
       Promise.race([getFAADroneAirspace(fLat, fLon).catch(() => null), hardNull(5000)]),
     ]);
 
-    // Building footprint from Neon (populated by building-import.js, staging pipeline)
+    // Building footprint from Xata (populated by building-import.js, staging pipeline)
     const building   = await riskData.getBuildingFootprint(fLat, fLon);
     const openSqm    = building ? Math.max(0, 400 - (building.area_sqm || 0)) : null;
 
@@ -1915,14 +1915,14 @@ async function onListening() {
     dbStatus = `✓ ready`;
   }
   console.log(`[startup] nad.db  : ${dbStatus}`);
-  console.log(`[startup] risk.db : ✓ Neon PostgreSQL`);
+  console.log(`[startup] risk.db : ✓ Xata PostgreSQL`);
   const keyStats = await keys.stats();
   console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);
   console.log(`  URL       : ${BASE_URL}`);
   console.log(`  Port      : ${PORT}`);
   console.log(`  nad.db    : ${dbStatus}`);
-  console.log(`  risk.db   : ✓ Neon PostgreSQL`);
+  console.log(`  risk.db   : ✓ Xata PostgreSQL`);
   console.log(`  API Keys  : ${keyStats.active} active`);
   console.log(`    GET  /api/address?street=Main&state=TX`);
   console.log(`    GET  /api/health\n`);
