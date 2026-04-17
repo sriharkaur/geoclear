@@ -648,7 +648,7 @@
     /* ─── RISK SCORE ───────────────────────────────────────────────────────── */
     .risk-section { background: var(--bg-alt); }
     .risk-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
-    .risk-scores-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 32px 0 24px; }
+    .risk-scores-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 32px 0 24px; }
     .risk-score-card {
       background: var(--surface); border: 1px solid var(--border2);
       border-radius: var(--r); padding: 20px;
@@ -988,6 +988,7 @@
       .pricing-grid { grid-template-columns: 1fr; }
       .enrich-grid { grid-template-columns: 1fr; }
       .risk-scores-grid { grid-template-columns: 1fr 1fr; }
+      .risk-climate-breakdown { flex-direction: column; gap: 4px; }
       .verticals-grid { grid-template-columns: 1fr; }
       .risk-demo-row { flex-direction: column; }
       .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
@@ -1242,7 +1243,7 @@
           </svg>
         </div>
         <div class="feat-title">Risk Score <span style="font-size:0.7rem;font-weight:700;background:var(--sky);color:#fff;padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px">PRO</span></div>
-        <div class="feat-desc">Four scores per address: deliverability, fraud, disaster, vacancy. Replaces separate calls to FEMA, LexisNexis, and Verisk — in one 30ms API call. <a href="#risk-score" style="color:var(--sky)">See live demo ↓</a></div>
+        <div class="feat-desc">Five scores per address: deliverability, fraud, disaster, vacancy, and climate risk. Flood + wildfire + storm + earthquake + drought — 5 federal sources, one call. <a href="#risk-score" style="color:var(--sky)">See live demo ↓</a></div>
       </div>
     </div>
   </div>
@@ -1485,17 +1486,16 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 <section class="risk-section" id="risk-score">
   <div class="container">
     <div class="section-label">Risk Score</div>
-    <h2 class="sh2">Four numbers. One decision.</h2>
+    <h2 class="sh2">Five numbers. One decision.</h2>
     <p class="ssub">
-      Every address returns a risk vector: will it deliver, is it fraud, will it flood, is anyone there.
-      One API call replaces a $4 third-party risk report — at 30ms.
+      Every address returns a full risk vector: deliverability, fraud, disaster, vacancy — plus a climate risk composite from 5 federal data sources. One API call. No third-party vendors.
     </p>
 
     <!-- Live risk demo -->
     <div class="demo-card" data-fade>
       <div class="demo-header">
         <div class="demo-title">Risk Score — Live Demo</div>
-        <div class="demo-subtitle">No API key needed · Real FEMA + wildfire data</div>
+        <div class="demo-subtitle">No API key needed · Real FEMA + USGS earthquake + USDA drought data</div>
       </div>
       <div class="risk-demo-row">
         <input class="demo-input" id="risk-street" type="text" placeholder="Street address (e.g. 123 Main St)" />
@@ -1523,15 +1523,24 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <div class="risk-score-card">
         <div class="risk-score-label">Disaster</div>
         <div class="risk-score-num score-mid">0.41</div>
-        <div class="risk-score-desc">Combined risk from FEMA flood zone, USFS wildfire hazard, NOAA 10-year storm events, and CAL FIRE FHSZ. Used for P&C underwriting.</div>
+        <div class="risk-score-desc">FEMA flood zone + USFS wildfire hazard + NOAA 10-year storm events + CAL FIRE FHSZ. Used for P&C underwriting.</div>
       </div>
       <div class="risk-score-card">
         <div class="risk-score-label">Vacancy</div>
         <div class="risk-score-num score-low">0.08</div>
         <div class="risk-score-desc">Is the address likely unoccupied? Zero-query signal, address class heuristic, and delivery outcome history from the Ground-Truth Graph.</div>
       </div>
+      <div class="risk-score-card" style="border-color: rgba(46,147,111,0.35); background: rgba(46,147,111,0.03);">
+        <div class="risk-score-label" style="color:var(--sky)">Climate Risk</div>
+        <div class="risk-score-num score-mid">0.29</div>
+        <div class="risk-score-desc">Composite from 5 federal sources: FEMA flood (30%), USFS wildfire (25%), NOAA storm (20%), USGS seismic (15%), USDA drought (10%). All 3,221 US counties.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">
+          <span style="font-size:0.68rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.08);border:1px solid rgba(46,147,111,0.2);border-radius:4px;padding:2px 6px;">eq: D (High)</span>
+          <span style="font-size:0.68rem;font-family:var(--mono);color:var(--muted);background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;">drought: None</span>
+        </div>
+      </div>
     </div>
-    <p class="risk-note">Fraud + vacancy scores require Professional (full query-history signals). Disaster score is live on all plans.</p>
+    <p class="risk-note">Fraud + vacancy require Professional (full traffic history). Climate Risk is live on all plans — earthquake + drought from pre-imported federal datasets.</p>
   </div>
 </section>
 
@@ -1576,11 +1585,11 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="vertical-desc">HMDA census tract, CRA FIPS code, NFIP flood determination — all required fields in one call. NFIP-ready. Auditable federal source. No vendor lock-in.</div>
         <div class="vertical-signal">census_tract: "010100", flood_sfha: false, fips: "06037"</div>
       </div>
-      <div class="vertical-card" style="border-style:dashed;background:var(--bg-alt);">
+      <div class="vertical-card">
         <div class="vertical-verdict">Assess or skip →</div>
         <div class="vertical-title">Reinsurance &amp; Climate Risk</div>
-        <div class="vertical-desc">Portfolio exposure in real time. Swiss Re, Munich Re, FEMA contractors — not quarterly PDFs but live risk vectors at every address, updated when FEMA updates.</div>
-        <div class="vertical-signal">disaster_score: 0.62, wildfire_class: "Very High"</div>
+        <div class="vertical-desc">Portfolio exposure in real time. Flood, wildfire, storm, seismic, and drought — 5 federal dimensions per address. Swiss Re and Munich Re price at address level, not ZIP code.</div>
+        <div class="vertical-signal">climate_risk.composite: 0.41, earthquake.sdc: "D", drought.level: "D1"</div>
       </div>
     </div>
   </div>
@@ -2099,7 +2108,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       const addrLine = [addr.address_number, addr.street_name, addr.city, addr.state, addr.zip_code].filter(Boolean).join(' ');
       results.innerHTML = `
         <div style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;font-family:var(--mono)">${addrLine}</div>
-        <div class="risk-scores-grid" style="margin:0 0 12px">
+        <div class="risk-scores-grid" style="margin:0 0 12px;grid-template-columns:repeat(4,1fr)">
           <div class="risk-score-card">
             <div class="risk-score-label">Deliverability</div>
             ${scoreDisplay(sc.deliverability)}
@@ -2126,7 +2135,25 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           ${signalBadge('sfha', sig.flood_sfha, sig.flood_sfha)}
           ${signalBadge('wildfire', sig.wildfire_class, sig.wildfire_class && sig.wildfire_class !== 'Very Low')}
           ${signalBadge('storm_events_10yr', sig.storm_events_10yr, sig.storm_events_10yr > 50)}
-        </div>`;
+          ${sig.earthquake_sdc ? signalBadge('earthquake_sdc', sig.earthquake_sdc, ['D','E','F'].includes(sig.earthquake_sdc)) : ''}
+          ${sig.drought_level && sig.drought_level !== 'None' ? signalBadge('drought', sig.drought_level, ['D2','D3','D4'].includes(sig.drought_level)) : ''}
+        </div>
+        ${d.climate_risk && d.climate_risk.composite !== null ? `
+        <div style="margin-top:12px;padding:12px;background:rgba(46,147,111,0.04);border:1px solid rgba(46,147,111,0.2);border-radius:8px;">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--sky);margin-bottom:8px;">Climate Risk</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
+            <span style="font-size:1.6rem;font-weight:800;font-family:var(--mono);color:${d.climate_risk.composite >= 0.6 ? '#c0392b' : d.climate_risk.composite >= 0.3 ? '#d08c24' : '#2e936f'}">${d.climate_risk.composite.toFixed(2)}</span>
+            <span style="font-size:0.76rem;color:var(--muted)">composite (5 federal sources)</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span style="font-size:0.7rem;font-family:var(--mono);color:var(--muted);background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;">flood: ${d.climate_risk.flood.toFixed(2)}</span>
+            <span style="font-size:0.7rem;font-family:var(--mono);color:var(--muted);background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;">wildfire: ${d.climate_risk.wildfire.toFixed(2)}</span>
+            <span style="font-size:0.7rem;font-family:var(--mono);color:var(--muted);background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;">storm: ${d.climate_risk.storm.toFixed(2)}</span>
+            ${d.climate_risk.earthquake ? `<span style="font-size:0.7rem;font-family:var(--mono);color:${['D','E','F'].includes(d.climate_risk.earthquake.sdc) ? '#d08c24' : 'var(--muted)'};background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;">eq: ${d.climate_risk.earthquake.score.toFixed(2)} (${d.climate_risk.earthquake.sdc} – ${d.climate_risk.earthquake.label})</span>` : ''}
+            ${d.climate_risk.drought ? `<span style="font-size:0.7rem;font-family:var(--mono);color:${['D2','D3','D4'].includes(d.climate_risk.drought.level) ? '#d08c24' : 'var(--muted)'};background:var(--bg-alt);border:1px solid var(--border2);border-radius:4px;padding:2px 7px;">drought: ${d.climate_risk.drought.level} (${d.climate_risk.drought.score.toFixed(2)})</span>` : ''}
+          </div>
+        </div>` : ''}
+      `;
     } catch(e) {
       results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Request failed — ${e.message}</div>`;
     }
