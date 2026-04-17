@@ -93,6 +93,24 @@ class RiskData {
   }
 
   /**
+   * FEMA National Risk Index — composite + heat wave + hurricane + coastal/riverine flood.
+   * Populated by: nri-import.js (run on staging, then upload-chunk → merge to prod).
+   * Returns null gracefully if nri_risk table not yet populated.
+   */
+  getNRIRisk(countyFips) {
+    if (!this.db || !countyFips) return null;
+    try {
+      return this.db.prepare(
+        `SELECT county_fips, risk_score, risk_rating,
+                heat_wave_score, hurricane_score,
+                coastal_flood_score, riverine_flood_score,
+                wildfire_score, earthquake_score
+         FROM nri_risk WHERE county_fips = ?`
+      ).get(countyFips) || null;
+    } catch (_) { return null; }
+  }
+
+  /**
    * Nearest Microsoft Building Footprint within ~100m of a lat/lon.
    * Returns { area_sqm, building_type } or null if table not populated yet.
    * Populated by: building-import.js (staging pipeline).
@@ -126,6 +144,7 @@ class RiskData {
       cal_fire:             check('calfire_fhsz'),
       earthquake:           check('earthquake_risk'),
       drought:              check('drought_risk'),
+      nri:                  check('nri_risk'),
       building_footprints:  check('building_footprints'),
     };
   }

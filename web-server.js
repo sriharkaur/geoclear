@@ -1652,15 +1652,16 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   const femaPromise = (addrLat && addrLon)
     ? Promise.race([getFEMAFloodZone(addrLat, addrLon).catch(() => null), hardNull(4000)])
     : Promise.resolve(null);
-  const [femaResult, wildfireRow, stormRow, eqRow, droughtRow] = await Promise.race([
+  const [femaResult, wildfireRow, stormRow, eqRow, droughtRow, nriRow] = await Promise.race([
     Promise.all([
       femaPromise,
       Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5)   : null),
       Promise.resolve(fips5 ? riskData.getStormRisk(fips5)      : null),
       Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null),
       Promise.resolve(fips5 ? riskData.getDroughtRisk(fips5)    : null),
+      Promise.resolve(fips5 ? riskData.getNRIRisk(fips5)        : null),
     ]),
-    hardNull(5500).then(() => [null, null, null, null, null]),
+    hardNull(5500).then(() => [null, null, null, null, null, null]),
   ]);
   const calFireRow = (addr.state === 'CA' && addrLat && addrLon) ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
 
@@ -1685,15 +1686,28 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   const disasterStorm = stormRow ? Math.min((stormRow.event_count || 0) / 200, 0.3) : 0;
   const disaster = Math.min(1, Math.max(0, disasterFlood * 0.6 + disasterWildfire * 0.25 + disasterStorm * 0.15));
 
-  // Climate Risk composite
-  const climateEq      = eqRow?.risk_score ?? null;
-  const climateDrought = droughtRow?.risk_score ?? null;
+  // Climate Risk composite — Phase 2 adds NRI heat wave + hurricane + coastal flood
+  const climateEq        = eqRow?.risk_score ?? null;
+  const climateDrought   = droughtRow?.risk_score ?? null;
+  const climateHeat      = nriRow?.heat_wave_score ?? null;
+  const climateHurricane = nriRow?.hurricane_score ?? null;
+  const climateCoastal   = nriRow?.coastal_flood_score ?? null;
+
+  // If NRI riverine flood is available, blend with FEMA zone for a stronger flood signal
+  const nriFlood       = nriRow?.riverine_flood_score ?? null;
+  const blendedFlood   = (nriFlood != null)
+    ? +( disasterFlood * 0.6 + nriFlood * 0.4 ).toFixed(3)
+    : disasterFlood;
+
   const climateInputs = [
-    { score: disasterFlood,    weight: 0.30 },
-    { score: disasterWildfire, weight: 0.25 },
-    { score: disasterStorm / 0.3, weight: 0.20 },
-    ...(climateEq      != null ? [{ score: climateEq,      weight: 0.15 }] : []),
-    ...(climateDrought != null ? [{ score: climateDrought, weight: 0.10 }] : []),
+    { score: blendedFlood,    weight: 0.25 },
+    { score: disasterWildfire, weight: 0.20 },
+    { score: disasterStorm / 0.3, weight: 0.15 },
+    ...(climateEq        != null ? [{ score: climateEq,        weight: 0.12 }] : []),
+    ...(climateDrought   != null ? [{ score: climateDrought,   weight: 0.08 }] : []),
+    ...(climateHeat      != null ? [{ score: climateHeat,      weight: 0.10 }] : []),
+    ...(climateHurricane != null ? [{ score: climateHurricane, weight: 0.06 }] : []),
+    ...(climateCoastal   != null ? [{ score: climateCoastal,   weight: 0.04 }] : []),
   ];
   const totalW = climateInputs.reduce((s, d) => s + d.weight, 0);
   const climateComposite = totalW > 0
@@ -1709,12 +1723,17 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
       vacancy:        null,
     },
     climate_risk: {
-      composite:  climateComposite,
-      flood:      +disasterFlood.toFixed(2),
-      wildfire:   +disasterWildfire.toFixed(2),
-      storm:      +Math.min(1, disasterStorm / 0.3).toFixed(2),
-      earthquake: eqRow ? { score: eqRow.risk_score, sdc: eqRow.sdc, label: eqRow.risk_label } : null,
-      drought:    droughtRow ? { score: droughtRow.risk_score, level: droughtRow.current_level } : null,
+      composite:      climateComposite,
+      flood:          +blendedFlood.toFixed(2),
+      wildfire:       +disasterWildfire.toFixed(2),
+      storm:          +Math.min(1, disasterStorm / 0.3).toFixed(2),
+      earthquake:     eqRow     ? { score: eqRow.risk_score, sdc: eqRow.sdc, label: eqRow.risk_label } : null,
+      drought:        droughtRow? { score: droughtRow.risk_score, level: droughtRow.current_level }     : null,
+      heat_wave:      nriRow    ? nriRow.heat_wave_score     : null,
+      hurricane:      nriRow    ? nriRow.hurricane_score     : null,
+      coastal_flood:  nriRow    ? nriRow.coastal_flood_score : null,
+      nri_composite:  nriRow    ? nriRow.risk_score          : null,
+      nri_rating:     nriRow    ? nriRow.risk_rating         : null,
     },
     signals: {
       flood_zone:        femaResult?.flood_zone ?? null,
@@ -1723,9 +1742,10 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
       storm_events_10yr: stormRow?.event_count ?? null,
       earthquake_sdc:    eqRow?.sdc ?? null,
       drought_level:     droughtRow?.current_level ?? null,
+      nri_rating:        nriRow?.risk_rating ?? null,
     },
     note: 'fraud + vacancy require Professional plan (full traffic history)',
-    version: '2.1-demo',
+    version: '2.2-demo',
     demo: true,
   });
 });

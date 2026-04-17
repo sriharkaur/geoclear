@@ -1596,6 +1596,111 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   </div>
 </section>
 
+<!-- ──────────────────────────────────────────────────────────────── DRONE SECTION -->
+<section style="padding:80px 0;background:var(--bg-alt);border-top:1px solid var(--border);">
+  <div style="max-width:var(--max);margin:0 auto;padding:0 32px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+
+      <div>
+        <div class="section-label" style="justify-content:flex-start;">Drone &amp; Autonomous Delivery</div>
+        <h2 class="sh2" style="margin-bottom:16px;">
+          The landing decision<br>in one API call.
+        </h2>
+        <p style="font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:28px;">
+          Every autonomous vehicle — drone, robot, or sidewalk courier — needs to know three things before a delivery attempt: is this airspace clear, is there a safe landing zone, and is the address reachable? GeoClear answers all three in a single call, under 5ms.
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:32px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(46,147,111,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M2 8l3.5 3.5L13 3.5"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text);font-size:0.95rem;">FAA airspace classification</div>
+              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">Class G (400ft free), Class B/C/D (LAANC authorization required), no-fly zones — resolved per lat/lon from the FAA UAS Facility Map. Real-time, no API key.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(46,147,111,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M2 8l3.5 3.5L13 3.5"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text);font-size:0.95rem;">Open yard estimate</div>
+              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">Building footprint area from 130M Microsoft USBuildingFootprints (MIT license) subtracted from parcel size — returns estimated open landing zone in sqm. Single-family home vs. apartment rooftop detected automatically.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(46,147,111,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M2 8l3.5 3.5L13 3.5"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;color:var(--text);font-size:0.95rem;">Confidence scoring</div>
+              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">High (FAA + building data both present), Medium (FAA only), Low (address-level only). Your dispatch system can gate on confidence — no human review queue for high-confidence deliveries.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:0.8rem;color:var(--dim);margin-bottom:20px;padding:12px 16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);">
+          Used by autonomous delivery teams targeting Wing, Zipline, Starship, Amazon Prime Air, and last-mile 3PL operators. Add-on pricing: $0.005/call.
+        </div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn-primary" onclick="openModal()" style="font-size:0.875rem;padding:10px 20px;">Get API key →</button>
+          <a href="/docs" class="btn-ghost" style="font-size:0.875rem;padding:10px 20px;">See docs ↗</a>
+        </div>
+      </div>
+
+      <div>
+        <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--rxl);overflow:hidden;">
+          <div style="padding:12px 16px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
+            <span style="font-size:0.75rem;color:var(--dim);margin-left:6px;">geoclear — drone enrichment</span>
+          </div>
+          <pre style="margin:0;padding:22px 24px;font-size:0.8rem;line-height:1.75;color:var(--text);overflow-x:auto;"><code><span style="color:var(--dim)"># /v1/enrich response — drone block</span>
+<span style="color:var(--sky)">"drone"</span>: {
+  <span style="color:var(--sky)">"deliverable"</span>:            <span style="color:#86EFAC">true</span>,
+  <span style="color:var(--sky)">"airspace_class"</span>:          <span style="color:#FCD34D">"G"</span>,
+  <span style="color:var(--sky)">"authorized_altitude_ft"</span>:  <span style="color:#C4B5FD">400</span>,
+  <span style="color:var(--sky)">"laanc_available"</span>:         <span style="color:#F87171">false</span>,
+  <span style="color:var(--sky)">"airport_id"</span>:              <span style="color:#94A3B8">null</span>,
+  <span style="color:var(--sky)">"estimated_open_sqm"</span>:      <span style="color:#C4B5FD">312</span>,
+  <span style="color:var(--sky)">"building_area_sqm"</span>:       <span style="color:#C4B5FD">148</span>,
+  <span style="color:var(--sky)">"confidence"</span>:              <span style="color:#FCD34D">"high"</span>
+}
+
+<span style="color:var(--dim)"># Near-airport example — LAANC required</span>
+<span style="color:var(--sky)">"drone"</span>: {
+  <span style="color:var(--sky)">"deliverable"</span>:            <span style="color:#F87171">false</span>,
+  <span style="color:var(--sky)">"airspace_class"</span>:          <span style="color:#FCD34D">"controlled"</span>,
+  <span style="color:var(--sky)">"authorized_altitude_ft"</span>:  <span style="color:#C4B5FD">0</span>,
+  <span style="color:var(--sky)">"laanc_available"</span>:         <span style="color:#F87171">false</span>,
+  <span style="color:var(--sky)">"airport_id"</span>:              <span style="color:#FCD34D">"DCA"</span>,
+  <span style="color:var(--sky)">"confidence"</span>:              <span style="color:#FCD34D">"high"</span>
+}</code></pre>
+        </div>
+
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center;">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--green);">130M</div>
+            <div style="font-size:0.72rem;color:var(--dim);margin-top:2px;">building footprints</div>
+          </div>
+          <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center;">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--sky);">FAA</div>
+            <div style="font-size:0.72rem;color:var(--dim);margin-top:2px;">UASFM real-time</div>
+          </div>
+          <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center;">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--text);">&lt;5ms</div>
+            <div style="font-size:0.72rem;color:var(--dim);margin-top:2px;">per call</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- ──────────────────────────────────────────────────────────────── COMPLIANCE CALLOUT -->
 <section style="padding: 64px 0; background: linear-gradient(135deg, rgba(46,147,111,0.04) 0%, rgba(140,176,178,0.04) 100%); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
   <div style="max-width: var(--max); margin: 0 auto; padding: 0 32px;">
