@@ -139,16 +139,16 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
     const customerId   = session.customer || null;
     if (email && tier) {
       try {
-        const upgraded = keys.upgradeTier(email.toLowerCase(), tier, subId, customerId);
+        const upgraded = await keys.upgradeTier(email.toLowerCase(), tier, subId, customerId);
         if (upgraded) {
           console.log(`[Stripe] Upgraded existing key for ${email} → ${tier}`);
-          keys.completeStripeSession(session.id, `upgraded:${upgraded.id}`);
+          await keys.completeStripeSession(session.id, `upgraded:${upgraded.id}`);
           const { TIERS } = require('./keys.js');
           sendEmail(email, 'Your GeoClear plan has been upgraded', keyEmail('(your existing key — unchanged)', tier, TIERS[tier] || TIERS.free)).catch(() => {});
         } else {
-          const result = keys.generate({ email: email.toLowerCase(), tier, notes: `stripe:${session.id}` });
-          keys.upgradeTier(email.toLowerCase(), tier, subId, customerId);
-          keys.completeStripeSession(session.id, result.key);
+          const result = await keys.generate({ email: email.toLowerCase(), tier, notes: `stripe:${session.id}` });
+          await keys.upgradeTier(email.toLowerCase(), tier, subId, customerId);
+          await keys.completeStripeSession(session.id, result.key);
           console.log(`[Stripe] New key issued for ${email} (${tier}): ${result.key.slice(0, 24)}…`);
           sendEmail(email, 'Your GeoClear API key', keyEmail(result.key, tier, result.limits)).catch(() => {});
         }
@@ -165,7 +165,7 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
     // Reverse-lookup tier from price ID
     const newTier  = priceId ? Object.entries(STRIPE_PRICES).find(([, v]) => v === priceId)?.[0] : null;
     if (newTier) {
-      const changed = keys.changeSubscriptionTier(subId, newTier);
+      const changed = await keys.changeSubscriptionTier(subId, newTier);
       if (changed) {
         console.log(`[Stripe] Subscription ${subId} plan changed: ${changed.oldTier} → ${newTier} (${changed.email})`);
       } else {
@@ -179,7 +179,7 @@ app.post('/v1/webhook/stripe', express.raw({ type: 'application/json' }), async 
   if (event.type === 'customer.subscription.deleted') {
     const sub   = event.data.object;
     const subId = sub.id;
-    const downgraded = keys.downgradeBySubscription(subId);
+    const downgraded = await keys.downgradeBySubscription(subId);
     if (downgraded) {
       console.log(`[Stripe] Subscription ${subId} cancelled → key downgraded to free`);
     } else {
@@ -234,15 +234,11 @@ app.post('/v1/admin/stream-upload', (req, res) => {
   });
 });
 
-// POST /v1/admin/reload-risk-db — re-open risk.db connection after upload
-app.post('/v1/admin/reload-risk-db', (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+// POST /v1/admin/reload-risk-db — no-op with Neon (kept for backwards compat)
+app.post('/v1/admin/reload-risk-db', adminAuth, async (req, res) => {
   try {
-    if (riskData.db) { try { riskData.db.close(); } catch (_) {} }
-    riskData = new RiskData();
-    const coverage = riskData.coverage();
-    console.log('[reload-risk-db] reloaded. coverage:', JSON.stringify(coverage));
+    const coverage = await riskData.coverage();
+    console.log('[reload-risk-db] Neon — no reload needed. coverage:', JSON.stringify(coverage));
     res.json({ ok: true, coverage });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -311,7 +307,7 @@ app.get('/status', (req, res) => res.redirect('/status.html'));
 // /api/health, /api/stats, /api/states are open — everything else requires a key
 const OPEN_API_PATHS = new Set(['/health', '/stats', '/states', '/demo', '/status']);
 
-function apiAuth(req, res, next) {
+async function apiAuth(req, res, next) {
   const rawKey = req.headers['x-api-key'] || req.query.key;
   if (!rawKey) {
     return res.status(401).json({
@@ -320,7 +316,7 @@ function apiAuth(req, res, next) {
       get_key: `${BASE_URL}/portal.html`,
     });
   }
-  const info = keys.validate(rawKey);
+  const info = await keys.validate(rawKey);
   if (!info) {
     return res.status(401).json({ ok: false, error: 'Invalid or revoked API key.' });
   }
@@ -731,7 +727,7 @@ app.get('/api/enrich', async (req, res) => {
   // Builder tier: metered monthly enrichment quota
   const monthlyLimit = req.keyInfo.limits.enrichment_monthly_limit;
   if (monthlyLimit !== null && monthlyLimit > 0) {
-    const quota = keys.checkEnrichmentQuota(req.keyInfo.key_id, monthlyLimit);
+    const quota = await keys.checkEnrichmentQuota(req.keyInfo.key_id, monthlyLimit);
     if (!quota.allowed) {
       return res.status(402).json({
         ok: false,
@@ -762,8 +758,8 @@ app.get('/api/enrich', async (req, res) => {
       Promise.race([getFAADroneAirspace(fLat, fLon).catch(() => null), hardNull(5000)]),
     ]);
 
-    // Building footprint from risk.db (populated by building-import.js, staging pipeline)
-    const building   = riskData.getBuildingFootprint(fLat, fLon);
+    // Building footprint from Neon (populated by building-import.js, staging pipeline)
+    const building   = await riskData.getBuildingFootprint(fLat, fLon);
     const openSqm    = building ? Math.max(0, 400 - (building.area_sqm || 0)) : null;
 
     // Drone deliverability: Class G + open yard ≥ 50 sqm → deliverable
@@ -858,28 +854,30 @@ function adminAuth(req, res, next) {
   next();
 }
 
-app.get('/v1/admin/keys/stats', adminAuth, (req, res) => {
-  ok(res, keys.stats());
+app.get('/v1/admin/keys/stats', adminAuth, async (req, res) => {
+  ok(res, await keys.stats());
 });
 
 // GET /v1/admin/signals — Ground-Truth Graph: top queried addresses + signal totals
-app.get('/v1/admin/signals', adminAuth, (req, res) => {
+app.get('/v1/admin/signals', adminAuth, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit || '100'), 1000);
-  const top   = keys.getTopQueriedAddresses(limit);
-  const total = keys.db.prepare('SELECT COUNT(*) AS n, SUM(query_count) AS hits FROM address_signals').get();
-  ok(res, { total_addresses_tracked: total.n, total_query_hits: total.hits, top });
+  const [top, total] = await Promise.all([
+    keys.getTopQueriedAddresses(limit),
+    keys.getSignalTotals(),
+  ]);
+  ok(res, { total_addresses_tracked: parseInt(total.n, 10), total_query_hits: parseInt(total.hits, 10), top });
 });
 // GET /v1/admin/data-sources — Data catalog: all data sources with metadata
 // ?status=active|blocked|planned  (optional filter)
-app.get('/v1/admin/data-sources', adminAuth, (req, res) => {
-  const sources = keys.getDataSources(req.query.status || null);
+app.get('/v1/admin/data-sources', adminAuth, async (req, res) => {
+  const sources = await keys.getDataSources(req.query.status || null);
   ok(res, { count: sources.length, sources });
 });
 
 // PATCH /v1/admin/data-sources/:source_id — Update refresh metadata on a data source
 // Body: { last_sourced_at, next_refresh_at, row_count, status, notes }
-app.patch('/v1/admin/data-sources/:source_id', adminAuth, (req, res) => {
-  const result = keys.updateDataSource(req.params.source_id, req.body);
+app.patch('/v1/admin/data-sources/:source_id', adminAuth, async (req, res) => {
+  const result = await keys.updateDataSource(req.params.source_id, req.body);
   if (!result) return res.status(400).json({ ok: false, error: 'no_valid_fields_or_not_found' });
   ok(res, { updated: result.changes > 0 });
 });
@@ -897,7 +895,7 @@ app.get('/v1/risk', async (req, res) => {
   // Inline auth for /v1/ routes (apiAuth middleware only covers /api/)
   const _riskKey = req.headers['x-api-key'] || req.query.key;
   if (!_riskKey) return res.status(401).json({ ok: false, error: 'API key required.' });
-  const _riskInfo = keys.validate(_riskKey);
+  const _riskInfo = await keys.validate(_riskKey);
   if (!_riskInfo) return res.status(401).json({ ok: false, error: 'Invalid or revoked API key.' });
   req.keyInfo = _riskInfo;
 
@@ -942,28 +940,22 @@ app.get('/v1/risk', async (req, res) => {
   const countyFips5 = enriched.fips || null;
   const [femaResult, signalRow, velocityRow, wildfireRow, stormRow, outcomeStats, earthquakeResult, droughtResult] = await Promise.all([
     (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
-    Promise.resolve(keys.db.prepare(
-      `SELECT query_count, fraud_signal_count FROM address_signals WHERE nad_uuid = ?`
-    ).get(addr.nad_uuid) || { query_count: 0, fraud_signal_count: 0 }),
-    // Velocity: distinct API keys that queried any address with this nad_uuid in last 24h
-    Promise.resolve(keys.db.prepare(
-      `SELECT COUNT(DISTINCT key_id) AS n FROM usage_log
-       WHERE endpoint = '/api/address' AND ts >= datetime('now', '-1 day')`
-    ).get()),
-    Promise.resolve(countyFips5 ? riskData.getWildfireRisk(countyFips5) : null),
-    Promise.resolve(countyFips5 ? riskData.getStormRisk(countyFips5)    : null),
-    Promise.resolve(keys.getOutcomeStats(addr.nad_uuid)),
-    // Earthquake: DB lookup first (pre-imported), fall back to live USGS API
-    Promise.resolve(countyFips5 ? riskData.getEarthquakeRisk(countyFips5) : null)
+    keys.getAddressSignal(addr.nad_uuid),
+    keys.getAddressQueryVelocity(),
+    countyFips5 ? riskData.getWildfireRisk(countyFips5) : Promise.resolve(null),
+    countyFips5 ? riskData.getStormRisk(countyFips5)    : Promise.resolve(null),
+    keys.getOutcomeStats(addr.nad_uuid),
+    // Earthquake: Neon lookup first, fall back to live USGS API
+    (countyFips5 ? riskData.getEarthquakeRisk(countyFips5) : Promise.resolve(null))
       .then(r => r ?? ((addrLat && addrLon) ? getEarthquakeRisk(addrLat, addrLon).catch(() => null) : null)),
-    // Drought: DB lookup first (pre-imported), fall back to live USDA API
-    Promise.resolve(countyFips5 ? riskData.getDroughtRisk(countyFips5) : null)
+    // Drought: Neon lookup first, fall back to live USDA API
+    (countyFips5 ? riskData.getDroughtRisk(countyFips5) : Promise.resolve(null))
       .then(r => r ?? (countyFips5 ? getDroughtRisk(countyFips5).catch(() => null) : null)),
   ]);
 
   // CAL FIRE: CA addresses only, lat/lon required
   const calFireRow = (addr.state === 'CA' && addrLat && addrLon)
-    ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
+    ? await riskData.getCalFireFHSZ(addrLat, addrLon) : null;
 
   // ── 3. Score each dimension ───────────────────────────────────────
 
@@ -1121,7 +1113,7 @@ app.get('/v1/risk', async (req, res) => {
 app.post('/v1/outcomes', async (req, res) => {
   const _outKey = req.headers['x-api-key'] || req.query.key;
   if (!_outKey) return res.status(401).json({ ok: false, error: 'API key required.' });
-  const _outInfo = keys.validate(_outKey);
+  const _outInfo = await keys.validate(_outKey);
   if (!_outInfo) return res.status(401).json({ ok: false, error: 'Invalid or revoked API key.' });
   req.keyInfo = _outInfo;
 
@@ -1148,10 +1140,7 @@ app.post('/v1/outcomes', async (req, res) => {
   if (!exists) return err(res, 'nad_uuid not found in address database.', 404);
 
   // Per-key rate limit: max 10K outcome submissions per day
-  const todayCount = keys.db.prepare(`
-    SELECT COUNT(*) AS n FROM address_outcomes
-    WHERE key_id = ? AND reported_at >= date('now')
-  `).get(req.keyInfo.key_id).n;
+  const todayCount = await keys.getOutcomeDailyCount(req.keyInfo.key_id);
   if (todayCount >= 10000) {
     return res.status(429).json({ ok: false, error: 'outcome_rate_limit', message: 'Max 10,000 outcome submissions per day per key.' });
   }
@@ -1164,30 +1153,30 @@ app.post('/v1/outcomes', async (req, res) => {
 });
 
 // GET /v1/admin/outcomes — Outcome feedback summary (admin only)
-app.get('/v1/admin/outcomes', adminAuth, (req, res) => {
+app.get('/v1/admin/outcomes', adminAuth, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit || '50'), 200);
-  ok(res, keys.getOutcomeSummary(limit));
+  ok(res, await keys.getOutcomeSummary(limit));
 });
 
-app.get('/v1/admin/keys', adminAuth, (req, res) => {
-  const data = keys.list({ includeRevoked: req.query.include_revoked === 'true' });
+app.get('/v1/admin/keys', adminAuth, async (req, res) => {
+  const data = await keys.list({ includeRevoked: req.query.include_revoked === 'true' });
   ok(res, data, { count: data.length });
 });
-app.post('/v1/admin/keys', adminAuth, (req, res) => {
+app.post('/v1/admin/keys', adminAuth, async (req, res) => {
   const { email, name, tier, notes } = req.body || {};
   if (!email) return err(res, 'email required.');
-  const result = keys.generate({ email, name, tier: tier || 'free', notes });
+  const result = await keys.generate({ email, name, tier: tier || 'free', notes });
   res.status(201).json({ ok: true, data: result });
 });
-app.delete('/v1/admin/keys/:id', adminAuth, (req, res) => {
-  const revoked = keys.revoke(req.params.id);
+app.delete('/v1/admin/keys/:id', adminAuth, async (req, res) => {
+  const revoked = await keys.revoke(req.params.id);
   if (!revoked) return err(res, 'Key not found.', 404);
   ok(res, { revoked: true, id: parseInt(req.params.id, 10) });
 });
 // ── Metered flush core (used by endpoint + daily cron) ───────────
 async function runMeteredFlush() {
   if (!stripe || !STRIPE_METER_ID) return { skipped: true, reason: 'Stripe or meter not configured' };
-  const rows    = keys.getMeteredKeysWithUsage();
+  const rows    = await keys.getMeteredKeysWithUsage();
   const results = [];
   for (const row of rows) {
     if (!row.stripe_customer_id) {
@@ -1256,12 +1245,12 @@ function dripDay7Email(tier) {
 }
 
 async function runDrip() {
-  const d3 = keys.getDripDay3Candidates();
+  const d3 = await keys.getDripDay3Candidates();
   for (const row of d3) {
     await sendEmail(row.email, `You've made ${row.requests_total.toLocaleString()} address lookups — here's what enrichment looks like`, dripDay3Email(row.requests_total)).catch(() => {});
     keys.markDripSent(row.id, 'd3');
   }
-  const d7 = keys.getDripDay7Candidates();
+  const d7 = await keys.getDripDay7Candidates();
   for (const row of d7) {
     await sendEmail(row.email, 'One week with GeoClear — features you might have missed', dripDay7Email(row.tier)).catch(() => {});
     keys.markDripSent(row.id, 'd7');
@@ -1540,73 +1529,11 @@ app.delete('/v1/admin/data-file', adminAuth, (req, res) => {
 });
 
 // GET /v1/admin/analytics — 30-day KPI pulse
-app.get('/v1/admin/analytics', adminAuth, (req, res) => {
+app.get('/v1/admin/analytics', adminAuth, async (req, res) => {
   try {
-    const db = keys.db;
     const days = parseInt(req.query.days ?? '30', 10);
-
-    const requestsByDay = db.prepare(`
-      SELECT DATE(ts) AS day, COUNT(*) AS requests, COUNT(DISTINCT key_id) AS active_keys
-      FROM usage_log
-      WHERE ts >= datetime('now', ? || ' days')
-      GROUP BY DATE(ts)
-      ORDER BY day DESC
-    `).all(`-${days}`);
-
-    const topKeys = db.prepare(`
-      SELECT k.email, k.tier, k.requests_total, k.requests_today, k.last_used_at, k.first_call_at
-      FROM api_keys k
-      WHERE k.is_active = 1
-      ORDER BY k.requests_total DESC
-      LIMIT 10
-    `).all();
-
-    const tierBreakdown = db.prepare(`
-      SELECT tier, COUNT(*) AS keys, SUM(requests_total) AS total_requests
-      FROM api_keys
-      WHERE is_active = 1
-      GROUP BY tier
-      ORDER BY total_requests DESC
-    `).all();
-
-    const errorRate = db.prepare(`
-      SELECT
-        COUNT(*) AS total,
-        SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END) AS errors
-      FROM usage_log
-      WHERE ts >= datetime('now', ? || ' days')
-    `).get(`-${days}`);
-
-    const newSignups = db.prepare(`
-      SELECT DATE(created_at) AS day, COUNT(*) AS signups, tier
-      FROM api_keys
-      WHERE created_at >= datetime('now', ? || ' days')
-      GROUP BY DATE(created_at), tier
-      ORDER BY day DESC
-    `).all(`-${days}`);
-
-    const avgLatency = db.prepare(`
-      SELECT ROUND(AVG(latency_ms), 1) AS avg_latency_ms, endpoint
-      FROM usage_log
-      WHERE ts >= datetime('now', ? || ' days') AND latency_ms IS NOT NULL
-      GROUP BY endpoint
-      ORDER BY avg_latency_ms DESC
-    `).all(`-${days}`);
-
-    res.json({
-      ok: true,
-      period_days: days,
-      requests_by_day: requestsByDay,
-      top_keys_by_volume: topKeys,
-      tier_breakdown: tierBreakdown,
-      error_rate: {
-        total: errorRate.total,
-        errors: errorRate.errors,
-        rate_pct: errorRate.total > 0 ? ((errorRate.errors / errorRate.total) * 100).toFixed(2) : '0.00',
-      },
-      new_signups_by_day: newSignups,
-      avg_latency_by_endpoint: avgLatency,
-    });
+    const data = await keys.getAnalytics(days);
+    res.json({ ok: true, period_days: days, ...data });
   } catch (e) {
     err(res, e.message);
   }
@@ -1657,15 +1584,15 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   const [femaResult, wildfireRow, stormRow, eqRow, droughtRow, nriRow] = await Promise.race([
     Promise.all([
       femaPromise,
-      Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5)   : null),
-      Promise.resolve(fips5 ? riskData.getStormRisk(fips5)      : null),
-      Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null),
-      Promise.resolve(fips5 ? riskData.getDroughtRisk(fips5)    : null),
-      Promise.resolve(fips5 ? riskData.getNRIRisk(fips5)        : null),
+      fips5 ? riskData.getWildfireRisk(fips5)   : Promise.resolve(null),
+      fips5 ? riskData.getStormRisk(fips5)      : Promise.resolve(null),
+      fips5 ? riskData.getEarthquakeRisk(fips5) : Promise.resolve(null),
+      fips5 ? riskData.getDroughtRisk(fips5)    : Promise.resolve(null),
+      fips5 ? riskData.getNRIRisk(fips5)        : Promise.resolve(null),
     ]),
     hardNull(5500).then(() => [null, null, null, null, null, null]),
   ]);
-  const calFireRow = (addr.state === 'CA' && addrLat && addrLon) ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
+  const calFireRow = (addr.state === 'CA' && addrLat && addrLon) ? await riskData.getCalFireFHSZ(addrLat, addrLon) : null;
 
   // Deliverability
   const confNorm  = (enriched.confidence || 50) / 100;
@@ -1809,11 +1736,12 @@ app.get('/api/demo', demoLimiter, (req, res) => {
   ok(res, raw.map(enrichAddress), { count: raw.length, demo: true });
 });
 
-app.get('/v1/me', (req, res) => {
+app.get('/v1/me', async (req, res) => {
   const rawKey = req.headers['x-api-key'] || req.query.key;
-  const info   = keys.validate(rawKey);
+  const info   = await keys.validate(rawKey);
   if (!info) return err(res, 'Invalid or missing API key.', 401);
   const days = Math.min(parseInt(req.query.history_days || '30', 10), 90);
+  const usage_history = await keys.getUsageHistory(info.key_id, days);
   ok(res, {
     tier:           info.tier,
     email:          info.email,
@@ -1821,7 +1749,7 @@ app.get('/v1/me', (req, res) => {
     requests_today: info.requests_today,
     requests_total: info.requests_total,
     created_at:     info.created_at,
-    usage_history:  keys.getUsageHistory(info.id, days),
+    usage_history,
   });
 });
 
@@ -1834,16 +1762,16 @@ const signupLimiter = rateLimit({
   handler: (req, res) => res.status(429).json({ ok: false, error: 'Too many signup attempts. Try again in an hour.' }),
 });
 
-app.post('/v1/signup', signupLimiter, (req, res) => {
+app.post('/v1/signup', signupLimiter, async (req, res) => {
   const { email } = req.body || {};
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return err(res, 'Valid email required.');
   }
-  const existing = keys.findByEmail(email.toLowerCase());
+  const existing = await keys.findByEmail(email.toLowerCase());
   if (existing) {
     return err(res, 'An API key already exists for this email. Use /v1/me to check your key status.', 409);
   }
-  const result = keys.generate({ email: email.toLowerCase(), tier: 'free' });
+  const result = await keys.generate({ email: email.toLowerCase(), tier: 'free' });
   sendEmail(email, 'Your GeoClear API key', keyEmail(result.key, result.tier, result.limits)).catch(() => {});
   res.status(201).json({
     ok: true,
@@ -1875,7 +1803,7 @@ app.post('/v1/checkout', async (req, res) => {
       success_url: `${BASE_URL}/portal.html?success=1&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${BASE_URL}/portal.html?cancelled=1`,
     });
-    keys.storeStripeSession(session.id, tier, email);
+    await keys.storeStripeSession(session.id, tier, email);
     ok(res, { session_id: session.id, url: session.url });
   } catch (e) {
     err(res, `Stripe error: ${e.message}`, 500);
@@ -1906,8 +1834,8 @@ app.post('/v1/checkout/bulk', async (req, res) => {
 });
 
 // Poll for key after payment completes (called by success page JS)
-app.get('/v1/checkout/session/:sessionId', (req, res) => {
-  const info = keys.getStripeSession(req.params.sessionId);
+app.get('/v1/checkout/session/:sessionId', async (req, res) => {
+  const info = await keys.getStripeSession(req.params.sessionId);
   if (!info) return err(res, 'Session not found.', 404);
   if (!info.api_key) return ok(res, { status: 'pending' });
   ok(res, { status: 'complete', api_key: info.api_key, tier: info.tier, email: info.email });
@@ -1973,25 +1901,23 @@ function startServer() {
   tryListen();
 }
 
-function onListening() {
+async function onListening() {
   const dbReady  = nad.isReady();
-  let stats      = null;
   let dbStatus   = '⚠ nad.db not loaded (rsync to /data to activate)';
   if (dbReady) {
     // Don't run COUNT(*) at startup — it blocks the event loop for minutes on cold cache.
     // The first /api/health or /api/stats call will warm the 1-hr cache instead.
     dbStatus = `✓ ready`;
   }
-  const riskStatus = riskData.isReady() ? '✓ ready' : '✗ not-found (risk_data_unavailable responses expected)';
   console.log(`[startup] nad.db  : ${dbStatus}`);
-  console.log(`[startup] risk.db : ${riskStatus}`);
-  const keyStats = keys.stats();
+  console.log(`[startup] risk.db : ✓ Neon PostgreSQL`);
+  const keyStats = await keys.stats();
   console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);
   console.log(`  URL       : ${BASE_URL}`);
   console.log(`  Port      : ${PORT}`);
   console.log(`  nad.db    : ${dbStatus}`);
-  console.log(`  risk.db   : ${riskStatus}`);
+  console.log(`  risk.db   : ✓ Neon PostgreSQL`);
   console.log(`  API Keys  : ${keyStats.active} active`);
   console.log(`    GET  /api/address?street=Main&state=TX`);
   console.log(`    GET  /api/health\n`);

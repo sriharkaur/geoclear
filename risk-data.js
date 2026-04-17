@@ -1,152 +1,137 @@
 'use strict';
 /**
- * Risk Data Module
- * ================
- * Reads from risk.db — a separate SQLite DB that lives alongside nad.db on /data.
- * Populated by: wildfire-import.js, storm-import.js, calfire-import.js,
- *               earthquake-import.js, drought-import.js
- *
- * If risk.db doesn't exist yet (pre-import), all methods return null gracefully.
- * The /v1/risk endpoint uses data_coverage flags to signal which dimensions are live.
- *
- * Usage:
- *   const riskData = new RiskData();
- *   riskData.getWildfireRisk('48201')          // by county FIPS
- *   riskData.getStormRisk('48201')             // by county FIPS
- *   riskData.getCalFireFHSZ(37.774, -122.419)  // by lat/lon (CA only)
+ * Risk Data Module — Neon PostgreSQL backend
+ * All methods are async. Pool uses NEON_DATABASE_URL_POOLED for app traffic.
  */
 
-const path     = require('path');
-const fs       = require('fs');
-const Database = require('better-sqlite3');
+const { Pool } = require('pg');
 
-const RISK_DB_PATH = path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'risk.db');
+const pool = new Pool({
+  connectionString: process.env.NEON_DATABASE_URL_POOLED || process.env.NEON_DATABASE_URL,
+  max: 10,
+});
+
+// Coverage cache — avoids 7 DB queries per health check
+let _coverageCache    = null;
+let _coverageCacheAt  = 0;
+const COVERAGE_TTL_MS = 5 * 60 * 1000;
 
 class RiskData {
-  constructor(dbPath = RISK_DB_PATH) {
-    if (fs.existsSync(dbPath)) {
-      try {
-        this.db = new Database(dbPath, { readonly: true });
-      } catch (_) {
-        this.db = null;
-      }
-    } else {
-      this.db = null;
-    }
-  }
+  isReady() { return true; }
 
-  isReady() { return this.db !== null; }
-
-  /** Wildfire Hazard Potential by county FIPS (from USFS FSIM national assessment) */
-  getWildfireRisk(countyFips) {
-    if (!this.db || !countyFips) return null;
+  async getWildfireRisk(countyFips) {
+    if (!countyFips) return null;
     try {
-      return this.db.prepare(
-        `SELECT county_fips, whp_class, whp_score, state FROM wildfire_risk WHERE county_fips = ?`
-      ).get(countyFips) || null;
+      const { rows } = await pool.query(
+        `SELECT county_fips, whp_class, whp_score, state FROM wildfire_risk WHERE county_fips = $1`,
+        [countyFips]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /** Storm risk by county FIPS (from NOAA Storm Events Database, 10-year aggregate) */
-  getStormRisk(countyFips) {
-    if (!this.db || !countyFips) return null;
+  async getStormRisk(countyFips) {
+    if (!countyFips) return null;
     try {
-      return this.db.prepare(
+      const { rows } = await pool.query(
         `SELECT county_fips, event_count, tornado_count, hurricane_count, hail_count,
-                flood_count, years_covered FROM storm_risk WHERE county_fips = ?`
-      ).get(countyFips) || null;
+                flood_count, years_covered FROM storm_risk WHERE county_fips = $1`,
+        [countyFips]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /** CAL FIRE Fire Hazard Severity Zone by lat/lon (California only) */
-  getCalFireFHSZ(lat, lon) {
-    if (!this.db || !lat || !lon) return null;
+  async getCalFireFHSZ(lat, lon) {
+    if (!lat || !lon) return null;
     try {
-      // Stored as bounding-box grid: find the cell containing this point
-      return this.db.prepare(
+      const { rows } = await pool.query(
         `SELECT fhsz_class, fhsz_label, county FROM calfire_fhsz
-         WHERE min_lat <= ? AND max_lat >= ? AND min_lon <= ? AND max_lon >= ?
+         WHERE min_lat <= $1 AND max_lat >= $2 AND min_lon <= $3 AND max_lon >= $4
          ORDER BY (max_lat - min_lat) * (max_lon - min_lon) ASC
-         LIMIT 1`
-      ).get(lat, lat, lon, lon) || null;
+         LIMIT 1`,
+        [lat, lat, lon, lon]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /** Seismic risk by county FIPS (from USGS ASCE7-22 at county centroid) */
-  getEarthquakeRisk(countyFips) {
-    if (!this.db || !countyFips) return null;
+  async getEarthquakeRisk(countyFips) {
+    if (!countyFips) return null;
     try {
-      return this.db.prepare(
-        `SELECT county_fips, pgam, sdc, risk_score, risk_label FROM earthquake_risk WHERE county_fips = ?`
-      ).get(countyFips) || null;
+      const { rows } = await pool.query(
+        `SELECT county_fips, pgam, sdc, risk_score, risk_label FROM earthquake_risk WHERE county_fips = $1`,
+        [countyFips]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /** Drought risk by county FIPS (from USDA Drought Monitor, 26-week avg) */
-  getDroughtRisk(countyFips) {
-    if (!this.db || !countyFips) return null;
+  async getDroughtRisk(countyFips) {
+    if (!countyFips) return null;
     try {
-      return this.db.prepare(
-        `SELECT county_fips, risk_score, current_level, weeks_sampled, import_date FROM drought_risk WHERE county_fips = ?`
-      ).get(countyFips) || null;
+      const { rows } = await pool.query(
+        `SELECT county_fips, risk_score, current_level, weeks_sampled, import_date FROM drought_risk WHERE county_fips = $1`,
+        [countyFips]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /**
-   * FEMA National Risk Index — composite + heat wave + hurricane + coastal/riverine flood.
-   * Populated by: nri-import.js (run on staging, then upload-chunk → merge to prod).
-   * Returns null gracefully if nri_risk table not yet populated.
-   */
-  getNRIRisk(countyFips) {
-    if (!this.db || !countyFips) return null;
+  async getNRIRisk(countyFips) {
+    if (!countyFips) return null;
     try {
-      return this.db.prepare(
+      const { rows } = await pool.query(
         `SELECT county_fips, risk_score, risk_rating,
                 heat_wave_score, hurricane_score,
                 coastal_flood_score, riverine_flood_score,
                 wildfire_score, earthquake_score
-         FROM nri_risk WHERE county_fips = ?`
-      ).get(countyFips) || null;
+         FROM nri_risk WHERE county_fips = $1`,
+        [countyFips]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /**
-   * Nearest Microsoft Building Footprint within ~100m of a lat/lon.
-   * Returns { area_sqm, building_type } or null if table not populated yet.
-   * Populated by: building-import.js (staging pipeline).
-   */
-  getBuildingFootprint(lat, lon) {
-    if (!this.db || !lat || !lon) return null;
+  async getBuildingFootprint(lat, lon) {
+    if (!lat || !lon) return null;
     try {
-      const delta = 0.001; // ~111m bounding box
-      return this.db.prepare(
+      const delta = 0.001;
+      const { rows } = await pool.query(
         `SELECT area_sqm, building_type,
-                (lat - ?) * (lat - ?) + (lon - ?) * (lon - ?) AS dist2
+                ($1 - lat) * ($2 - lat) + ($3 - lon) * ($4 - lon) AS dist2
          FROM building_footprints
-         WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?
+         WHERE lat BETWEEN $5 AND $6 AND lon BETWEEN $7 AND $8
          ORDER BY dist2
-         LIMIT 1`
-      ).get(lat, lat, lon, lon, lat - delta, lat + delta, lon - delta, lon + delta) || null;
+         LIMIT 1`,
+        [lat, lat, lon, lon, lat - delta, lat + delta, lon - delta, lon + delta]
+      );
+      return rows[0] || null;
     } catch (_) { return null; }
   }
 
-  /** Check which tables are populated (for data_coverage response field) */
-  coverage() {
-    if (!this.db) return { wildfire: false, storm: false, cal_fire: false, earthquake: false, drought: false };
-    const check = (table) => {
+  async coverage() {
+    if (_coverageCache && (Date.now() - _coverageCacheAt) < COVERAGE_TTL_MS) {
+      return _coverageCache;
+    }
+    const check = async (table) => {
       try {
-        return this.db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n > 0;
+        const { rows } = await pool.query(`SELECT COUNT(*) AS n FROM ${table}`);
+        return parseInt(rows[0].n, 10) > 0;
       } catch (_) { return false; }
     };
-    return {
-      wildfire:             check('wildfire_risk'),
-      storm:                check('storm_risk'),
-      cal_fire:             check('calfire_fhsz'),
-      earthquake:           check('earthquake_risk'),
-      drought:              check('drought_risk'),
-      nri:                  check('nri_risk'),
-      building_footprints:  check('building_footprints'),
-    };
+    const [wildfire, storm, cal_fire, earthquake, drought, nri, building_footprints] = await Promise.all([
+      check('wildfire_risk'),
+      check('storm_risk'),
+      check('calfire_fhsz'),
+      check('earthquake_risk'),
+      check('drought_risk'),
+      check('nri_risk'),
+      check('building_footprints'),
+    ]);
+    _coverageCache   = { wildfire, storm, cal_fire, earthquake, drought, nri, building_footprints };
+    _coverageCacheAt = Date.now();
+    return _coverageCache;
   }
 }
 
