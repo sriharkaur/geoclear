@@ -233,8 +233,8 @@ Same content as #5. Submit after G2 is live (use G2 listing URL as a reference i
 
 ---
 
-### #7 — Create new Stripe prices for Q-105 pricing reframe (Action required by you)
-**Status:** 🆕 NEW
+### #7 — Create new Stripe prices for Q-105 pricing reframe
+**Status:** ✅ DONE
 **Action required:** You — in Stripe Dashboard (live mode), create two new recurring prices and set env vars on Render.
 
 **Step 1: Create prices in Stripe (Products → Add product)**
