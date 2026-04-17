@@ -1,7 +1,7 @@
 # GeoClear — Feature Inventory
 > **Single source of truth for everything built.**
 > Update this file every time a feature ships. Mirrors RELEASES.md chronologically but organized by feature area for quick lookup.
-> Last updated: 2026-04-16 (session 7)
+> Last updated: 2026-04-17 (session 24)
 
 ---
 
@@ -140,6 +140,41 @@ All require `X-Admin-Secret` header.
 | POST | `/v1/admin/import-tsv-gz` | Stream a gzipped TSV directly into nad.db; tees to `/data/overture.tsv.gz` for restart safety |
 | POST | `/v1/admin/import-tsv-gz-cached` | Re-run import from saved `/data/overture.tsv.gz` — runs in `worker_threads` (non-blocking) |
 | GET  | `/v1/admin/db-probe` | Diagnostic: inspect schema + indexes, test a live INSERT/DELETE round-trip |
+| GET | `/v1/admin/signals` | Top queried + flagged addresses from Ground-Truth Graph |
+| GET | `/v1/admin/outcomes` | Outcome feedback summary — by_type counts, by_key, top addresses |
+| GET | `/v1/admin/data-sources` | List data source catalog entries; `?status=active` filter |
+| PATCH | `/v1/admin/data-sources/:source_id` | Update data source metadata (last_sourced, notes, etc.) |
+
+---
+
+## Risk Scoring
+
+### `GET /v1/risk` (Professional+ only)
+
+Returns 4 independent scores (0–1) for any US address. Resolves by `nad_uuid`, `street+city+state`, or `lat+lon`.
+
+| Score | v1 (heuristic) | v2 (outcome-backed, auto-upgrades) |
+|-------|---------------|-------------------------------------|
+| `deliverability` | RDI + placement + query_count | `delivery_success / total_attempts` (≥3 outcomes) |
+| `fraud` | fraud_signal_count + velocity | confirmed fraud labels (≥2 fraud outcomes) |
+| `disaster` | FEMA flood + USFS wildfire + NOAA storm | same (no outcome feedback yet) |
+| `vacancy` | zero-query + addr_class | delivery failure ratio proxy |
+
+Response includes `score_version: "v1" | "v2"` and `data_coverage` flags for each dimension.
+
+### `POST /v1/outcomes` — Outcome Feedback Loop (Risk Score v2)
+
+Customers report real-world delivery/fraud/chargeback outcomes per `nad_uuid`. GeoClear uses these to upgrade heuristic scores to outcome-backed scores.
+
+- **Endpoint**: `POST /v1/outcomes` (requires API key, inline auth)
+- **Body**: `{ nad_uuid, outcome_type, outcome_value?, metadata? }`
+- **Valid outcome_type values**: `delivery_success`, `delivery_failed`, `fraud_confirmed`, `fraud_cleared`, `chargeback`, `claim_filed`
+- **Rate limit**: 10,000 outcomes/day per key (prevents score manipulation)
+- **Side effects**: `fraud_confirmed` + `chargeback` automatically increment `fraud_signal_count` in Ground-Truth Graph
+- **Promotion threshold**: `score_version` flips to `v2` when ≥3 delivery outcomes OR ≥2 fraud outcomes exist for an address
+- **Storage**: `address_outcomes` table in `keys.db`; indexed by `nad_uuid`, `key_id`, `(outcome_type, nad_uuid)`
+
+**Primary use case**: Drone delivery companies (Wing, Zipline, Amazon Prime Air) report delivery success/failure per address → deliverability score becomes ground-truth-backed, not heuristic.
 
 ---
 

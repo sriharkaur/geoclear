@@ -9,9 +9,12 @@
 
 ## Unreleased
 
+- **Risk Score v2 — outcome feedback loop** — `POST /v1/outcomes` accepts delivery/fraud/chargeback outcomes per `nad_uuid`; `address_outcomes` table in `keys.db`; inline key auth on `/v1/outcomes` and `/v1/risk`; deliverability + fraud scores auto-upgrade from heuristic (`score_version: v1`) to outcome-backed (`score_version: v2`) at ≥3 delivery or ≥2 fraud outcomes; `outcome_feedback` flag in `data_coverage`; `outcomes` object in signals when present; 10K/day per-key submission limit; `GET /v1/admin/outcomes` summary; `fraud_confirmed` + `chargeback` outcomes side-effect into `fraud_signal_count`. Primary use case: drone delivery companies ground-truthing deliverability per address.
+- **Data Catalog** — `docs/DATA-CATALOG.md` — full metadata for all 9 data sources (NAD r22, Overture, Census TIGER, FEMA NFHL, USGS 3DEP, USFS WHP, NOAA Storm, CAL FIRE FHSZ, OpenAddresses); refresh calendar; lineage diagram. `data_sources` table seeded in `keys.db`.
 - **`/bulk` landing page** — drag-drop CSV upload zone wired to `POST /api/address/csv`; 3-step how-it-works; input/output column table; pricing grid (free / $199 1M / $799 5M one-time); FAQ accordion; signup modal. Route `/bulk` added to `web-server.js`. File: `public/bulk.html`
 - **Bulk Credits Pack in Stripe** — two one-time products: 1M credits $199 (`prod_ULmPbW3DgGenEh`) and 5M credits $799 (`prod_ULmPjIOpbCdElY`). Price IDs: `STRIPE_PRICE_BULK_1M` + `STRIPE_PRICE_BULK_5M`. `POST /v1/checkout/bulk` endpoint (`{ email, pack:"1m"|"5m" }`) → Stripe payment mode checkout. `buyBulk()` in `bulk.html` wired. Success banner shown on `?success=1`.
 - **Render Health Check Path** — set to `/api/health` on prod service `srv-d7ep7bfavr4c73d46gng`. Render will auto-restart on health failure.
+- **Pricing slider metered comparison** — `updateCalc()` now shows "Pay-as-you-go equivalent: $X/mo — subscription saves Y%" for Builder/Professional/Scale slider positions. Helps conversion at subscription tiers.
 - **`/sitemap.xml`** — 8-URL sitemap covering all public pages; `application/xml` content-type; explicit route added before catch-all. Google Search Console: geoclear.io Domain property verified via Cloudflare DNS TXT integration (automatic); sitemap submitted with status Success, 7 URLs discovered.
 - **Render auto-deploy fix** — documented manual trigger via `POST /v1/services/srv-d7ep7bfavr4c73d46gng/deploys`; logged in COMMS.md #4 for dashboard investigation.
 > Features merged to main but not yet cut into a version.

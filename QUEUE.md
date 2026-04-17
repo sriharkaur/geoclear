@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 23 — comprehensive testing framework spec added to ENGINEERING INFRASTRUCTURE: 10 BDS layers, 60+ TCs mapped to GeoClear modules, install commands, SLAs, directory structure)_
+_Last updated: 2026-04-17 (session 24 — Risk Score v2 ✅ complete: outcome feedback loop, POST /v1/outcomes, score_version v1→v2 auto-upgrade, drone delivery use case)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -105,7 +105,7 @@ _Last updated: 2026-04-17 (session 23 — comprehensive testing framework spec a
 ## PRODUCT BACKLOG — Revenue-Blocking (do after first paying customer)
 
 - [x] **CSV upload → enriched CSV download** ✅ 2026-04-17 — `POST /api/address/csv` (text/csv, max 5K rows, 10MB). Auto-detects columns. Returns: geo_verified, nad_uuid, confidence, residential, fips, timezone, coverage, match_type. RFC 4180 inline. **Pending**: portal drag-drop UI + pro-tier external enrichment (flood_zone, census_tract).
-- [ ] **Add metered cost calculator to pricing slider** — "500K addresses × $0.002 = $1,000." Add "one-time cleanup" framing alongside monthly subscription. File: `public/landing.html`
+- [x] **Add metered cost calculator to pricing slider** ✅ 2026-04-17 — Shows "Pay-as-you-go equivalent: $X/mo — saves Y%" for Builder/Professional/Scale positions. File: `public/landing.html`
 - [ ] **Usage dashboard for customers** — self-serve usage over time in portal (calls/day, quota used, cost accrued for metered). File: `public/portal.html`
 - [ ] **API usage analytics endpoint** — `GET /v1/admin/analytics`: requests/day by tier, top keys by volume, error rate. *(also in Phase 1 Week 4 — done there, remove when complete)*
 - [ ] **Add 500-call enrichment taste to Builder tier** — *(also in Phase 2 — remove this entry when done)*
@@ -421,7 +421,7 @@ Open:
 
 ## T4 — BIG SWINGS (6–18 months)
 
-- [ ] **GeoClear Risk Score v2** — add outcome feedback loop: customers send delivery/fraud/chargeback webhooks → label individual addresses → train per-address scores (not just tract-level). This is the Ground-Truth Graph fully realized. Moat: no competitor can buy this dataset — earned from live traffic.
+- [x] **GeoClear Risk Score v2** ✅ 2026-04-17 — `POST /v1/outcomes` endpoint; `address_outcomes` table in `keys.db`; score_version v1→v2 auto-upgrade at ≥3 delivery or ≥2 fraud outcomes; inline key auth on `/v1/risk` and `/v1/outcomes`; `GET /v1/admin/outcomes`; drone delivery use case ground-truthing deliverability. Moat: no competitor can buy this dataset — earned from live traffic.
 - [ ] Physical World Graph API — address nodes connected to businesses, schools, flood zones
 - [ ] Climate Risk Score per address (FEMA + CAL FIRE + NOAA + USGS)
 - [ ] National 911 Address Layer — partner with NENA ($10B NG911 funding)

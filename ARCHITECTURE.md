@@ -124,6 +124,8 @@ NAD_DB=data/dev.db node web-server.js
 | GET | `/api/near` | Proximity search (`?lat=&lon=&radius_km=&limit=`) |
 | GET | `/api/enrich` | Point enrichment — census tract, FEMA flood zone (`?lat=&lon=` or `?nad_uuid=`) |
 | GET | `/v1/me` | Key status — tier, limits, usage today/total |
+| GET | `/v1/risk` | Risk Score (Professional+) — deliverability, fraud, disaster, vacancy (0–1); `score_version: v1|v2`; resolves by nad_uuid, street+city+state, or lat+lon |
+| POST | `/v1/outcomes` | Outcome feedback — report delivery/fraud/chargeback per nad_uuid; upgrades v1 heuristic to v2 outcome-backed score |
 
 ### Admin (requires `X-Admin-Secret` header)
 
@@ -137,6 +139,10 @@ NAD_DB=data/dev.db node web-server.js
 | POST | `/v1/admin/stream-upload` | Stream a file to `/data/<filename>` without body buffering. Header: `X-Upload-Filename`. For small-to-medium files. |
 | POST | `/v1/admin/upload-chunk` | Write one chunk at a byte offset — resumable upload for large files (37GB+). Headers: `X-Upload-Filename`, `X-Chunk-Offset`. |
 | POST | `/v1/admin/merge` | Merge all addresses from an attached SQLite DB into nad.db in background (10K-row batches, INSERT OR IGNORE). Body: `{ dbPath, source? }`. |
+| GET | `/v1/admin/signals` | Top queried + fraud-flagged addresses from Ground-Truth Graph |
+| GET | `/v1/admin/outcomes` | Outcome feedback summary — by_type counts, by_key breakdown, top addresses |
+| GET | `/v1/admin/data-sources` | Data source catalog entries; `?status=` filter |
+| PATCH | `/v1/admin/data-sources/:source_id` | Update data source metadata |
 
 ---
 
