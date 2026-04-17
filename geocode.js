@@ -63,15 +63,18 @@ function httpGetText(url, timeoutMs = 8000, redirects = 3) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : require('http');
     const parsed = new URL(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => { controller.abort(); reject(new Error(`Timeout: ${url}`)); }, timeoutMs);
     const opts = {
       hostname: parsed.hostname,
       path:     parsed.pathname + parsed.search,
       headers:  { 'User-Agent': BROWSER_UA },
-      timeout:  timeoutMs,
+      signal:   controller.signal,
     };
     const req = lib.get(opts, res => {
       if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308)
           && res.headers.location && redirects > 0) {
+        clearTimeout(timer);
         res.resume();
         const next = res.headers.location.startsWith('http')
           ? res.headers.location : new URL(res.headers.location, url).href;
@@ -80,10 +83,9 @@ function httpGetText(url, timeoutMs = 8000, redirects = 3) {
       }
       const chunks = [];
       res.on('data', d => chunks.push(d));
-      res.on('end', () => resolve(Buffer.concat(chunks).toString()));
+      res.on('end', () => { clearTimeout(timer); resolve(Buffer.concat(chunks).toString()); });
     });
-    req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout: ${url}`)); });
-    req.on('error', reject);
+    req.on('error', e => { clearTimeout(timer); if (e.name !== 'AbortError') reject(e); });
   });
 }
 
@@ -91,16 +93,19 @@ function httpGet(url, timeoutMs = 8000, redirects = 3) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : require('http');
     const parsed = new URL(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => { controller.abort(); reject(new Error('Request timed out')); }, timeoutMs);
     const opts = {
       hostname: parsed.hostname,
       path:     parsed.pathname + parsed.search,
       headers:  { 'User-Agent': BROWSER_UA, 'Accept': 'application/json' },
-      timeout:  timeoutMs,
+      signal:   controller.signal,
     };
     const req = lib.get(opts, res => {
       // Follow redirects
       if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308)
           && res.headers.location && redirects > 0) {
+        clearTimeout(timer);
         res.resume();
         const next = res.headers.location.startsWith('http')
           ? res.headers.location
@@ -111,6 +116,7 @@ function httpGet(url, timeoutMs = 8000, redirects = 3) {
       const chunks = [];
       res.on('data', d => chunks.push(d));
       res.on('end', () => {
+        clearTimeout(timer);
         try {
           resolve(JSON.parse(Buffer.concat(chunks).toString()));
         } catch (e) {
@@ -118,8 +124,7 @@ function httpGet(url, timeoutMs = 8000, redirects = 3) {
         }
       });
     });
-    req.on('timeout', () => { req.destroy(); reject(new Error('Request timed out')); });
-    req.on('error', reject);
+    req.on('error', e => { clearTimeout(timer); if (e.name !== 'AbortError') reject(e); });
   });
 }
 
