@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 22 — data strategy section added: 15 additional data sources prioritized across 3 tiers, 6 platform capability decisions)_
+_Last updated: 2026-04-17 (session 23 — comprehensive testing framework spec added to ENGINEERING INFRASTRUCTURE: 10 BDS layers, 60+ TCs mapped to GeoClear modules, install commands, SLAs, directory structure)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -22,7 +22,7 @@ _Last updated: 2026-04-17 (session 22 — data strategy section added: 15 additi
 
 - [x] **RapidAPI listing** ✅ 2026-04-17 — GeoClear live at `rapidapi.com/auduuai/api/geoclear`. OpenAPI spec imported, all endpoints (Address/Enrichment/Geography/Account/Status), base URL `https://geoclear.io`, X-Api-Key auth, Category: Data, visibility: Public.
 - [x] **`/compliance` landing page** ✅ 2026-04-17 — `public/compliance.html` (678 lines) + `/compliance` route in `web-server.js`. Awaiting commit with relink-complete batch. — H1: "Flood zone + census tract for every US address. NFIP-ready." Body: FEMA NFHL as primary source (auditable for legal), HMDA census tract, self-serve $249/mo, no sales call. Show live JSON response with `flood_zone`, `flood_sfha`, `census_tract`. CTA: "Start free." File: `public/compliance.html`, route in `web-server.js`. *Destination for all compliance outreach emails — zero Claire conversions without this.*
-- [ ] **Google Search Console setup** — add geoclear.io as property, verify via Cloudflare DNS TXT record, submit sitemap. 20 min. *Prerequisite for all SEO traction.*
+- [x] **Google Search Console setup** ✅ 2026-04-17 — geoclear.io Domain property verified via Cloudflare DNS TXT integration (automated, no manual DNS entry needed). Sitemap submitted: `https://geoclear.io/sitemap.xml` (7 URLs). `public/sitemap.xml` created and deployed. GSC will index once Render deploy propagates.
 - [ ] **Build compliance outreach list — 15 targets** — LinkedIn: "VP Product" OR "Head of Engineering" + "mortgage" OR "insurance" OR "proptech". Targets: Encompass, BytePro, Maxwell, Blend, Qualia, Snapdocs, Hippo Insurance, Kin Insurance, Better.com, Morty, Neptune Flood, Openly, Lemonade. Add name + direct email to `AddressAPIBusinessGTM.md`.
 - [ ] **Send compliance outreach batch 1 (15 emails)** — plain text, < 150 words. Subject: `"Flood zone determination API — NFIP-ready, self-serve, $249/mo"`. Body: NFIP compliance framing → live API JSON showing `flood_zone: "AE"`, `flood_sfha: true`, `census_tract` → link to `/compliance`. *Do not send until /compliance page is live.*
 
@@ -116,6 +116,170 @@ _Last updated: 2026-04-17 (session 22 — data strategy section added: 15 additi
 ---
 
 ## ENGINEERING INFRASTRUCTURE
+
+- [ ] **Comprehensive Testing Framework** — BDS `/dev-test` (10-layer). No test runner installed yet (`package.json` has no `test` script, no mocha/jest/autocannon). `tests/TC-REGISTRY.md` and `tests/BUG-REGISTRY.md` scaffolded but empty. Full implementation spec below.
+
+  **Framework:** Node.js + Mocha (unit/integration/API/security/data) + Playwright (E2E + visual) + autocannon (performance). All 10 BDS layers applied to GeoClear's actual modules.
+
+  **Install:**
+  ```bash
+  npm install --save-dev mocha chai supertest autocannon
+  npx playwright install chromium
+  ```
+  Add to `package.json`:
+  ```json
+  "scripts": {
+    "test":      "mocha 'tests/**/*.test.js' --timeout 10000",
+    "test:unit": "mocha 'tests/unit/**/*.test.js'",
+    "test:api":  "mocha 'tests/api/**/*.test.js' --timeout 15000",
+    "test:sec":  "mocha 'tests/security/**/*.test.js'",
+    "test:data": "mocha 'tests/data/**/*.test.js'",
+    "test:perf": "node tests/perf/run.js",
+    "test:e2e":  "npx playwright test"
+  }
+  ```
+
+  **Layer 1 — Unit (TC-UNIT-XXXX)** | File: `tests/unit/`
+  Target modules and functions to test in isolation (no DB, no network, no filesystem):
+  - `enrich.js` — `enrich(lat, lon)`: null inputs, non-US coords, timeout simulation, cache hit/miss
+  - `keys.js` / `KeyStore` — `generate()`, `validate()`, `recordUsage()`, `checkEnrichmentQuota()`, tier limit enforcement, key hashing round-trip (hash → validate → match), `updateDataSource()` field whitelist
+  - `query.js` / `NADQuery` — `parseAddress()` input sanitization, confidence score calculation at each placement tier (Rooftop=100, Parcel=85, Street=70, Interpolation=50, Unknown=30), anomaly flag deduction logic, `displayCity()` post_city vs inc_muni preference
+  - `geocode.js` — `enrichPoint()` response shape validation, FEMA flood zone parsing (all 15 zone codes), SFHA derivation logic
+  - `risk-data.js` — `RiskData`: county FIPS lookup, WHP class normalization (1–5 → Very Low–Very High), storm score calculation
+
+  **Layer 2 — Integration (TC-INT-XXXX)** | File: `tests/integration/`
+  Tests against real `data/dev.db` (572MB, 20K addresses/state). Set `NAD_DB=data/dev.db`.
+  - `KeyStore._init()`: table + seed runs idempotently (run `_init()` twice, no duplicate rows, no error)
+  - `data_sources` seed: all 9 rows present, `status` correct (calfire_fhsz=blocked, openaddresses=planned, 7 active)
+  - `KeyStore.generate()` + `validate()` round-trip: generate key → hash stored → validate raw key → returns correct tier
+  - `KeyStore.checkEnrichmentQuota()`: free tier at 0 calls → allowed; free tier at 500 calls → blocked; professional tier → always allowed
+  - `NADQuery`: basic address lookup against dev.db returns `nad_uuid`, `confidence` ≥ 0, `state` matches input
+  - `address_signals` upsert: first call creates row with `query_count=1`; second call increments to 2; no duplicate rows
+  - `updateDataSource()`: updates `last_sourced_at` → verify persisted; reject unknown field → no-op
+
+  **Layer 3 — System (TC-SYS-XXXX)** | File: `tests/api/` (inline with API tests, using supertest)
+  Full request path through Express middleware:
+  - Auth middleware chain: unauthenticated → 401 before any DB query
+  - Rate limit middleware: 60 req/min limit enforced; 61st request → 429
+  - Admin auth: missing `X-Admin-Secret` → 401; wrong secret → 401; correct secret → passes
+  - Error propagation: DB unavailable → 503, not 500 with stack trace leaked
+
+  **Layer 4 — API Contract (TC-API-XXXX)** | File: `tests/api/`
+  Every endpoint, verified with supertest against `NAD_DB=data/dev.db` server:
+
+  | Endpoint | TC IDs | Key assertions |
+  |----------|--------|---------------|
+  | `GET /api/health` | TC-API-0001–0003 | 200, `{"status":"ok","db":"connected"}`, no X-Api-Key required |
+  | `GET /api/address` | TC-API-0010–0025 | valid key+address → 200 + `nad_uuid` + `confidence`; missing street → 400; no key → 401; wrong key → 401; quota exceeded → 429 |
+  | `GET /api/suggest` | TC-API-0030–0035 | returns array, each item has `display`, `nad_uuid`; empty query → 400 |
+  | `GET /api/near` | TC-API-0040–0045 | valid lat/lon → array with `distance_m`; missing lat → 400; `radius` > 50000 → 400 or clamped |
+  | `GET /api/enrich` | TC-API-0050–0060 | Professional key → 200 + `flood_zone` + `census_tract`; free key → 402; missing lat/lon → 400; quota exhaustion → 429 |
+  | `GET /v1/risk` | TC-API-0070–0080 | Professional key → 200 + 4 scores (0–1); free key → 402; invalid address → 404 |
+  | `GET /v1/me` | TC-API-0090–0092 | valid key → tier + usage + limits; no key → 401 |
+  | `GET /v1/admin/keys/stats` | TC-API-0100–0103 | correct secret → 200; no secret → 401 |
+  | `GET /v1/admin/analytics` | TC-API-0110–0113 | `?days=30` → `requests_by_day` array length ≤ 30; `?days=0` → 400 or clamped |
+  | `GET /v1/admin/data-sources` | TC-API-0120–0124 | 9 sources returned; `?status=blocked` → 1 result (calfire_fhsz); `?status=planned` → 1 result (openaddresses) |
+  | `PATCH /v1/admin/data-sources/:id` | TC-API-0125–0128 | valid fields update + returns `updated:true`; unknown source_id → `updated:false`; disallowed field → ignored |
+  | `POST /v1/keys` | TC-API-0130–0135 | valid email → key issued + email format correct; missing email → 400 |
+  | `GET /api/states` | TC-API-0140–0142 | returns array of states with `code`, `address_count` > 0 |
+  | `GET /v1/admin/signals` | TC-API-0150–0152 | returns `total_addresses_tracked`, `total_query_hits`, `top` array |
+
+  **Layer 5 — E2E (TC-E2E-XXXX)** | File: `tests/e2e/` (Playwright)
+  Complete user journeys covering critical revenue paths:
+  - TC-E2E-0001: Free signup flow — `GET /` → landing page loads → `POST /v1/keys` → email contains API key → `GET /api/address` with key → 200
+  - TC-E2E-0002: Quota enforcement — generate free key → exhaust 10K daily limit → next request → 429 → response body contains upgrade CTA
+  - TC-E2E-0003: Portal — `GET /portal.html` → key input → submit → tier/usage displays correctly
+  - TC-E2E-0004: Compliance page — `GET /compliance` → 200 → live demo widget returns `flood_zone` for test address
+
+  **Layer 6 — Visual Regression (TC-VIS-XXXX)** | File: `tests/e2e/` (Playwright screenshots)
+  Baseline screenshots of all public pages at 1280px, 768px, 375px. Run on every UI change:
+  - TC-VIS-0001–0003: `landing.html` — desktop/tablet/mobile
+  - TC-VIS-0004–0006: `compliance.html` — desktop/tablet/mobile
+  - TC-VIS-0007–0009: `docs.html` — desktop/tablet/mobile
+  - TC-VIS-0010–0012: `portal.html` — desktop/tablet/mobile
+  Setup: `npx playwright test --update-snapshots` once to create baselines. Store in `tests/e2e/snapshots/`.
+
+  **Layer 7 — Performance (TC-PERF-XXXX)** | File: `tests/perf/run.js` (autocannon)
+  SLAs (GeoClear-specific — override BDS defaults for enrichment endpoints):
+
+  | Endpoint | p50 | p95 | p99 | throughput |
+  |----------|-----|-----|-----|------------|
+  | `GET /api/health` | <5ms | <20ms | <50ms | >500 req/s |
+  | `GET /api/address` (dev.db) | <50ms | <200ms | <500ms | >50 req/s |
+  | `GET /api/enrich` (cached FEMA/Census) | <150ms | <500ms | <1500ms | >20 req/s |
+  | `GET /v1/risk` (risk.db cached) | <30ms | <100ms | <300ms | >50 req/s |
+
+  Run: `node tests/perf/run.js` — autocannon 50 connections, 30 seconds, report p50/p95/p99.
+  Memory leak check: send 10K requests → `process.memoryUsage()` before vs after < 5% growth.
+
+  **Layer 8 — Security (TC-SEC-XXXX)** | File: `tests/security/`
+  ```bash
+  # TC-SEC-0001: no key → 401
+  # TC-SEC-0002: invalid key → 401 (not 403 or 500)
+  # TC-SEC-0003: SQL injection in street param → no DB error leaked, no unexpected rows
+  # TC-SEC-0004: XSS in street param → response is JSON, not HTML with script tag
+  # TC-SEC-0005: oversized payload (100KB GET param) → 400 or 414, not crash
+  # TC-SEC-0006: CORS — Origin: evil.com → no ACAO: * on /v1/* endpoints
+  # TC-SEC-0007: admin endpoints without secret → 401
+  # TC-SEC-0008: rate limit — 61 req/min → 429 with Retry-After header
+  # TC-SEC-0009: Stripe webhook without signature → 400 (not 200)
+  # TC-SEC-0010: key in URL param (not header) — should NOT work (keys only via X-Api-Key header)
+  # TC-SEC-0011: plaintext key not stored in DB (verify key column = 24-char prefix only)
+  # TC-SEC-0012: admin secret via header only — not querystring
+  ```
+
+  **Layer 9 — Data Integrity (TC-DATA-XXXX)** | File: `tests/data/`
+  Run against `data/dev.db`:
+  - TC-DATA-0001: `addresses` table has ≥ 18,000 rows (dev.db has 20K/state × ≥1 state)
+  - TC-DATA-0002: All addresses with `placement='Rooftop'` have non-null `latitude` and `longitude`
+  - TC-DATA-0003: No addresses where `state IS NULL AND state_id IS NOT NULL`
+  - TC-DATA-0004: `api_keys` — `key_hash` IS NOT NULL for all rows (no plaintext keys)
+  - TC-DATA-0005: `data_sources` — all 9 seed rows present; `calfire_fhsz` status = 'blocked'
+  - TC-DATA-0006: `usage_log` FK integrity — no `key_id` referencing a non-existent `api_keys.id`
+  - TC-DATA-0007: All 16 expected indexes present on `addresses` table (`EXPLAIN QUERY PLAN` for address lookup uses index)
+  - TC-DATA-0008: `KeyStore._init()` idempotent — run 3× on same DB, no errors, no duplicate rows in `data_sources`
+
+  **Layer 10 — Pipeline (TC-PIPE-XXXX)**
+  - TC-PIPE-0001: `curl https://geoclear.io/api/health` → 200, `db:connected`, latency < 2s
+  - TC-PIPE-0002: `curl https://geoclear-staging.onrender.com/api/health` → 200 (when staging deployed)
+  - TC-PIPE-0003: `git push main` → Render deploy log shows `node web-server.js` started, no crash
+  - TC-PIPE-0004: Post-deploy address lookup returns known address (1600 Pennsylvania Ave DC) with `confidence ≥ 85`
+
+  **Directory structure to create:**
+  ```
+  tests/
+  ├── TC-REGISTRY.md          ← exists (empty)
+  ├── BUG-REGISTRY.md         ← exists (empty)
+  ├── unit/
+  │   ├── enrich.test.js
+  │   ├── keys.test.js
+  │   ├── query.test.js
+  │   └── geocode.test.js
+  ├── integration/
+  │   ├── keystore.test.js
+  │   ├── data-sources.test.js
+  │   └── address-query.test.js
+  ├── api/
+  │   ├── address.test.js
+  │   ├── enrich.test.js
+  │   ├── risk.test.js
+  │   ├── admin.test.js
+  │   └── auth.test.js
+  ├── security/
+  │   └── security.test.js
+  ├── data/
+  │   └── integrity.test.js
+  ├── perf/
+  │   └── run.js
+  └── e2e/
+      ├── signup-flow.test.js
+      ├── quota-enforcement.test.js
+      └── snapshots/         ← Playwright baselines (git-committed)
+  ```
+
+  **BDS framework reference:** `/dev-test` skill at `~/.claude/skills/dev-test.md`
+  **Owner:** engineering. Run `/dev-test` to execute the full framework on any session.
+  **Gate rule:** No feature is complete without all applicable layers green. Security + data integrity layers mandatory on every deploy.
 
 - [x] **Data Catalog** ✅ 2026-04-17 — `docs/DATA-CATALOG.md` created. Comprehensive inventory of all 9 data sources (NAD, Overture, Census, FEMA, USGS, USFS WHP, NOAA Storm, CAL FIRE FHSZ, OpenAddresses). Each entry covers: publisher, license, role, coverage, last sourced, next refresh date, cadence, API endpoint, pipeline, all attributes extracted, use cases powered. Includes refresh calendar (2026-07-15 NAD, 2026-10-01 USFS, 2027-03-01 NOAA). Update this file whenever a source is added or refreshed.
 

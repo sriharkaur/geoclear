@@ -119,3 +119,90 @@ Optional but valuable: run `/bds-customize` when you want a formal strategic and
 _(Note when you'd like to schedule a council session, or mark DEFERRED if not a priority now)_
 
 ---
+
+### #3 — LinkedIn posts ready to publish (2 posts)
+**Status:** 🆕 NEW
+**Date:** 2026-04-17
+**From:** Claude
+**Category:** ACTION NEEDED — manual post required (no LinkedIn credentials stored)
+
+**Details:**
+Two LinkedIn posts are queued per the Phase 1 Week 2 and Phase 2 plan. Both are ready to copy-paste. Post #1 first (FEMA anchor), then #2 (developer angle) a few days later.
+
+---
+
+**POST #1 — FEMA anchor (Phase 1 Week 2)**
+Target: PropTech + mortgage tech communities. Post any Tuesday/Wednesday 9am PT.
+
+```
+Manual flood zone determination costs $3–$15 per address.
+
+We built an API that returns it for free (up to 1,000/day).
+
+curl "https://geoclear.io/api/enrich?lat=30.2672&lon=-97.7431" \
+  -H "X-Api-Key: YOUR_KEY"
+
+Returns:
+{
+  "flood_zone": "AE",
+  "flood_sfha": true,
+  "census_tract": "48453001702",
+  "elevation_ft": 489.2
+}
+
+Live FEMA NFHL data. No manual lookup. No subscription required to start.
+
+198M US addresses. One API call. geoclear.io
+```
+
+Hashtags: #PropTech #MortgageTech #FEMA #FloodZone #API #RealEstate
+
+---
+
+**POST #2 — Developer angle (Phase 2)**
+Post a few days after Post #1.
+
+```
+One API call. Everything about a US address.
+
+curl "https://geoclear.io/api/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC" \
+  -H "X-Api-Key: YOUR_KEY"
+
+Returns: validated address + FEMA flood zone + census tract + timezone + nearest hospital + fire station + elevation.
+
+198M addresses. <5ms. Free tier — no credit card.
+
+geoclear.io
+```
+
+Hashtags: #Developer #API #GeoData #AddressValidation #BuildInPublic
+
+---
+
+**Your Input:**
+Post both when ready. Mark ✅ DONE after each.
+
+---
+
+### #4 — Render auto-deploy not triggering on git push
+**Status:** 🆕 NEW
+**Date:** 2026-04-17
+**From:** Claude
+**Category:** FYI + ACTION NEEDED
+
+**Details:**
+During GSC sitemap setup, discovered that Render's auto-deploy did NOT trigger for 2 git pushes to main (commits `27f1837` and `04dbfc6`). Had to manually trigger via `POST /v1/services/srv-d7ep7bfavr4c73d46gng/deploys`. The previous running deploy was from 04:10 UTC, pushed at ~05:04 UTC — 54 minutes of commits not auto-deploying.
+
+**Action needed:** Check Render dashboard → prod service → Settings → "Auto-Deploy" toggle. Should be ON for the main branch. May have been accidentally disabled during a prior session.
+
+**Manual trigger (if needed):**
+```bash
+source ~/.zshrc
+curl -s -X POST -H "Authorization: Bearer $RENDER_API_KEY" \
+  "https://api.render.com/v1/services/srv-d7ep7bfavr4c73d46gng/deploys"
+```
+
+**Your Input:**
+_(Confirm auto-deploy is re-enabled in Render dashboard)_
+
+---
