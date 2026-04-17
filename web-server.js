@@ -303,6 +303,8 @@ app.use((req, res, next) => {
 // Serve static files — disable index so root '/' falls through to the route handler below
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
+app.get('/status', (req, res) => res.redirect('/status.html'));
+
 // ── API Auth + Rate Limiting ──────────────────────────────────────
 // /api/health, /api/stats, /api/states are open — everything else requires a key
 const OPEN_API_PATHS = new Set(['/health', '/stats', '/states', '/demo', '/status']);
@@ -1597,6 +1599,14 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
     const m = street.match(/^(\d+[A-Za-z]?)\s+(.+)/);
     if (m) { addNum = m[1]; stName = m[2]; }
   }
+  // Strip direction suffixes (NW, NE, SW, SE, North, South…) and street types (St, Ave, Blvd…)
+  // so "10th Street NW" matches st_name "10TH" in NAD.
+  if (stName) {
+    stName = stName
+      .replace(/\s+(northwest|northeast|southwest|southeast|nw|ne|sw|se|north|south|east|west)\.?\s*$/i, '')
+      .replace(/\s+(street|avenue|boulevard|drive|road|lane|court|place|way|circle|terrace|parkway|highway|st|ave|blvd|dr|rd|ln|ct|pl|cir|ter|pkwy|hwy)\.?\s*$/i, '')
+      .trim();
+  }
   const rows = nad.findAddress({ addNumber: addNum, streetName: stName, city, stateCode: state, zipCode: zip, limit: 1 });
   if (!rows.length) return err(res, 'No addresses found.', 404);
   const addr     = rows[0];
@@ -1697,6 +1707,13 @@ app.get('/api/demo/enrich', demoLimiter, async (req, res) => {
     const m = street.match(/^(\d+[A-Za-z]?)\s+(.+)/);
     if (m) { addNum = m[1]; stName = m[2]; }
   }
+  // Strip direction suffixes and street types so "10th Street NW" matches st_name "10TH"
+  if (stName) {
+    stName = stName
+      .replace(/\s+(northwest|northeast|southwest|southeast|nw|ne|sw|se|north|south|east|west)\.?\s*$/i, '')
+      .replace(/\s+(street|avenue|boulevard|drive|road|lane|court|place|way|circle|terrace|parkway|highway|st|ave|blvd|dr|rd|ln|ct|pl|cir|ter|pkwy|hwy)\.?\s*$/i, '')
+      .trim();
+  }
   const rows = nad.findAddress({ addNumber: addNum, streetName: stName, city, stateCode: state, zipCode: zip, limit: 1 });
   if (!rows.length) return err(res, 'No addresses found.', 404);
   const addr    = rows[0];
@@ -1705,7 +1722,12 @@ app.get('/api/demo/enrich', demoLimiter, async (req, res) => {
   const lon = parseFloat(addr.longitude || 0);
   if (!lat || !lon) return err(res, 'Address has no coordinates — cannot enrich.', 422);
   try {
-    const data = await enrichPoint(lat, lon);
+    const hardNull = (ms) => new Promise(r => setTimeout(() => r(null), ms));
+    const data = await Promise.race([
+      enrichPoint(lat, lon).catch(() => null),
+      hardNull(5000),
+    ]);
+    if (!data) return err(res, 'Enrichment timed out — try again.', 504);
     ok(res, {
       address: enrichAddress(addr),
       flood_zone:       data.flood_zone       ?? null,

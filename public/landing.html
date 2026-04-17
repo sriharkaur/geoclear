@@ -1018,7 +1018,7 @@
       <a href="/docs" target="_blank">Docs</a>
     </div>
     <div class="nav-right">
-      <button class="nav-signin" onclick="openModal()">Sign in</button>
+      <a href="/portal.html" class="nav-signin">Sign in</a>
       <button class="nav-cta" onclick="openModal()">Get API key →</button>
     </div>
   </div>
@@ -1498,9 +1498,9 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="demo-subtitle">No API key needed · Real FEMA + USGS earthquake + USDA drought data</div>
       </div>
       <div class="risk-demo-row">
-        <input class="demo-input" id="risk-street" type="text" placeholder="Street address (e.g. 123 Main St)" />
-        <input class="demo-input" id="risk-city"   type="text" placeholder="City" style="max-width:180px"/>
-        <input class="demo-input" id="risk-state"  type="text" placeholder="State" style="max-width:80px" maxlength="2" />
+        <input class="demo-input" id="risk-street" type="text" placeholder="Street address (e.g. 123 Main St)" value="1012 10th Street NW" />
+        <input class="demo-input" id="risk-city"   type="text" placeholder="City" style="max-width:180px" value="Washington" />
+        <input class="demo-input" id="risk-state"  type="text" placeholder="State" style="max-width:80px" maxlength="2" value="DC" />
         <button class="demo-btn" onclick="runRiskDemo()">Score →</button>
       </div>
       <div id="risk-results" class="demo-results-area">
