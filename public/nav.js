@@ -71,15 +71,8 @@
   // Inject CSS into <head> and nav before <body> content
   document.head.insertAdjacentHTML('beforeend', NAV_CSS);
 
-  // Replace existing <nav> if present, else prepend to body
-  const existing = document.querySelector('nav');
-  if (existing) {
-    existing.outerHTML = NAV_HTML;
-    // outerHTML replacement doesn't work directly; use a different approach
-  }
-
-  // Use a placeholder approach: replace #gc-nav-placeholder or insert at top of body
   const placeholder = document.getElementById('gc-nav-placeholder');
+  const existing = document.querySelector('nav');
   if (placeholder) {
     placeholder.outerHTML = NAV_HTML;
   } else if (existing) {
