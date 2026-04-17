@@ -790,6 +790,11 @@ app.get('/api/enrich', async (req, res) => {
 
 // Health check — never blocks. Returns cached count if warm, null if not yet computed.
 // COUNT(*) on 120M rows is expensive; /api/stats warms the cache lazily via first request.
+// Shallow ping — always 200, used by Render as the health check path.
+// Render keeps the old instance alive until this returns 200, preventing
+// deploy downtime during the ~90s nad.db mmap warm-up.
+app.get('/api/ping', (req, res) => res.json({ ok: true }));
+
 app.get('/api/health', (req, res) => {
   if (!nad.isReady()) return res.json({ status: 'starting', addresses: null, version: '1.0.0' });
   const hit = cache.get('stats');
