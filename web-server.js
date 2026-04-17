@@ -1535,6 +1535,9 @@ app.get('/terms', (req, res) => {
 app.get('/compliance', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'compliance.html'));
 });
+app.get('/sitemap.xml', (req, res) => {
+  res.type('application/xml').sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
