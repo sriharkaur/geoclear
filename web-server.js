@@ -21,7 +21,7 @@ const crypto     = require('crypto');
 const path       = require('path');
 const { NADQuery }    = require('./query.js');
 const { enrich }      = require('./enrich.js');
-const { enrichPoint, getFEMAFloodZone } = require('./geocode.js');
+const { enrichPoint, getFEMAFloodZone, getEarthquakeRisk, getDroughtRisk } = require('./geocode.js');
 const { KeyStore }    = require('./keys.js');
 const { RiskData }    = require('./risk-data.js');
 
@@ -354,7 +354,7 @@ app.use('/api', (req, res, next) => {
 
 // Apply auth + rate-limit to all protected /api routes
 app.use('/api', (req, res, next) => {
-  if (OPEN_API_PATHS.has(req.path)) return next();
+  if (OPEN_API_PATHS.has(req.path) || req.path.startsWith('/demo')) return next();
   apiAuth(req, res, next);
 });
 app.use('/api', (req, res, next) => {
@@ -889,7 +889,7 @@ app.get('/v1/risk', async (req, res) => {
 
   // ── 2. Fetch signals in parallel ─────────────────────────────────
   const countyFips5 = enriched.fips || null;
-  const [femaResult, signalRow, velocityRow, wildfireRow, stormRow, outcomeStats] = await Promise.all([
+  const [femaResult, signalRow, velocityRow, wildfireRow, stormRow, outcomeStats, earthquakeResult, droughtResult] = await Promise.all([
     (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
     Promise.resolve(keys.db.prepare(
       `SELECT query_count, fraud_signal_count FROM address_signals WHERE nad_uuid = ?`
@@ -902,6 +902,8 @@ app.get('/v1/risk', async (req, res) => {
     Promise.resolve(countyFips5 ? riskData.getWildfireRisk(countyFips5) : null),
     Promise.resolve(countyFips5 ? riskData.getStormRisk(countyFips5)    : null),
     Promise.resolve(keys.getOutcomeStats(addr.nad_uuid)),
+    (addrLat && addrLon) ? getEarthquakeRisk(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
+    countyFips5 ? getDroughtRisk(countyFips5).catch(() => null) : Promise.resolve(null),
   ]);
 
   // CAL FIRE: CA addresses only, lat/lon required
@@ -969,11 +971,32 @@ app.get('/v1/risk', async (req, res) => {
     failedDeliverySignal > 0 ? failedDeliverySignal : neverQueried + classVacancy
   ));
 
-  // ── 4. Determine score version ────────────────────────────────────
+  // ── 4. Climate Risk composite ─────────────────────────────────────
+  // Weighted: flood (most actionable) + wildfire + storm + earthquake + drought
+  // Each dimension 0–1. Composite = weighted mean of available dimensions.
+  const climateFlood    = disasterFlood;
+  const climateWildfire = disasterWildfireFinal;
+  const climateStorm    = disasterStorm / 0.3; // re-normalize from 0–0.3 cap to 0–1
+  const climateEq       = earthquakeResult?.risk_score ?? null;
+  const climateDrought  = droughtResult?.risk_score   ?? null;
+
+  const climateInputs = [
+    { score: climateFlood,    weight: 0.30 },
+    { score: climateWildfire, weight: 0.25 },
+    { score: climateStorm,    weight: 0.20 },
+    ...(climateEq       != null ? [{ score: climateEq,      weight: 0.15 }] : []),
+    ...(climateDrought  != null ? [{ score: climateDrought, weight: 0.10 }] : []),
+  ];
+  const totalWeight    = climateInputs.reduce((s, d) => s + d.weight, 0);
+  const climateComposite = totalWeight > 0
+    ? climateInputs.reduce((s, d) => s + d.score * d.weight, 0) / totalWeight
+    : null;
+
+  // ── 5. Determine score version ────────────────────────────────────
   const hasOutcomes = outcomeStats.total_outcomes > 0;
   const scoreVersion = (deliveryOutcomes >= 3 || fraudOutcomes >= 2) ? 'v2' : 'v1';
 
-  // ── 5. Build response ─────────────────────────────────────────────
+  // ── 6. Build response ─────────────────────────────────────────────
   ok(res, {
     nad_uuid:  addr.nad_uuid,
     address:   enriched.full_address || `${addr.add_number || ''} ${addr.st_name || ''}`.trim(),
@@ -982,6 +1005,23 @@ app.get('/v1/risk', async (req, res) => {
       fraud:          +fraud.toFixed(3),
       disaster:       +disaster.toFixed(3),
       vacancy:        +vacancy.toFixed(3),
+    },
+    climate_risk: {
+      composite:  climateComposite !== null ? +climateComposite.toFixed(3) : null,
+      flood:      +climateFlood.toFixed(3),
+      wildfire:   +climateWildfire.toFixed(3),
+      storm:      +Math.min(1, climateStorm).toFixed(3),
+      earthquake: earthquakeResult ? {
+        score:      earthquakeResult.risk_score,
+        pgam:       earthquakeResult.pgam,
+        sdc:        earthquakeResult.sdc,
+        label:      earthquakeResult.risk_label,
+      } : null,
+      drought: droughtResult ? {
+        score:         droughtResult.risk_score,
+        current_level: droughtResult.current_level,
+        weeks_sampled: droughtResult.weeks_sampled,
+      } : null,
     },
     signals: {
       confidence:          enriched.confidence,
@@ -993,6 +1033,8 @@ app.get('/v1/risk', async (req, res) => {
       wildfire_class:      wildfireRow?.whp_class      || calFireRow?.fhsz_label || null,
       storm_events_10yr:   stormRow?.event_count       || null,
       cal_fire_fhsz:       calFireRow?.fhsz_label      || null,
+      earthquake_pgam:     earthquakeResult?.pgam      ?? null,
+      drought_level:       droughtResult?.current_level ?? null,
       ...(hasOutcomes && {
         outcomes: {
           total:            outcomeStats.total_outcomes,
@@ -1004,15 +1046,17 @@ app.get('/v1/risk', async (req, res) => {
       }),
     },
     data_coverage: {
-      fema_flood:    femaResult   !== null,
-      wildfire:      wildfireRow  !== null,
-      storm:         stormRow     !== null,
-      cal_fire:      calFireRow   !== null,
+      fema_flood:    femaResult       !== null,
+      wildfire:      wildfireRow      !== null,
+      storm:         stormRow         !== null,
+      cal_fire:      calFireRow       !== null,
+      earthquake:    earthquakeResult !== null,
+      drought:       droughtResult    !== null,
       ground_truth:  (signalRow.query_count || 0) > 0,
       outcome_feedback: hasOutcomes,
     },
     score_version: scoreVersion,
-    version: '2.0',
+    version: '2.1',
   });
 });
 
@@ -1581,6 +1625,37 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
     version: '1.0-demo',
     demo: true,
   });
+});
+
+// Compliance / enrichment demo — flood zone + census tract, no API key required
+app.get('/api/demo/enrich', demoLimiter, async (req, res) => {
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+  const { street, number, city, state, zip } = req.query;
+  if (!street && !zip) return err(res, 'Provide street or zip.');
+  const rows = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
+  if (!rows.length) return err(res, 'No addresses found.', 404);
+  const addr    = rows[0];
+  const enriched = enrich(addr);
+  const lat = parseFloat(addr.latitude  || 0);
+  const lon = parseFloat(addr.longitude || 0);
+  if (!lat || !lon) return err(res, 'Address has no coordinates — cannot enrich.', 422);
+  try {
+    const data = await enrichPoint(lat, lon);
+    ok(res, {
+      address: enrichAddress(addr),
+      flood_zone:       data.flood_zone       ?? null,
+      flood_sfha:       data.flood_sfha       ?? null,
+      flood_community:  data.flood_community  ?? null,
+      census_tract:     data.census_tract     ?? null,
+      census_block_grp: data.census_block_grp ?? null,
+      census_geoid:     data.census_geoid     ?? null,
+      fips:             enriched.fips         ?? null,
+      confidence:       enriched.confidence   ?? null,
+      demo: true,
+    });
+  } catch(e) {
+    err(res, `Enrichment failed: ${e.message}`, 502);
+  }
 });
 
 app.get('/api/demo', demoLimiter, (req, res) => {

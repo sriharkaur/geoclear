@@ -414,6 +414,92 @@
     .footer-links { display: flex; gap: 20px; }
     .footer-links a:hover { color: var(--text); }
 
+    /* LIVE DEMO WIDGET */
+    .demo-inputs { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .demo-input-row { display: flex; gap: 8px; }
+    .demo-input {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px; padding: 7px 10px;
+      font-family: var(--mono); font-size: 0.78rem;
+      color: #e2ddd8; outline: none; flex: 1;
+      transition: border-color 0.15s;
+    }
+    .demo-input:focus { border-color: rgba(46,147,111,0.6); }
+    .demo-input-sm { max-width: 52px; flex: none; }
+    .demo-run-btn {
+      background: var(--sky); color: #fff;
+      border: none; border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 0.78rem; font-weight: 600; font-family: var(--font);
+      cursor: pointer; width: 100%; margin-top: 2px;
+      transition: opacity 0.15s;
+    }
+    .demo-run-btn:hover { opacity: 0.85; }
+    .demo-run-btn:disabled { opacity: 0.5; cursor: default; }
+    .demo-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 10px 0; }
+
+    /* FEMA ZONE LEGEND */
+    .fema-legend { margin-top: 40px; border: 1px solid var(--border2); border-radius: var(--rlg); overflow: hidden; }
+    .fema-legend-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; background: rgba(46,147,111,0.04);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; user-select: none;
+      font-size: 0.88rem; font-weight: 600;
+    }
+    .fema-legend-header:hover { background: rgba(46,147,111,0.07); }
+    .fema-legend-toggle { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+    .fema-legend-body { padding: 20px; display: none; }
+    .fema-legend-body.open { display: block; }
+    .fema-zone-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 12px;
+    }
+    .fema-zone-card { border-radius: var(--r); padding: 12px 14px; font-size: 0.82rem; }
+    .fz-ae { background: rgba(235,135,113,0.08); border: 1px solid rgba(235,135,113,0.2); }
+    .fz-ve { background: rgba(235,135,113,0.13); border: 1px solid rgba(235,135,113,0.3); }
+    .fz-a  { background: rgba(198,166,115,0.08); border: 1px solid rgba(198,166,115,0.2); }
+    .fz-x  { background: rgba(46,147,111,0.06);  border: 1px solid rgba(46,147,111,0.18); }
+    .fz-d  { background: rgba(122,110,104,0.06); border: 1px solid rgba(122,110,104,0.15); }
+    .fema-zone-code { font-family: var(--mono); font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .fz-ae .fema-zone-code, .fz-ve .fema-zone-code, .fz-a .fema-zone-code { color: var(--red); }
+    .fz-x .fema-zone-code { color: var(--sky); }
+    .fz-d .fema-zone-code { color: var(--muted); }
+    .fema-zone-label { font-weight: 600; margin-bottom: 3px; font-size: 0.82rem; }
+    .fema-zone-desc { color: var(--muted); font-size: 0.77rem; line-height: 1.4; }
+    .fema-zone-sfha {
+      display: inline-block; margin-top: 7px;
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 2px 8px; border-radius: 20px;
+    }
+    .sfha-yes { background: rgba(235,135,113,0.12); color: var(--red); }
+    .sfha-no  { background: rgba(46,147,111,0.08); color: var(--sky); }
+    .sfha-unk { background: rgba(122,110,104,0.08); color: var(--muted); }
+
+    /* COST CALCULATOR */
+    .cost-calc {
+      background: linear-gradient(135deg, rgba(46,147,111,0.06) 0%, rgba(140,176,178,0.06) 100%);
+      border: 1px solid var(--border2); border-radius: var(--rlg);
+      padding: 24px 28px; margin-bottom: 40px;
+    }
+    .cost-calc-title { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .cost-calc-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .cost-calc-label { font-size: 0.9rem; color: var(--muted); white-space: nowrap; }
+    .cost-calc-input {
+      border: 1px solid var(--border2); border-radius: var(--r);
+      padding: 6px 10px; font-size: 0.88rem; font-family: var(--font);
+      background: var(--surface); color: var(--text); width: 110px; outline: none;
+    }
+    .cost-calc-input:focus { border-color: var(--sky); }
+    .cost-calc-result { margin-top: 16px; display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+    .cost-stat { display: flex; flex-direction: column; gap: 2px; }
+    .cost-stat-val { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+    .cost-stat-label { font-size: 0.73rem; color: var(--muted); font-weight: 500; }
+    .cost-stat-manual .cost-stat-val { color: var(--red); }
+    .cost-stat-geo .cost-stat-val { color: var(--sky); }
+    .cost-stat-save .cost-stat-val { color: var(--sky); }
+    .cost-divider { width: 1px; background: var(--border2); align-self: stretch; }
+
     /* RESPONSIVE */
     @media (max-width: 768px) {
       .hero-inner { grid-template-columns: 1fr; gap: 40px; }
@@ -491,28 +577,29 @@
             <span class="code-dot code-dot-y"></span>
             <span class="code-dot code-dot-g"></span>
           </div>
-          <span class="code-label">POST /v1/address/enrich</span>
+          <span class="code-label">Live demo — FEMA + census enrichment</span>
         </div>
-        <div class="code-body"><pre>{
-  <span class="j-key">"address"</span>: <span class="j-str">"1234 Oak St"</span>,
-  <span class="j-key">"city"</span>: <span class="j-str">"Houston"</span>,
-  <span class="j-key">"state"</span>: <span class="j-str">"TX"</span>,
-
-  <span class="j-comment">// — FEMA NFHL flood determination —</span>
-  <span class="highlight-row"><span class="j-key">"flood_zone"</span>: <span class="j-str">"AE"</span>,</span>
-  <span class="highlight-row"><span class="j-key">"flood_sfha"</span>: <span class="j-bool-true">true</span>,</span>
-  <span class="highlight-row"><span class="j-key">"flood_zone_desc"</span>: <span class="j-str">"High risk — 1% annual chance"</span>,</span>
-
-  <span class="j-comment">// — HMDA census tract —</span>
-  <span class="highlight-row"><span class="j-key">"census_tract"</span>: <span class="j-str">"48201230100"</span>,</span>
-  <span class="highlight-row"><span class="j-key">"county_fips"</span>: <span class="j-str">"48201"</span>,</span>
-
-  <span class="j-comment">// — address validation —</span>
-  <span class="j-key">"standardized"</span>: <span class="j-str">"1234 OAK ST"</span>,
-  <span class="j-key">"zip"</span>: <span class="j-str">"77008"</span>,
-  <span class="j-key">"rdi"</span>: <span class="j-str">"Residential"</span>,
-  <span class="j-key">"timezone"</span>: <span class="j-str">"America/Chicago"</span>
-}</pre></div>
+        <div class="code-body">
+          <div class="demo-inputs">
+            <div class="demo-input-row">
+              <input type="text" id="demo-num" class="demo-input demo-input-sm" value="" placeholder="#" />
+              <input type="text" id="demo-street" class="demo-input" value="Main" placeholder="Street name" />
+            </div>
+            <div class="demo-input-row">
+              <input type="text" id="demo-city" class="demo-input" value="Austin" placeholder="City" />
+              <input type="text" id="demo-state" class="demo-input demo-input-sm" value="TX" placeholder="ST" maxlength="2" />
+            </div>
+            <button class="demo-run-btn" id="enrich-btn" onclick="runEnrichDemo()">Try live — real FEMA + census data →</button>
+          </div>
+          <hr class="demo-divider" />
+          <pre id="enrich-output">{
+  <span class="j-comment">// click "Try live" to run a real lookup</span>
+  <span class="j-key">"flood_zone"</span>:   <span class="j-str">"..."</span>,
+  <span class="j-key">"flood_sfha"</span>:   <span class="j-null">null</span>,
+  <span class="j-key">"census_tract"</span>: <span class="j-str">"..."</span>,
+  <span class="j-key">"county_fips"</span>:  <span class="j-str">"..."</span>
+}</pre>
+        </div>
       </div>
     </div>
   </div>
@@ -556,11 +643,28 @@
 <!-- COMPLIANCE FIELDS -->
 <section>
   <div class="container">
-    <div class="anchor-banner">
-      <span class="anchor-banner-icon">💡</span>
-      <div>
-        <strong>Manual flood zone determination costs $3–$15 per address.</strong>
-        <span> GeoClear Professional includes unlimited flood zone lookups for $249/mo. At 1,000 lookups/mo that's $0.25 each vs $3–$15.</span>
+    <div class="cost-calc">
+      <div class="cost-calc-title">💡 Calculate your savings</div>
+      <div class="cost-calc-row">
+        <span class="cost-calc-label">I verify</span>
+        <input type="number" class="cost-calc-input" id="calc-vol" value="1000" min="1" oninput="updateCostCalc()" />
+        <span class="cost-calc-label">addresses / month</span>
+      </div>
+      <div class="cost-calc-result">
+        <div class="cost-stat cost-stat-manual">
+          <div class="cost-stat-val" id="calc-manual">$3,000–$15,000</div>
+          <div class="cost-stat-label">Manual determination cost</div>
+        </div>
+        <div class="cost-divider"></div>
+        <div class="cost-stat cost-stat-geo">
+          <div class="cost-stat-val" id="calc-geo">$249/mo</div>
+          <div class="cost-stat-label">GeoClear Professional</div>
+        </div>
+        <div class="cost-divider"></div>
+        <div class="cost-stat cost-stat-save">
+          <div class="cost-stat-val" id="calc-save">92–98%</div>
+          <div class="cost-stat-label">Cost reduction</div>
+        </div>
       </div>
     </div>
 
@@ -618,6 +722,54 @@
         </tr>
       </tbody>
     </table>
+
+    <div class="fema-legend">
+      <div class="fema-legend-header" onclick="toggleLegend()">
+        <span>📌 FEMA flood zone reference — what each code means</span>
+        <span class="fema-legend-toggle" id="legend-toggle">Show ▾</span>
+      </div>
+      <div class="fema-legend-body" id="legend-body">
+        <div class="fema-zone-grid">
+          <div class="fema-zone-card fz-ae">
+            <div class="fema-zone-code">AE</div>
+            <div class="fema-zone-label">High risk — detailed</div>
+            <div class="fema-zone-desc">1% annual chance of flooding. Base Flood Elevation established. Most common SFHA zone. Flood insurance mandatory for federally-backed mortgages.</div>
+            <span class="fema-zone-sfha sfha-yes">SFHA — flood insurance required</span>
+          </div>
+          <div class="fema-zone-card fz-ve">
+            <div class="fema-zone-code">VE / V</div>
+            <div class="fema-zone-label">Coastal high hazard</div>
+            <div class="fema-zone-desc">High-velocity wave action in addition to flood risk. Stricter building standards apply. Most restrictive zone — found along coastlines.</div>
+            <span class="fema-zone-sfha sfha-yes">SFHA — flood insurance required</span>
+          </div>
+          <div class="fema-zone-card fz-a">
+            <div class="fema-zone-code">A / AO / AH</div>
+            <div class="fema-zone-label">High risk — approximate</div>
+            <div class="fema-zone-desc">1% annual chance of flooding. BFE not established for A zones. AO = shallow sheet-flow. AH = shallow ponding. Detailed study not yet performed.</div>
+            <span class="fema-zone-sfha sfha-yes">SFHA — flood insurance required</span>
+          </div>
+          <div class="fema-zone-card fz-x">
+            <div class="fema-zone-code">X (Shaded)</div>
+            <div class="fema-zone-label">Moderate risk</div>
+            <div class="fema-zone-desc">0.2% annual chance of flooding (500-year). Or areas protected by levee from 1% flood. Flood insurance not mandatory but recommended.</div>
+            <span class="fema-zone-sfha sfha-no">Outside SFHA</span>
+          </div>
+          <div class="fema-zone-card fz-x">
+            <div class="fema-zone-code">X (Unshaded)</div>
+            <div class="fema-zone-label">Minimal risk</div>
+            <div class="fema-zone-desc">Outside the 500-year floodplain. Minimal flood hazard. No mandatory flood insurance requirement. ~70% of US addresses fall here.</div>
+            <span class="fema-zone-sfha sfha-no">Outside SFHA</span>
+          </div>
+          <div class="fema-zone-card fz-d">
+            <div class="fema-zone-code">D</div>
+            <div class="fema-zone-label">Undetermined</div>
+            <div class="fema-zone-desc">Flood hazard not studied. Risk unknown. Common in rural areas without detailed FEMA maps. Lenders may require flood insurance determination.</div>
+            <span class="fema-zone-sfha sfha-unk">Risk undetermined</span>
+          </div>
+        </div>
+        <p style="margin-top:14px;font-size:0.78rem;color:var(--muted);">Source: <a href="https://www.fema.gov/flood-maps/national-flood-hazard-layer" target="_blank" style="color:var(--sky);">FEMA National Flood Hazard Layer</a>. GeoClear queries NFHL directly — same source your compliance team uses.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -679,5 +831,75 @@
   </div>
 </footer>
 
+<script>
+async function runEnrichDemo() {
+  const number = document.getElementById('demo-num').value.trim();
+  const street = document.getElementById('demo-street').value.trim();
+  const city   = document.getElementById('demo-city').value.trim();
+  const state  = document.getElementById('demo-state').value.trim().toUpperCase();
+  const out    = document.getElementById('enrich-output');
+  const btn    = document.getElementById('enrich-btn');
+  if (!street || !city || !state) return;
+  btn.textContent = 'Running…';
+  btn.disabled = true;
+  try {
+    const p = new URLSearchParams({ number, street, city, state });
+    const r = await fetch('/api/demo/enrich?' + p);
+    const d = await r.json();
+    if (!d.ok) {
+      out.innerHTML = `{\n  <span class="j-key">"error"</span>: <span class="j-str">"${(d.error||'lookup failed').replace(/"/g,'&quot;')}"</span>\n}`;
+      return;
+    }
+    const sfha = d.flood_sfha === true
+      ? '<span class="j-bool-true">true</span>'
+      : d.flood_sfha === false
+        ? '<span class="j-bool-false">false</span>'
+        : '<span class="j-null">null</span>';
+    const fz   = d.flood_zone       ? `<span class="j-str">"${d.flood_zone}"</span>`       : '<span class="j-null">null</span>';
+    const ct   = d.census_tract     ? `<span class="j-str">"${d.census_tract}"</span>`     : '<span class="j-null">null</span>';
+    const fips = d.fips             ? `<span class="j-str">"${d.fips}"</span>`             : '<span class="j-null">null</span>';
+    const addr = d.address && d.address.full_address ? d.address.full_address : '';
+    out.innerHTML = `{
+  <span class="j-comment">// FEMA NFHL — real-time lookup</span>
+  <span class="highlight-row"><span class="j-key">"flood_zone"</span>:  ${fz},</span>
+  <span class="highlight-row"><span class="j-key">"flood_sfha"</span>:  ${sfha},</span>
+
+  <span class="j-comment">// Census Bureau — HMDA</span>
+  <span class="highlight-row"><span class="j-key">"census_tract"</span>: ${ct},</span>
+  <span class="highlight-row"><span class="j-key">"county_fips"</span>:  ${fips},</span>
+
+  <span class="j-comment">// address</span>
+  <span class="j-key">"standardized"</span>: <span class="j-str">"${addr}"</span>,
+  <span class="j-key">"demo"</span>: <span class="j-bool-true">true</span>
+}`;
+  } catch(e) {
+    out.innerHTML = `{\n  <span class="j-key">"error"</span>: <span class="j-str">"request failed"</span>\n}`;
+  } finally {
+    btn.textContent = 'Try live — real FEMA + census data →';
+    btn.disabled = false;
+  }
+}
+
+function toggleLegend() {
+  const body   = document.getElementById('legend-body');
+  const toggle = document.getElementById('legend-toggle');
+  const open   = body.classList.toggle('open');
+  toggle.textContent = open ? 'Hide ▴' : 'Show ▾';
+}
+
+function updateCostCalc() {
+  const vol = parseInt(document.getElementById('calc-vol').value, 10) || 0;
+  const manLow  = vol * 3;
+  const manHigh = vol * 15;
+  const geo     = 249;
+  const saveLow  = manLow  > 0 ? Math.round((1 - geo / manLow)  * 100) : 0;
+  const saveHigh = manHigh > 0 ? Math.round((1 - geo / manHigh) * 100) : 0;
+
+  const fmt = n => n >= 1000 ? '$' + (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K' : '$' + n;
+  document.getElementById('calc-manual').textContent = fmt(manLow) + '–' + fmt(manHigh);
+  document.getElementById('calc-geo').textContent    = '$249/mo';
+  document.getElementById('calc-save').textContent   = saveLow > 0 ? saveLow + '–' + saveHigh + '%' : 'Free tier';
+}
+</script>
 </body>
 </html>

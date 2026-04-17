@@ -37,6 +37,8 @@ const structuresCache = new Map();
 const gnisCache       = new Map();
 const nhdCache        = new Map();
 const calfireCache    = new Map();
+const earthquakeCache = new Map();
+const droughtCache    = new Map();
 
 function pruneCache(map) {
   if (map.size > CACHE_MAX) {
@@ -56,6 +58,34 @@ function cacheKey(lat, lon) {
 
 // ── HTTP helper (follows up to 3 redirects, browser UA) ──────────
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+function httpGetText(url, timeoutMs = 8000, redirects = 3) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : require('http');
+    const parsed = new URL(url);
+    const opts = {
+      hostname: parsed.hostname,
+      path:     parsed.pathname + parsed.search,
+      headers:  { 'User-Agent': BROWSER_UA },
+      timeout:  timeoutMs,
+    };
+    const req = lib.get(opts, res => {
+      if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308)
+          && res.headers.location && redirects > 0) {
+        res.resume();
+        const next = res.headers.location.startsWith('http')
+          ? res.headers.location : new URL(res.headers.location, url).href;
+        resolve(httpGetText(next, timeoutMs, redirects - 1));
+        return;
+      }
+      const chunks = [];
+      res.on('data', d => chunks.push(d));
+      res.on('end', () => resolve(Buffer.concat(chunks).toString()));
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error(`Timeout: ${url}`)); });
+    req.on('error', reject);
+  });
+}
 
 function httpGet(url, timeoutMs = 8000, redirects = 3) {
   return new Promise((resolve, reject) => {
@@ -444,8 +474,128 @@ async function enrichPoint(lat, lon) {
   };
 }
 
+/**
+ * Earthquake risk via USGS ASCE 7-22 Seismic Design Maps.
+ * Returns Modified Maximum Considered Earthquake PGA (pgam) + Seismic Design Category.
+ * pgam normalized to 0–1: 0=negligible (<0.04g), 1=extreme (≥2.0g near major fault).
+ * Source: https://earthquake.usgs.gov/ws/designmaps/asce7-22.json
+ */
+async function getEarthquakeRisk(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = cacheKey(lat, lon);
+  if (earthquakeCache.has(key)) return earthquakeCache.get(key);
+
+  const url = `https://earthquake.usgs.gov/ws/designmaps/asce7-22.json` +
+    `?latitude=${lat}&longitude=${lon}&riskCategory=III&siteClass=C&title=geoclear`;
+
+  let result = null;
+  try {
+    const body = await httpGet(url, 15000);
+    const data = body?.response?.data;
+    if (data && data.pgam != null) {
+      const pgam  = parseFloat(data.pgam);
+      const sdc   = (data.sdc || '').toUpperCase();
+      // Normalize pgam: 0g→0, 0.5g→0.29, 1g→0.5, 2g→0.75, ≥3g→1.0 (log scale)
+      const score = Math.min(1, pgam > 0 ? (Math.log(1 + pgam * 10) / Math.log(31)) : 0);
+      const SDC_LABEL = { A: 'Negligible', B: 'Low', C: 'Moderate', D: 'High', E: 'Very High', F: 'Extreme' };
+      result = {
+        pgam:        +pgam.toFixed(3),
+        sdc,
+        risk_score:  +score.toFixed(3),
+        risk_label:  SDC_LABEL[sdc] || 'Unknown',
+      };
+    }
+  } catch (_) {}
+
+  pruneCache(earthquakeCache);
+  earthquakeCache.set(key, result);
+  return result;
+}
+
+/**
+ * Drought intensity via USDA Drought Monitor county statistics.
+ * Aggregates last 26 weeks of weekly area-percentage data (D0–D4) for a county FIPS.
+ * risk_score = mean fraction of county area in severe drought (D2+D3+D4) over 26 weeks.
+ * Source: https://usdmdataservices.unl.edu/api/CountyStatistics/
+ */
+async function getDroughtRisk(countyFips) {
+  if (!countyFips) return null;
+  const key = `drought:${countyFips}`;
+  if (droughtCache.has(key)) return droughtCache.get(key);
+
+  // Last 26 weeks
+  const endDate   = new Date();
+  const startDate = new Date(endDate - 26 * 7 * 24 * 3600 * 1000);
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  const url = `https://usdmdataservices.unl.edu/api/CountyStatistics/GetDroughtSeverityStatisticsByArea` +
+    `?aoi=${countyFips}&startdate=${fmt(startDate)}&enddate=${fmt(endDate)}&statisticsType=1`;
+
+  let result = null;
+  try {
+    const body = await httpGetText(url, 15000);
+    // Response is CSV text: MapDate,FIPS,County,State,None,D0,D1,D2,D3,D4,...
+    // CSV parser handles quoted fields (e.g. "4,078.02" in the None/area column)
+    const parseCSVRow = (line) => {
+      const out = []; let cur = ''; let inQ = false;
+      for (const ch of line) {
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === ',' && !inQ) { out.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      out.push(cur);
+      return out;
+    };
+    const lines = body.trim ? body.trim().split('\n') : [];
+    if (lines.length > 1) {
+      const header = parseCSVRow(lines[0]);
+      const idxNone = header.indexOf('None');
+      const idxD0   = header.indexOf('D0');
+      const idxD1   = header.indexOf('D1');
+      const idxD2   = header.indexOf('D2');
+      const idxD3   = header.indexOf('D3');
+      const idxD4   = header.indexOf('D4');
+      const rows  = lines.slice(1).filter(l => l.trim());
+      // Values are area in sq miles; normalize each row by its total area
+      let sumRatio = 0;
+      let currentLevel = 'None';
+      for (const row of rows) {
+        const cols  = parseCSVRow(row);
+        const none  = parseFloat(cols[idxNone]) || 0;
+        const d0    = parseFloat(cols[idxD0])   || 0;
+        const d1    = parseFloat(cols[idxD1])   || 0;
+        const d2    = parseFloat(cols[idxD2])   || 0;
+        const d3    = parseFloat(cols[idxD3])   || 0;
+        const d4    = parseFloat(cols[idxD4])   || 0;
+        const total = none + d0 + d1 + d2 + d3 + d4;
+        if (total > 0) sumRatio += (d2 + d3 + d4) / total;
+        // Most recent week is first row after header
+        if (row === rows[0]) {
+          if (d4 > 0) currentLevel = 'D4';
+          else if (d3 > 0) currentLevel = 'D3';
+          else if (d2 > 0) currentLevel = 'D2';
+          else if (d1 > 0) currentLevel = 'D1';
+          else if (d0 > 0) currentLevel = 'D0';
+          else currentLevel = 'None';
+        }
+      }
+      const avgRatio = rows.length > 0 ? sumRatio / rows.length : 0;
+      result = {
+        risk_score:    +Math.min(1, avgRatio).toFixed(3),
+        current_level: currentLevel,
+        weeks_sampled: rows.length,
+      };
+    }
+  } catch (_) {}
+
+  // Cache for 24h (drought changes weekly)
+  droughtCache.set(key, result);
+  setTimeout(() => droughtCache.delete(key), 24 * 3600 * 1000);
+  return result;
+}
+
 module.exports = {
   getCensusTract, getFEMAFloodZone, getElevation,
   getNearestStructures, getNearestGNIS, getNearestWaterway, getCALFireFHSZ,
+  getEarthquakeRisk, getDroughtRisk,
   enrichPoint,
 };
