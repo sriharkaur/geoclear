@@ -82,6 +82,7 @@ function httpGetText(url, timeoutMs = 8000, redirects = 3) {
         return;
       }
       const chunks = [];
+      res.on('error', () => {});
       res.on('data', d => chunks.push(d));
       res.on('end', () => { clearTimeout(timer); resolve(Buffer.concat(chunks).toString()); });
     });
@@ -114,6 +115,7 @@ function httpGet(url, timeoutMs = 8000, redirects = 3) {
         return;
       }
       const chunks = [];
+      res.on('error', () => {});
       res.on('data', d => chunks.push(d));
       res.on('end', () => {
         clearTimeout(timer);
