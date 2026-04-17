@@ -14,6 +14,7 @@
 | Fuzzy / typo-tolerant search | `GET /api/address?fuzzy=true` | Calls `findAddressFuzzy()` in query.js |
 | Autocomplete / typeahead | `GET /api/suggest` | `?q=&state=&zip=&limit=` — 5-min TTL cache |
 | Bulk address verify | `POST /api/address/bulk` | Array input, max 1,000 per request, synchronous |
+| CSV address verify | `POST /api/address/csv` | `Content-Type: text/csv`; max 5,000 rows, 10MB; auto-detects columns (number/street/city/state/zip + aliases); returns same CSV + geo_verified, nad_uuid, confidence, residential, fips, timezone, coverage, match_type |
 | ZIP code lookup | `GET /api/zip/:zip` | Returns ZIP metadata |
 | State summary | `GET /api/state/:code` | Address count + metadata + `coverage` + `coverage_source` per state |
 | All states | `GET /api/states` | Sorted by address count |

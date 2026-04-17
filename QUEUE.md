@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 21 — data catalog created at docs/DATA-CATALOG.md; CAL FIRE ArcGIS URL still broken)_
+_Last updated: 2026-04-17 (session 22 — data strategy section added: 15 additional data sources prioritized across 3 tiers, 6 platform capability decisions)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
@@ -104,7 +104,7 @@ _Last updated: 2026-04-17 (session 21 — data catalog created at docs/DATA-CATA
 
 ## PRODUCT BACKLOG — Revenue-Blocking (do after first paying customer)
 
-- [ ] **CSV upload → enriched CSV download** — Ops Owen is entirely blocked without this. Input: CSV with address columns. Output: same CSV + `confidence`, `flood_zone`, `census_tract`, `residential`, `fips` appended. Endpoint: `POST /api/address/csv`. UI: drag-drop in portal. *Unblocks entire Ops Owen persona + Bulk Credits Pack.*
+- [x] **CSV upload → enriched CSV download** ✅ 2026-04-17 — `POST /api/address/csv` (text/csv, max 5K rows, 10MB). Auto-detects columns. Returns: geo_verified, nad_uuid, confidence, residential, fips, timezone, coverage, match_type. RFC 4180 inline. **Pending**: portal drag-drop UI + pro-tier external enrichment (flood_zone, census_tract).
 - [ ] **Add metered cost calculator to pricing slider** — "500K addresses × $0.002 = $1,000." Add "one-time cleanup" framing alongside monthly subscription. File: `public/landing.html`
 - [ ] **Usage dashboard for customers** — self-serve usage over time in portal (calls/day, quota used, cost accrued for metered). File: `public/portal.html`
 - [ ] **API usage analytics endpoint** — `GET /v1/admin/analytics`: requests/day by tier, top keys by volume, error rate. *(also in Phase 1 Week 4 — done there, remove when complete)*
@@ -134,6 +134,66 @@ _Last updated: 2026-04-17 (session 21 — data catalog created at docs/DATA-CATA
 Open:
 - [ ] Fill remaining state gaps — AL, AK (not in Overture — need state GIS portals)
 - [ ] NAD r23 quarterly update (~June 2026) — run on staging, merge to prod
+
+---
+
+## DATA STRATEGY — Additional Sources & Platform Capabilities
+
+> **Context:** These items cover (1) additional data sources that extend GeoClear's addressable use cases and competitive moat, and (2) platform architecture decisions that determine whether GeoClear stays an enrichment API or becomes the authoritative geospatial intelligence layer for American commerce. Think at Sundar/Zuck/Elon scale: Google built Maps as a platform layer everything else runs on. That's the model here — not "more enrichment fields" but "the ground truth that every proptech, insurtech, and fintech must connect to."
+
+### A. Additional Data Sources — Prioritized by Revenue Impact
+
+> Add each to `docs/DATA-CATALOG.md` when imported. Update `data_sources` table in `keys.db` via `PATCH /v1/admin/data-sources/:source_id`.
+
+#### Tier 1 — Ship by $10K MRR (high ROI, all free federal sources)
+
+- [ ] **Census ACS Vacancy + Demographics by tract** — US Census American Community Survey. Vacancy rate, median income, population density, age distribution by census tract. Free. Import: `census-acs-import.js`. Unlocks: vacancy dimension of `/v1/risk` (currently placeholder), lending redlining detection, real estate demand signals. Already have the census tract from TIGER — this is the payload that makes it valuable. Source: `data.census.gov` (B25002 Occupancy Status, B19013 Median Income, B01003 Population). ~74,000 tracts. Cadence: annual (5-year ACS).
+- [ ] **EPA EJScreen — Environmental Justice Screening** — EPA's environmental justice index by census block group. 11 environmental indicators: air toxics, proximity to Superfund sites, RMP facilities, wastewater discharge, lead paint, traffic, ozone, PM2.5, diesel PM, underground storage tanks, proximity to hazardous waste. Free. Source: `https://ejscreen.epa.gov/mapper/ejscreenRESTbroker.aspx`. Live API (lat/lon → block group → EJ scores). Unlocks: environmental risk dimension on `/v1/risk`, ESG/impact investing use case, environmental due diligence for lenders. Target customer: climate-focused lenders, ESG funds, insurance underwriters.
+- [ ] **USPS No-Stat / Delivery Statistics (CASS-adjacent)** — USPS publishes No-Stat address counts by ZIP+carrier route. No-Stat = addresses that don't receive regular delivery (vacant, seasonal, under construction). Free public data. Source: USPS Address Management System public release. Unlocks: vacancy dimension in `/v1/risk` with real data instead of heuristic. Note: full CASS certification (3–6 months, $$$) needed for `/v1/address` to return CASS-standardized output — track separately.
+- [ ] **USGS National Hydrography Dataset (NHD)** — Rivers, streams, lakes, reservoirs, coastline. Distance to nearest waterbody by lat/lon. Free. Source: `https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer`. Unlocks: flood risk context (proximity to water + FEMA zone = much stronger flood signal), waterfront property premium detection. 1M+ features.
+- [ ] **HUD Fair Market Rents + Housing Choice Voucher zones** — HUD publishes FMR by ZIP and metro area annually. Also: Opportunity Zones (QCT + DDA designations) by census tract. Free. Source: `https://www.huduser.gov/portal/datasets/fmr.html`. Unlocks: rental market intelligence, affordable housing compliance, LIHTC eligibility for lenders.
+- [ ] **Overture Maps Places (POIs)** — Same Overture data source we already use for addresses, but the `places` theme. 59M+ global POIs (restaurants, banks, hospitals, schools, stores) with name, category, brand, hours, website. Free (CDLA 2.0). Source: `s3://overturemaps-us-west-2/release/.../theme=places`. Unlocks: commercial density score per address, neighborhood character detection, retail accessibility index. The Overture S3 pipeline is already built — this is a schema extension, not a new pipeline.
+- [ ] **FEMA Disaster Declarations** — FEMA declares major disasters by county. Historical record going back to 1953. Free. Source: `https://www.fema.gov/api/open/v2/disasterDeclarations`. Import to `risk.db`. Unlocks: long-term disaster frequency per county beyond NOAA storm events — includes earthquakes, droughts, ice storms, etc. that NOAA misses.
+
+#### Tier 2 — Ship by $50K MRR (require more pipeline work or cost/legal review)
+
+- [ ] **County Parcel / Cadastral Data (REGRID or county GIS portals)** — Property boundaries, ownership, assessed value, land use code, year built, building sq ft, lot size, zoning. This is the **single highest-value dataset GeoClear doesn't have**. Makes every address a financial and physical asset record. Sources: (a) free from county GIS portals (~3,100 counties — painful); (b) REGRID ($$$, covers 98% of US parcels, API); (c) Microsoft USBuildingFootprints partially overlaps. Unlocks: property intelligence endpoint `/v1/property`, lending AVM input, real estate comp analysis, insurance replacement cost estimation. Note: REGRID likely $20K+/year — evaluate after $25K MRR.
+- [ ] **First Street Foundation — Climate Risk (Foundation API)** — Parcel-level flood, fire, heat, drought, wind risk with 30-year projections. The only source with climate-forward risk (FEMA NFHL is historical, First Street is predictive). Commercial API ($$$). Unlocks: climate risk score addition to `/v1/risk`, forward-looking insurance underwriting. Evaluate after $25K MRR. Direct competitor to our disaster score but ~10× more granular.
+- [ ] **ATTOM / CoreLogic Property Data** — Commercial data provider. Ownership history, sales history, deed transfers, liens, foreclosures, MLS history. Expensive ($25K–$100K+/year). Unlocks: complete property intelligence layer. Evaluate after $50K MRR or enterprise contract.
+- [ ] **FCC Broadband Coverage Map** — Already in product backlog. Moving here: FCC published new fabric-based broadband map in 2023 (545M locations). Free. Source: `broadbandmap.fcc.gov`. Unlocks: broadband tier by address (BEAD program demand, $42B addressable). ISP-level coverage data.
+- [ ] **Bureau of Transportation Statistics (BTS) — National Transit Map** — Transit stops, routes, frequency by lat/lon. Free. Source: NTD + GTFS feeds. Unlocks: walkability/transit accessibility score, urban vs suburban classification refinement.
+- [ ] **USGS Earthquake Hazard (NSHM)** — National Seismic Hazard Model. Peak ground acceleration (PGA) probability by lat/lon. Free. Source: `https://earthquake.usgs.gov/hazards/hazmaps/`. Unlocks: seismic risk dimension on `/v1/risk`. Especially valuable for CA, WA, OR, AK, NM — states with significant quake exposure.
+- [ ] **OpenStreetMap Buildings + Land Use** — Building outlines, roof types, land use (residential/commercial/industrial/park). Free (ODbL — same license issue as OpenAddresses, needs legal review). 70M+ US building outlines. Unlocks: building density per block, land use classification, green space proximity. Better coverage than Microsoft footprints in dense urban areas.
+
+#### Tier 3 — Platform Scale (after $100K MRR or strategic partnership)
+
+- [ ] **NASA/NOAA Climate Projections (CMIP6)** — 30-year temperature, precipitation, sea level projections by grid cell. Free. Source: NASA SEDAC. Unlocks: long-horizon climate risk for insurance/lending. Requires building a raster lookup layer.
+- [ ] **Zoning Data (aggregated)** — Municipal zoning codes: residential, commercial, industrial, agricultural, mixed-use. No national source exists — requires aggregating ~20,000 municipalities. Options: (a) build scraper; (b) ZoningPoint ($$$); (c) Regrid includes some zoning data. Unlocks: development potential, land use compliance, ADU eligibility detection. Enormous real estate value.
+- [ ] **School District Boundaries + Ratings** — NCES school district boundaries (free). GreatSchools ratings (commercial). Unlocks: highest-signal amenity for residential real estate and family persona targeting.
+- [ ] **Walk Score / Transit Score API** — Walkability, bikeability, transit scores per address. Commercial ($$$). Unlocks: lifestyle/amenity scoring. Strong signal for residential real estate customers.
+- [ ] **SafeGraph / Foursquare Places (mobility + POI)** — Foot traffic, visit patterns, POI data. Commercial. Unlocks: economic activity signals per address, retail viability scoring. Expensive but creates unique behavioral layer.
+
+---
+
+### B. Platform Capability Decisions
+
+> These are architectural choices that determine whether GeoClear becomes a data platform or stays an enrichment endpoint. Decide each explicitly — not deciding is deciding.
+
+- [ ] **[DECISION NEEDED] GeoServer / OGC Standards layer** — GeoServer exposes data via WFS, WMS, WCS (OGC standards). Enterprise GIS customers (government, utilities, large insurers) expect OGC-compliant APIs — they often can't integrate REST JSON-only APIs into their ArcGIS/QGIS workflows. **Recommendation:** Yes, but after $50K MRR. Adds significant integration surface area. File a DECISIONS.md entry when this decision is made. Reference: `geoserver.org`.
+- [ ] **[DECISION NEEDED] GeoPlatform.gov integration** — Federal data gateway providing programmatic access to authoritative US geospatial datasets via standards-based APIs. High-value for federal contracts and government customers. **Recommendation:** Yes — integrate as a data source aggregator (replace some of our individual agency API calls with GeoPlatform endpoints). Low risk, no cost. Review `geoapi.geoplatform.gov` API when building Tier 1 sources above. Adopt FAIR principles (Findable, Accessible, Interoperable, Reusable) as design constraints on `/v1/enrich` response schema.
+- [ ] **[SKIP] STAC (SpatioTemporal Asset Catalog)** — Standard for discovering satellite imagery and temporal raster datasets. Not applicable to address intelligence in current form. Only relevant if we add historical/temporal address data (e.g., "how has flood risk at this address changed over 10 years?"). **Decision: skip until temporal enrichment is on roadmap.** Revisit at $100K MRR.
+- [ ] **[SKIP] Tiling / Tilegarden** — Serverless map tile rendering. Only needed if we build a map visualization product. We are an API; our customers build maps. **Decision: skip entirely.** If customers need tiles, recommend MapTiler or Mapbox as complementary tools.
+- [ ] **[DECISION NEEDED] Knowledge Graph / RDF layer** — Representing addresses as semantic nodes linked to risk factors, census data, zoning, parcel ownership via RDF triples and SPARQL queries. This is the "Google Knowledge Graph for addresses" play. High complexity, high moat. **Recommendation:** Design for it — use `nad_uuid` as a stable URI for every address now, which makes a future RDF layer trivially buildable. Actual RDF exposure: defer until $100K MRR. Reference: `kb.geoplatform.gov/knowledge-graphs/rdf-data.html`.
+- [ ] **[ACTION] Adopt `nad_uuid` as canonical address URI** — Currently `nad_uuid` is used internally. Expose it as a stable, permanent address identifier in all API responses (`"id": "NAD:us-{nad_uuid}"`). This is the foundation for: (a) knowledge graph, (b) OGC feature IDs, (c) customer-side stable references across API calls. No data change — just schema/response change. File as a feature ticket.
+
+---
+
+### C. Competitive Intelligence Watch List
+
+- [ ] **Monthly: check if SmartyStreets adds flood zone or census tract** — If yes: reassess Pro tier pricing and GTM messaging immediately. (Already in Phase 3 — duplicate reminder here for data strategy context.)
+- [ ] **Quarterly: review Overture Maps new themes** — Overture is adding buildings, transportation, base maps. Any new theme that overlaps our roadmap: evaluate import.
+- [ ] **Quarterly: check Google Maps Platform pricing** — Google has census tract in Places API. If they bundle it into a cheaper tier, our compliance moat narrows. Watch closely.
+- [ ] **Crunchbase alerts** — "address verification" + "property data" + "climate risk" funding rounds. Funded competitors = new entrants with resources.
 
 ---
 
