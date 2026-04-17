@@ -796,6 +796,7 @@ app.get('/api/enrich', async (req, res) => {
 app.get('/api/ping', (req, res) => res.json({ ok: true }));
 
 app.get('/api/health', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   if (!nad.isReady()) return res.json({ status: 'starting', addresses: null, version: '1.0.0' });
   const hit = cache.get('stats');
   res.json({ status: 'ok', addresses: hit ? hit.val.addresses : null, version: '1.0.0' });
