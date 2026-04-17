@@ -9,6 +9,10 @@
 
 ## Unreleased
 
+- **RUNBOOK-ENV-VARS.md** — full env var audit checklist per service (prod + staging): required vars, Node version pin verification, cache-clear deploy procedure, failure mode table. Covers Q-144 + Q-145.
+- **risk.db startup logging** — `onListening()` now logs `[startup] risk.db: ✓ ready / ✗ not-found` alongside nad.db.
+- **risk_data_unavailable error** — `/v1/risk` and `/api/demo/risk` return `{"ok":false,"error":"risk_data_unavailable"}` (HTTP 503) when risk.db is absent; previously returned silent nulls across all risk fields. Covers Q-146.
+
 - **Climate Risk Score Phase 1** — `earthquake-import.js` (USGS ASCE7-22, 3,221 counties → `earthquake_risk` table) + `drought-import.js` (USDA Drought Monitor 26-week avg, 3,221 counties → `drought_risk` table); `risk-data.js` adds `getEarthquakeRisk()` + `getDroughtRisk()` synchronous DB lookups; `/v1/risk` uses DB-first with live API fallback; `coverage()` now reports earthquake + drought; `risk_score`, `pgam`, `sdc`, `risk_label` per county; `risk_score`, `current_level`, `weeks_sampled` per county. Run imports on staging then upload to prod.
 - **Compliance page — live FEMA + census demo** — hero-right interactive widget: type any US address → real `/api/demo/enrich` response shows `flood_zone`, `flood_sfha`, `census_tract`, `county_fips`. FEMA zone legend (expandable AE/VE/A/X/D reference with SFHA status). Cost calculator: input monthly volume → instant manual vs GeoClear savings. Auth bypass for all `/api/demo/*` paths (no key required).
 - **Landing page compliance callout** — dedicated section between verticals and pricing targeting mortgage/insurance personas: HMDA, NFIP, and CRA framing with "See compliance features →" CTA.

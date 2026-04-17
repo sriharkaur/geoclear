@@ -221,6 +221,9 @@ Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-G
 | UptimeRobot monitors | IDs 802836799 (API Health) + 802836800 (Landing Page) | 5-min interval; 90-day uptime 99.963%, avg response 131ms |
 | Status proxy endpoint | `GET /api/status` | Server-side UptimeRobot proxy — real uptime ratios (1d/7d/30d/90d) + avg 24h response; API key never in browser |
 | Health check | `GET /api/health` | Returns DB status + address count (lazy: null until /api/stats warms cache) |
+| **Env var runbook** | `docs/runbooks/RUNBOOK-ENV-VARS.md` | Required env vars per service, Node pin verification, cache-clear deploy checklist, failure mode table |
+| **risk.db startup log** | `[startup] risk.db: ready/not-found` | Logged in `onListening()` alongside nad.db status |
+| **risk_data_unavailable error** | `/v1/risk`, `/api/demo/risk` | Returns HTTP 503 `{"error":"risk_data_unavailable"}` when risk.db absent; no longer returns silent nulls |
 | Coverage stats | `GET /api/stats` | Breakdown by state; warms 1-hr address count cache |
 | Demo widget | `GET /api/demo` | IP rate-limited 10/hr, no key required |
 | OpenAPI spec | `openapi.yaml` repo root | OAS 3.0, all public endpoints — ready to upload to RapidAPI Provider Hub |

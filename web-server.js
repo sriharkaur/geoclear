@@ -910,6 +910,7 @@ app.get('/v1/risk', async (req, res) => {
     });
   }
   if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+  if (!riskData.isReady()) return res.status(503).json({ ok: false, error: 'risk_data_unavailable' });
 
   let { nad_uuid, street, number, city, state, zip, lat, lon } = req.query;
 
@@ -1623,6 +1624,7 @@ const demoLimiter = rateLimit({
 // Risk Score demo — no API key, same IP rate limit as /api/demo
 app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+  if (!riskData.isReady()) return res.status(503).json({ ok: false, error: 'risk_data_unavailable' });
   const { street, number, city, state, zip } = req.query;
   if (!street && !zip) return err(res, 'Provide street or zip.');
   // Parse "123 Main St" into addNumber=123 + streetName="Main St" if caller didn't split them.
@@ -1980,12 +1982,16 @@ function onListening() {
     // The first /api/health or /api/stats call will warm the 1-hr cache instead.
     dbStatus = `✓ ready`;
   }
+  const riskStatus = riskData.isReady() ? '✓ ready' : '✗ not-found (risk_data_unavailable responses expected)';
+  console.log(`[startup] nad.db  : ${dbStatus}`);
+  console.log(`[startup] risk.db : ${riskStatus}`);
   const keyStats = keys.stats();
   console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);
   console.log(`  URL       : ${BASE_URL}`);
   console.log(`  Port      : ${PORT}`);
-  console.log(`  DB Status : ${dbStatus}`);
+  console.log(`  nad.db    : ${dbStatus}`);
+  console.log(`  risk.db   : ${riskStatus}`);
   console.log(`  API Keys  : ${keyStats.active} active`);
   console.log(`    GET  /api/address?street=Main&state=TX`);
   console.log(`    GET  /api/health\n`);
