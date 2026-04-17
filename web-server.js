@@ -1566,10 +1566,11 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
     const m = street.match(/^(\d+[A-Za-z]?)\s+(.+)/);
     if (m) { addNum = m[1]; stName = m[2]; }
   }
-  // Strip direction suffixes (NW, NE, SW, SE, North, South…) and street types (St, Ave, Blvd…)
-  // so "10th Street NW" matches st_name "10TH" in NAD.
+  // Strip direction prefixes (N Pine St → Pine) and suffixes (10th St NW → 10th)
+  // and street types so input matches st_name in NAD.
   if (stName) {
     stName = stName
+      .replace(/^(northwest|northeast|southwest|southeast|nw|ne|sw|se|north|south|east|west|[nsew])\.?\s+/i, '')
       .replace(/\s+(northwest|northeast|southwest|southeast|nw|ne|sw|se|north|south|east|west)\.?\s*$/i, '')
       .replace(/\s+(street|avenue|boulevard|drive|road|lane|court|place|way|circle|terrace|parkway|highway|st|ave|blvd|dr|rd|ln|ct|pl|cir|ter|pkwy|hwy)\.?\s*$/i, '')
       .trim();
@@ -1694,9 +1695,10 @@ app.get('/api/demo/enrich', demoLimiter, async (req, res) => {
     const m = street.match(/^(\d+[A-Za-z]?)\s+(.+)/);
     if (m) { addNum = m[1]; stName = m[2]; }
   }
-  // Strip direction suffixes and street types so "10th Street NW" matches st_name "10TH"
+  // Strip direction prefixes (N Pine St → Pine) and suffixes, and street types
   if (stName) {
     stName = stName
+      .replace(/^(northwest|northeast|southwest|southeast|nw|ne|sw|se|north|south|east|west|[nsew])\.?\s+/i, '')
       .replace(/\s+(northwest|northeast|southwest|southeast|nw|ne|sw|se|north|south|east|west)\.?\s*$/i, '')
       .replace(/\s+(street|avenue|boulevard|drive|road|lane|court|place|way|circle|terrace|parkway|highway|st|ave|blvd|dr|rd|ln|ct|pl|cir|ter|pkwy|hwy)\.?\s*$/i, '')
       .trim();
