@@ -51,8 +51,18 @@ Enrichments via separate call (`GET /api/enrich?lat=&lon=` or `?nad_uuid=`):
 | `flood_sfha` | FEMA NFHL API | `true` if in Special Flood Hazard Area |
 | `flood_community` | FEMA NFHL API | Community name |
 | `elevation_ft` | USGS 3DEP EPQS | Ground elevation in feet; 1m lidar resolution where available |
+| `nearest_hospital_name` | USGS Structures (TNM) | Name of nearest hospital |
+| `nearest_hospital_mi` | USGS Structures (TNM) | Distance to nearest hospital in miles |
+| `nearest_fire_station_name` | USGS Structures (TNM) | Name of nearest fire station |
+| `nearest_fire_station_mi` | USGS Structures (TNM) | Distance to nearest fire station in miles |
+| `nearest_place_name` | USGS GNIS (TNM) | Nearest named populated place |
+| `nearest_place_type` | USGS GNIS (TNM) | Feature class (e.g. "Populated Place") |
+| `nearest_place_mi` | USGS GNIS (TNM) | Distance to nearest place in miles |
+| `nearest_waterway_name` | NHD+ HR (TNM) | Nearest named stream or river |
+| `nearest_waterway_ftype` | NHD+ HR (TNM) | NHD feature type code (e.g. 558=ArtificialPath, 460=LakePond) |
+| `nearest_waterway_mi` | NHD+ HR (TNM) | Distance to nearest waterway in miles |
 
-All APIs are US federal — no key, no cost. Results cached in-process (LRU, ~10K entries).
+All APIs are US federal — no key, no cost. Results cached in-process (LRU, ~10K entries per source).
 
 ---
 

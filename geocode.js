@@ -1,25 +1,29 @@
 'use strict';
 /**
- * NAD Point Enrichment — Census Tract + FEMA Flood Zone + Elevation
- * =================================================================
- * Three free US Federal Government APIs called in parallel. No keys.
+ * NAD Point Enrichment — Census + FEMA + Elevation + Structures + GNIS + NHD
+ * ===========================================================================
+ * Six free US Federal Government APIs called in parallel. No keys required.
  *
  * Census Bureau Geocoder (TIGER/Line):
  *   https://geocoding.geo.census.gov/geocoder/geographies/coordinates
- *   Returns: census tract, block group, block code, GEOID, county FIPS
  *
  * FEMA NFHL (National Flood Hazard Layer):
  *   https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query
- *   Returns: flood zone code (AE, X, AH…), SFHA flag, community name
  *
  * USGS 3DEP Elevation Point Query Service (EPQS):
  *   https://epqs.nationalmap.gov/v1/json?x={lon}&y={lat}&units=Feet
- *   Returns: ground elevation in feet, 1m lidar resolution where available
  *
- * Usage:
- *   const { getCensusTract, getFEMAFloodZone, enrichPoint } = require('./geocode.js');
- *   const result = await enrichPoint(38.878, -77.175);
- *   // { tract:'4518.01', flood_zone:'X', sfha:false, elevation_ft:72.24 }
+ * USGS Structures (The National Map):
+ *   https://carto.nationalmap.gov/arcgis/rest/services/structures/MapServer
+ *   Layer 14 = Hospitals, Layer 16 = Fire Stations
+ *
+ * USGS GNIS Geographic Names (The National Map):
+ *   https://carto.nationalmap.gov/arcgis/rest/services/geonames/MapServer
+ *   Layer 3 = Populated Places
+ *
+ * NHD+ High Resolution Hydrography (The National Map):
+ *   https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer
+ *   Layer 3 = NetworkNHDFlowline (named streams/rivers)
  */
 
 const https = require('https');
@@ -29,6 +33,9 @@ const CACHE_MAX = 10_000;
 const censusCache     = new Map();
 const femaCache       = new Map();
 const elevationCache  = new Map();
+const structuresCache = new Map();
+const gnisCache       = new Map();
+const nhdCache        = new Map();
 
 function pruneCache(map) {
   if (map.size > CACHE_MAX) {
@@ -201,32 +208,198 @@ async function getElevation(lat, lon) {
   return result;
 }
 
+// ── ArcGIS spatial helpers ────────────────────────────────────────
+
+function haversineMi(lat1, lon1, lat2, lon2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return Math.round(R * 2 * Math.asin(Math.sqrt(a)) * 10) / 10;
+}
+
+// Extract [lat, lon] from esriGeometryPoint, esriGeometryMultipoint, or esriGeometryPolyline
+function geomLatLon(g) {
+  if (!g) return null;
+  if (g.x !== undefined && g.y !== undefined) return [g.y, g.x];         // Point
+  if (g.points?.length)                        return [g.points[0][1], g.points[0][0]]; // Multipoint
+  if (g.paths?.length && g.paths[0]?.length)   return [g.paths[0][0][1], g.paths[0][0][0]]; // Polyline
+  return null;
+}
+
+async function arcgisBoxQuery(serviceUrl, layer, lat, lon, outFields, delta, where) {
+  const env = encodeURIComponent(JSON.stringify({
+    xmin: lon - delta, ymin: lat - delta,
+    xmax: lon + delta, ymax: lat + delta,
+    spatialReference: { wkid: 4326 },
+  }));
+  const whereClause = where ? `&where=${encodeURIComponent(where)}` : '';
+  const url = `${serviceUrl}/${layer}/query` +
+    `?geometry=${env}&geometryType=esriGeometryEnvelope` +
+    `&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects` +
+    `${whereClause}&outFields=${outFields}` +
+    `&returnGeometry=true&f=json&resultRecordCount=20`;
+  const body = await httpGet(url, 8000);
+  return body?.features || [];
+}
+
+function findNearest(lat, lon, features, nameField) {
+  let bestDist = Infinity;
+  let bestName = null;
+  for (const f of features) {
+    const ll = geomLatLon(f.geometry);
+    if (!ll) continue;
+    const d = haversineMi(lat, lon, ll[0], ll[1]);
+    if (d < bestDist) {
+      bestDist = d;
+      bestName = f.attributes?.[nameField] || null;
+    }
+  }
+  return bestDist < Infinity ? { name: bestName, mi: bestDist } : null;
+}
+
+// ── USGS Structures — hospitals + fire stations ───────────────────
+
+const STRUCTURES_BASE = 'https://carto.nationalmap.gov/arcgis/rest/services/structures/MapServer';
+
+async function getNearestStructures(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = cacheKey(lat, lon);
+  if (structuresCache.has(key)) return structuresCache.get(key);
+
+  let result = {
+    nearest_hospital_name: null, nearest_hospital_mi: null,
+    nearest_fire_station_name: null, nearest_fire_station_mi: null,
+  };
+  try {
+    const [hosp, fire] = await Promise.allSettled([
+      arcgisBoxQuery(STRUCTURES_BASE, 14, lat, lon, 'name', 0.5),
+      arcgisBoxQuery(STRUCTURES_BASE, 16, lat, lon, 'name', 0.5),
+    ]);
+    if (hosp.status === 'fulfilled') {
+      const h = findNearest(lat, lon, hosp.value, 'name');
+      if (h) { result.nearest_hospital_name = h.name; result.nearest_hospital_mi = h.mi; }
+    }
+    if (fire.status === 'fulfilled') {
+      const fs = findNearest(lat, lon, fire.value, 'name');
+      if (fs) { result.nearest_fire_station_name = fs.name; result.nearest_fire_station_mi = fs.mi; }
+    }
+  } catch (_) {}
+
+  pruneCache(structuresCache);
+  structuresCache.set(key, result);
+  return result;
+}
+
+// ── USGS GNIS Geographic Names ────────────────────────────────────
+
+async function getNearestGNIS(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = cacheKey(lat, lon);
+  if (gnisCache.has(key)) return gnisCache.get(key);
+
+  let result = { nearest_place_name: null, nearest_place_type: null, nearest_place_mi: null };
+  try {
+    const BASE = 'https://carto.nationalmap.gov/arcgis/rest/services/geonames/MapServer';
+    const features = await arcgisBoxQuery(BASE, 3, lat, lon, 'gaz_name,gaz_featureclass', 0.25);
+    let bestDist = Infinity;
+    for (const f of features) {
+      const ll = geomLatLon(f.geometry);
+      if (!ll) continue;
+      const d = haversineMi(lat, lon, ll[0], ll[1]);
+      if (d < bestDist) {
+        bestDist = d;
+        result.nearest_place_name = f.attributes?.gaz_name || null;
+        result.nearest_place_type = f.attributes?.gaz_featureclass || null;
+        result.nearest_place_mi   = d;
+      }
+    }
+  } catch (_) {}
+
+  pruneCache(gnisCache);
+  gnisCache.set(key, result);
+  return result;
+}
+
+// ── NHD Hydrography — nearest named waterway ─────────────────────
+
+async function getNearestWaterway(lat, lon) {
+  if (!lat || !lon) return null;
+  const key = cacheKey(lat, lon);
+  if (nhdCache.has(key)) return nhdCache.get(key);
+
+  let result = { nearest_waterway_name: null, nearest_waterway_ftype: null, nearest_waterway_mi: null };
+  try {
+    const BASE = 'https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer';
+    // ftype 428 = Pipeline — exclude non-hydrographic features; require a GNIS name
+    const features = await arcgisBoxQuery(BASE, 3, lat, lon, 'gnis_name,ftype', 0.1,
+      "gnis_name IS NOT NULL AND gnis_name <> '' AND ftype <> 428");
+    let bestDist = Infinity;
+    for (const f of features) {
+      const ll = geomLatLon(f.geometry);
+      if (!ll) continue;
+      const d = haversineMi(lat, lon, ll[0], ll[1]);
+      if (d < bestDist) {
+        bestDist = d;
+        result.nearest_waterway_name  = f.attributes?.gnis_name || null;
+        result.nearest_waterway_ftype = f.attributes?.ftype ?? null;
+        result.nearest_waterway_mi    = d;
+      }
+    }
+  } catch (_) {}
+
+  pruneCache(nhdCache);
+  nhdCache.set(key, result);
+  return result;
+}
+
 // ── Combined point enrichment ─────────────────────────────────────
 /**
- * Calls all three APIs in parallel and returns merged enrichment object.
+ * Calls all six APIs in parallel and returns merged enrichment object.
  * Never throws — missing APIs return null fields.
  */
 async function enrichPoint(lat, lon) {
-  const [census, fema, elev] = await Promise.allSettled([
+  const [census, fema, elev, structs, gnis, nhd] = await Promise.allSettled([
     getCensusTract(lat, lon),
     getFEMAFloodZone(lat, lon),
     getElevation(lat, lon),
+    getNearestStructures(lat, lon),
+    getNearestGNIS(lat, lon),
+    getNearestWaterway(lat, lon),
   ]);
 
-  const c = census.status === 'fulfilled' ? census.value : null;
-  const f = fema.status   === 'fulfilled' ? fema.value   : null;
-  const e = elev.status   === 'fulfilled' ? elev.value   : null;
+  const c  = census.status  === 'fulfilled' ? census.value  : null;
+  const f  = fema.status    === 'fulfilled' ? fema.value    : null;
+  const e  = elev.status    === 'fulfilled' ? elev.value    : null;
+  const s  = structs.status === 'fulfilled' ? structs.value : null;
+  const g  = gnis.status    === 'fulfilled' ? gnis.value    : null;
+  const w  = nhd.status     === 'fulfilled' ? nhd.value     : null;
 
   return {
-    census_tract:     c?.tract     || null,
-    census_tract_raw: c?.tract_raw || null,
-    census_block_grp: c?.block_group || null,
-    census_geoid:     c?.geoid     || null,
-    flood_zone:       f?.flood_zone || null,
-    flood_sfha:       f?.sfha ?? null,
-    flood_community:  f?.community  || null,
-    elevation_ft:     e,
+    census_tract:              c?.tract        || null,
+    census_tract_raw:          c?.tract_raw    || null,
+    census_block_grp:          c?.block_group  || null,
+    census_geoid:              c?.geoid        || null,
+    flood_zone:                f?.flood_zone   || null,
+    flood_sfha:                f?.sfha         ?? null,
+    flood_community:           f?.community    || null,
+    elevation_ft:              e,
+    nearest_hospital_name:     s?.nearest_hospital_name      || null,
+    nearest_hospital_mi:       s?.nearest_hospital_mi        ?? null,
+    nearest_fire_station_name: s?.nearest_fire_station_name  || null,
+    nearest_fire_station_mi:   s?.nearest_fire_station_mi    ?? null,
+    nearest_place_name:        g?.nearest_place_name         || null,
+    nearest_place_type:        g?.nearest_place_type         || null,
+    nearest_place_mi:          g?.nearest_place_mi           ?? null,
+    nearest_waterway_name:     w?.nearest_waterway_name      || null,
+    nearest_waterway_ftype:    w?.nearest_waterway_ftype     ?? null,
+    nearest_waterway_mi:       w?.nearest_waterway_mi        ?? null,
   };
 }
 
-module.exports = { getCensusTract, getFEMAFloodZone, getElevation, enrichPoint };
+module.exports = {
+  getCensusTract, getFEMAFloodZone, getElevation,
+  getNearestStructures, getNearestGNIS, getNearestWaterway,
+  enrichPoint,
+};
