@@ -7,7 +7,7 @@
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.NEON_DATABASE_URL_POOLED || process.env.NEON_DATABASE_URL,
+  connectionString: process.env.XATA_DATABASE_URL || process.env.NEON_DATABASE_URL,
   max: 10,
 });
 

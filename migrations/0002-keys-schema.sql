@@ -21,8 +21,9 @@ CREATE TABLE IF NOT EXISTS api_keys (
   stripe_customer_id      TEXT,
   metered_unreported      INTEGER NOT NULL DEFAULT 0,
   enrichment_calls_month  INTEGER NOT NULL DEFAULT 0,
+  enrichment_month        TEXT    NOT NULL DEFAULT '',
   first_call_at           TIMESTAMPTZ,
-  drip_sent               INTEGER NOT NULL DEFAULT 0
+  drip_sent               TEXT    NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_keys_key    ON api_keys(key);
 CREATE INDEX IF NOT EXISTS idx_keys_email  ON api_keys(email);
