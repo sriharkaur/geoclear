@@ -1598,8 +1598,11 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   const addrLon  = parseFloat(addr.longitude || 0);
   const fips5    = enriched.fips || null;
 
+  const hardNull = (ms) => new Promise(r => setTimeout(() => r(null), ms));
   const [femaResult, wildfireRow, stormRow, eqRow, droughtRow] = await Promise.all([
-    (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
+    (addrLat && addrLon)
+      ? Promise.race([getFEMAFloodZone(addrLat, addrLon).catch(() => null), hardNull(5000)])
+      : Promise.resolve(null),
     Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5)   : null),
     Promise.resolve(fips5 ? riskData.getStormRisk(fips5)      : null),
     Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null),
