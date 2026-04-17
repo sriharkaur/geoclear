@@ -645,6 +645,46 @@
     .enrich-title { font-size: 1rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.015em; }
     .enrich-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
 
+    /* ─── RISK SCORE ───────────────────────────────────────────────────────── */
+    .risk-section { background: var(--bg-alt); }
+    .risk-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .risk-scores-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 32px 0 24px; }
+    .risk-score-card {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: var(--r); padding: 20px;
+    }
+    .risk-score-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+    .risk-score-num { font-size: 2rem; font-weight: 800; font-family: var(--mono); color: var(--text); line-height: 1; }
+    .risk-score-num.score-low    { color: #2e936f; }
+    .risk-score-num.score-mid    { color: #d08c24; }
+    .risk-score-num.score-high   { color: #c0392b; }
+    .risk-score-num.score-null   { color: var(--dim); font-size: 1.1rem; margin-top: 8px; }
+    .risk-score-desc { font-size: 0.76rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+    .risk-signals { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .risk-signal { font-size: 0.72rem; background: var(--bg-alt); border: 1px solid var(--border2); border-radius: 6px; padding: 3px 9px; color: var(--muted); font-family: var(--mono); }
+    .risk-signal.signal-warn { border-color: #d08c2440; color: #d08c24; background: #d08c2408; }
+    .risk-signal.signal-danger { border-color: #c0392b40; color: #c0392b; background: #c0392b08; }
+    .risk-demo-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .risk-demo-row input { flex: 1; }
+    .risk-note { font-size: 0.78rem; color: var(--dim); text-align: center; margin-top: 8px; }
+
+    /* ─── VERTICALS ─────────────────────────────────────────────────────────── */
+    .verticals-section .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .verticals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+    .vertical-card {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: var(--rxl); padding: 28px 26px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .vertical-card:hover { border-color: var(--border3); box-shadow: 0 4px 24px rgba(46,147,111,0.08); }
+    .vertical-verdict {
+      font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--sky); margin-bottom: 10px;
+    }
+    .vertical-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 8px; }
+    .vertical-desc { font-size: 0.84rem; color: var(--muted); line-height: 1.65; }
+    .vertical-signal { font-size: 0.76rem; margin-top: 14px; padding: 8px 12px; background: var(--bg-alt); border-radius: 6px; border: 1px solid var(--border); font-family: var(--mono); color: var(--muted); }
+
     /* ─── FINAL CTA ─────────────────────────────────────────────────────────── */
     .cta-section {
       position: relative; overflow: hidden;
@@ -947,6 +987,9 @@
       .code-section .container { grid-template-columns: 1fr; }
       .pricing-grid { grid-template-columns: 1fr; }
       .enrich-grid { grid-template-columns: 1fr; }
+      .risk-scores-grid { grid-template-columns: 1fr 1fr; }
+      .verticals-grid { grid-template-columns: 1fr; }
+      .risk-demo-row { flex-direction: column; }
       .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
       .demo-grid { grid-template-columns: 1fr 1fr; }
       .demo-grid .demo-btn { grid-column: span 2; }
@@ -1191,6 +1234,15 @@
         <div class="feat-title">Bulk Processing</div>
         <div class="feat-desc">Verify and enrich up to 1,000 addresses per request. Clean entire datasets — CRM exports, property lists, customer uploads — in seconds, not hours.</div>
       </div>
+      <div class="feat-card" style="border-color:rgba(46,147,111,0.25);background:linear-gradient(135deg,var(--surface) 80%,rgba(46,147,111,0.04))">
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 2"/>
+          </svg>
+        </div>
+        <div class="feat-title">Risk Score <span style="font-size:0.7rem;font-weight:700;background:var(--sky);color:#fff;padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px">PRO</span></div>
+        <div class="feat-desc">Four scores per address: deliverability, fraud, disaster, vacancy. Replaces separate calls to FEMA, LexisNexis, and Verisk — in one 30ms API call. <a href="#risk-score" style="color:var(--sky)">See live demo ↓</a></div>
+      </div>
     </div>
   </div>
 </section>
@@ -1423,6 +1475,111 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="enrich-label">ZIP+4</div>
         <div class="enrich-title">Full ZIP+4 Postal Code</div>
         <div class="enrich-desc">The complete 9-digit ZIP+4 code for delivery precision, USPS mail pre-sorting, and postal routing — derived automatically, no extra call needed.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── RISK SCORE -->
+<section class="risk-section" id="risk-score">
+  <div class="container">
+    <div class="section-label">Risk Score</div>
+    <h2 class="sh2">Four numbers. One decision.</h2>
+    <p class="ssub">
+      Every address returns a risk vector: will it deliver, is it fraud, will it flood, is anyone there.
+      One API call replaces a $4 third-party risk report — at 30ms.
+    </p>
+
+    <!-- Live risk demo -->
+    <div class="demo-card" data-fade>
+      <div class="demo-header">
+        <div class="demo-title">Risk Score — Live Demo</div>
+        <div class="demo-subtitle">No API key needed · Real FEMA + wildfire data</div>
+      </div>
+      <div class="risk-demo-row">
+        <input class="demo-input" id="risk-street" type="text" placeholder="Street address (e.g. 123 Main St)" />
+        <input class="demo-input" id="risk-city"   type="text" placeholder="City" style="max-width:180px"/>
+        <input class="demo-input" id="risk-state"  type="text" placeholder="State" style="max-width:80px" maxlength="2" />
+        <button class="demo-btn" onclick="runRiskDemo()">Score →</button>
+      </div>
+      <div id="risk-results" class="demo-results-area">
+        <div class="demo-placeholder">Enter an address to see the risk vector</div>
+      </div>
+    </div>
+
+    <!-- Static explainer cards -->
+    <div class="risk-scores-grid" data-fade-group>
+      <div class="risk-score-card">
+        <div class="risk-score-label">Deliverability</div>
+        <div class="risk-score-num score-low">0.94</div>
+        <div class="risk-score-desc">Will this address receive a package? Based on address confidence, placement quality, and query activity. Below 0.4 → reroute to pickup.</div>
+      </div>
+      <div class="risk-score-card">
+        <div class="risk-score-label">Fraud</div>
+        <div class="risk-score-num score-low">0.02</div>
+        <div class="risk-score-desc">Is this address a fraud signal? Velocity, unit anomaly, and confirmed chargeback history. Above 0.6 → hold for review.</div>
+      </div>
+      <div class="risk-score-card">
+        <div class="risk-score-label">Disaster</div>
+        <div class="risk-score-num score-mid">0.41</div>
+        <div class="risk-score-desc">Combined risk from FEMA flood zone, USFS wildfire hazard, NOAA 10-year storm events, and CAL FIRE FHSZ. Used for P&C underwriting.</div>
+      </div>
+      <div class="risk-score-card">
+        <div class="risk-score-label">Vacancy</div>
+        <div class="risk-score-num score-low">0.08</div>
+        <div class="risk-score-desc">Is the address likely unoccupied? Zero-query signal, address class heuristic, and delivery outcome history from the Ground-Truth Graph.</div>
+      </div>
+    </div>
+    <p class="risk-note">Fraud + vacancy scores require Professional (full query-history signals). Disaster score is live on all plans.</p>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── VERTICALS -->
+<section class="verticals-section">
+  <div class="container">
+    <div class="section-label">Who uses this</div>
+    <h2 class="sh2">The decision layer for<br>five industries</h2>
+    <p class="ssub">
+      Every industry that touches a physical address needs a verdict, not a data dump.
+      GeoClear returns the answer, not the spreadsheet.
+    </p>
+
+    <div class="verticals-grid" data-fade-group>
+      <div class="vertical-card">
+        <div class="vertical-verdict">Ship or don't →</div>
+        <div class="vertical-title">E-commerce Fraud</div>
+        <div class="vertical-desc">One prevented chargeback pays for a year. Velocity + unit anomaly catches ring farms before the ship label prints. No manual review queue.</div>
+        <div class="vertical-signal">fraud_score: 0.78 → hold_for_review: true</div>
+      </div>
+      <div class="vertical-card">
+        <div class="vertical-verdict">Insure or don't →</div>
+        <div class="vertical-title">P&amp;C Insurance</div>
+        <div class="vertical-desc">FEMA flood + USFS wildfire + NOAA storm at 30ms. Replaces a $4 third-party risk call on every quote. Lemonade, Hippo, and Kin price at address level — not ZIP code.</div>
+        <div class="vertical-signal">disaster_score: 0.81, flood_zone: "AE", sfha: true</div>
+      </div>
+      <div class="vertical-card">
+        <div class="vertical-verdict">Deliver or reroute →</div>
+        <div class="vertical-title">Last-Mile Logistics</div>
+        <div class="vertical-desc">Failed deliveries cost $17. A deliverability score below 0.4 triggers reroute to pickup before the driver leaves the depot. Real-time, per-address.</div>
+        <div class="vertical-signal">deliverability: 0.31 → route_to_pickup: true</div>
+      </div>
+      <div class="vertical-card">
+        <div class="vertical-verdict">Land or don't →</div>
+        <div class="vertical-title">Drone &amp; Autonomous Delivery</div>
+        <div class="vertical-desc">Airspace class, open landing area, no-fly status — the landing decision in one call. Every autonomous vehicle needs this primitive. No one else has it.</div>
+        <div class="vertical-signal">drone_deliverable: true, airspace_class: "G"</div>
+      </div>
+      <div class="vertical-card">
+        <div class="vertical-verdict">Fund or flag →</div>
+        <div class="vertical-title">Mortgage &amp; Compliance</div>
+        <div class="vertical-desc">HMDA census tract, CRA FIPS code, NFIP flood determination — all required fields in one call. NFIP-ready. Auditable federal source. No vendor lock-in.</div>
+        <div class="vertical-signal">census_tract: "010100", flood_sfha: false, fips: "06037"</div>
+      </div>
+      <div class="vertical-card" style="border-style:dashed;background:var(--bg-alt);">
+        <div class="vertical-verdict">Assess or skip →</div>
+        <div class="vertical-title">Reinsurance &amp; Climate Risk</div>
+        <div class="vertical-desc">Portfolio exposure in real time. Swiss Re, Munich Re, FEMA contractors — not quarterly PDFs but live risk vectors at every address, updated when FEMA updates.</div>
+        <div class="vertical-signal">disaster_score: 0.62, wildfire_class: "Very High"</div>
       </div>
     </div>
   </div>
@@ -1870,6 +2027,75 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   });
 
   /* ── Live demo ── */
+  /* ── Risk Score demo ────────────────────────────────────────────────────── */
+  async function runRiskDemo() {
+    const street  = document.getElementById('risk-street').value.trim();
+    const city    = document.getElementById('risk-city').value.trim();
+    const state   = document.getElementById('risk-state').value.trim();
+    const results = document.getElementById('risk-results');
+    if (!street) { results.innerHTML = '<div class="demo-placeholder" style="color:var(--red)">Enter a street address.</div>'; return; }
+
+    results.innerHTML = '<div class="demo-placeholder">Scoring…</div>';
+    try {
+      const params = new URLSearchParams({ street, city, state });
+      const r = await fetch(`/api/demo/risk?${params}`);
+      const body = await r.json();
+      if (!r.ok) { results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">${body.error || 'Not found'}</div>`; return; }
+      const d = body.data;
+      const sc = d.scores;
+      const sig = d.signals;
+
+      function scoreClass(v) { if (v === null) return 'score-null'; return v >= 0.6 ? 'score-high' : v >= 0.3 ? 'score-mid' : 'score-low'; }
+      function scoreDisplay(v, label) {
+        if (v === null) return `<div class="risk-score-num score-null">Pro req.</div>`;
+        return `<div class="risk-score-num ${scoreClass(v)}">${v.toFixed(2)}</div>`;
+      }
+      function signalBadge(label, value, warn) {
+        if (value === null || value === undefined) return '';
+        const cls = warn ? 'signal-warn' : '';
+        return `<span class="risk-signal ${cls}">${label}: ${value}</span>`;
+      }
+
+      const addr = d.address;
+      const addrLine = [addr.address_number, addr.street_name, addr.city, addr.state, addr.zip_code].filter(Boolean).join(' ');
+      results.innerHTML = `
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;font-family:var(--mono)">${addrLine}</div>
+        <div class="risk-scores-grid" style="margin:0 0 12px">
+          <div class="risk-score-card">
+            <div class="risk-score-label">Deliverability</div>
+            ${scoreDisplay(sc.deliverability)}
+            <div class="risk-score-desc">${sc.deliverability >= 0.7 ? 'High confidence — address well-documented.' : sc.deliverability >= 0.4 ? 'Moderate confidence — verify before shipping.' : 'Low confidence — consider pickup.'}</div>
+          </div>
+          <div class="risk-score-card">
+            <div class="risk-score-label">Fraud</div>
+            ${scoreDisplay(sc.fraud, 'fraud')}
+            <div class="risk-score-desc">Requires Professional plan (velocity + chargeback history).</div>
+          </div>
+          <div class="risk-score-card">
+            <div class="risk-score-label">Disaster</div>
+            ${scoreDisplay(sc.disaster)}
+            <div class="risk-score-desc">${sc.disaster >= 0.6 ? 'Elevated risk — FEMA/wildfire/storm signals.' : sc.disaster >= 0.3 ? 'Moderate risk — some hazard exposure.' : 'Low disaster risk at this address.'}</div>
+          </div>
+          <div class="risk-score-card">
+            <div class="risk-score-label">Vacancy</div>
+            ${scoreDisplay(sc.vacancy, 'vacancy')}
+            <div class="risk-score-desc">Requires Professional plan (query-history signals).</div>
+          </div>
+        </div>
+        <div class="risk-signals">
+          ${signalBadge('flood_zone', sig.flood_zone, sig.flood_sfha)}
+          ${signalBadge('sfha', sig.flood_sfha, sig.flood_sfha)}
+          ${signalBadge('wildfire', sig.wildfire_class, sig.wildfire_class && sig.wildfire_class !== 'Very Low')}
+          ${signalBadge('storm_events_10yr', sig.storm_events_10yr, sig.storm_events_10yr > 50)}
+        </div>`;
+    } catch(e) {
+      results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Request failed — ${e.message}</div>`;
+    }
+  }
+
+  document.getElementById('risk-street').addEventListener('keydown', e => { if (e.key === 'Enter') runRiskDemo(); });
+  document.getElementById('risk-state').addEventListener('keydown',  e => { if (e.key === 'Enter') runRiskDemo(); });
+
   async function runDemo() {
     const streetVal = document.getElementById('demo-street').value.trim();
     const cityState = document.getElementById('demo-city').value.trim();

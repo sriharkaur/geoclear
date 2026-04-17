@@ -423,7 +423,7 @@ Open:
 
 - [x] **GeoClear Risk Score v2** ✅ 2026-04-17 — `POST /v1/outcomes` endpoint; `address_outcomes` table in `keys.db`; score_version v1→v2 auto-upgrade at ≥3 delivery or ≥2 fraud outcomes; inline key auth on `/v1/risk` and `/v1/outcomes`; `GET /v1/admin/outcomes`; drone delivery use case ground-truthing deliverability. Moat: no competitor can buy this dataset — earned from live traffic.
 - [ ] Physical World Graph API — address nodes connected to businesses, schools, flood zones
-- [ ] Climate Risk Score per address (FEMA + CAL FIRE + NOAA + USGS)
+- ⏳ **Climate Risk Score per address** IN PROGRESS (session 24) — extending `/v1/risk` with heat, drought, sea level rise, precipitation, landslide dimensions. All free federal sources (NASA NEX-GDDP-CMIP6, NOAA Atlas 14, USGS landslide, NOAA SLR). Multi-dimensional response: `climate_risk.composite` + per-hazard scores.
 - [ ] National 911 Address Layer — partner with NENA ($10B NG911 funding)
 - [ ] Autonomous Address Deduplication-as-a-Service (AI agent for CRM cleanup)
 - [ ] Address Intelligence for AI Training Data licensing

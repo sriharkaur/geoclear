@@ -1522,6 +1522,67 @@ const demoLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => res.status(429).json({ ok: false, error: 'Demo limit reached (10/hr). Sign up free at geoclear.io' }),
 });
+// Risk Score demo — no API key, same IP rate limit as /api/demo
+app.get('/api/demo/risk', demoLimiter, async (req, res) => {
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+  const { street, number, city, state, zip } = req.query;
+  if (!street && !zip) return err(res, 'Provide street or zip.');
+  const rows = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
+  if (!rows.length) return err(res, 'No addresses found.', 404);
+  const addr     = rows[0];
+  const enriched = enrich(addr);
+  const addrLat  = parseFloat(addr.latitude  || 0);
+  const addrLon  = parseFloat(addr.longitude || 0);
+  const fips5    = enriched.fips || null;
+
+  const [femaResult, wildfireRow, stormRow] = await Promise.all([
+    (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
+    Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5) : null),
+    Promise.resolve(fips5 ? riskData.getStormRisk(fips5)    : null),
+  ]);
+  const calFireRow = (addr.state === 'CA' && addrLat && addrLon) ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
+
+  // Deliverability
+  const confNorm  = (enriched.confidence || 50) / 100;
+  const pBoost    = { 'Structure - Rooftop': 0.15, Rooftop: 0.15, Parcel: 0.05 }[addr.placement] ?? 0;
+  const deliverability = Math.min(1, Math.max(0, confNorm * 0.75 + pBoost));
+
+  // Disaster
+  let disasterFlood = 0;
+  if (femaResult) {
+    if (femaResult.sfha === true)                                                                            disasterFlood = 0.8;
+    else if (femaResult.flood_zone && femaResult.flood_zone !== 'X' && femaResult.flood_zone !== 'OUTSIDE') disasterFlood = 0.4;
+    else if (femaResult.flood_zone === 'X')                                                                  disasterFlood = 0.05;
+  }
+  const WHP_SCORE = { 1: 0.0, 2: 0.05, 3: 0.15, 4: 0.30, 5: 0.40 };
+  const CAL_FIRE_SCORE = { Moderate: 0.15, High: 0.30, 'Very High': 0.45 };
+  const disasterWildfire = Math.max(
+    calFireRow ? (CAL_FIRE_SCORE[calFireRow.fhsz_label] ?? 0) : 0,
+    wildfireRow ? (WHP_SCORE[wildfireRow.whp_score] ?? 0) : 0
+  );
+  const disasterStorm = stormRow ? Math.min((stormRow.event_count || 0) / 200, 0.3) : 0;
+  const disaster = Math.min(1, Math.max(0, disasterFlood * 0.6 + disasterWildfire * 0.25 + disasterStorm * 0.15));
+
+  ok(res, {
+    address:       enrichAddress(addr),
+    scores: {
+      deliverability: Math.round(deliverability * 100) / 100,
+      fraud:          null,
+      disaster:       Math.round(disaster * 100) / 100,
+      vacancy:        null,
+    },
+    signals: {
+      flood_zone:     femaResult?.flood_zone ?? null,
+      flood_sfha:     femaResult?.sfha ?? null,
+      wildfire_class: wildfireRow?.whp_class ?? null,
+      storm_events_10yr: stormRow?.event_count ?? null,
+    },
+    note: 'fraud + vacancy require Professional plan (full traffic history)',
+    version: '1.0-demo',
+    demo: true,
+  });
+});
+
 app.get('/api/demo', demoLimiter, (req, res) => {
   if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
   const { street, number, city, state, zip } = req.query;
