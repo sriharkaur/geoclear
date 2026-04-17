@@ -21,8 +21,9 @@ const crypto     = require('crypto');
 const path       = require('path');
 const { NADQuery }    = require('./query.js');
 const { enrich }      = require('./enrich.js');
-const { enrichPoint } = require('./geocode.js');
+const { enrichPoint, getFEMAFloodZone } = require('./geocode.js');
 const { KeyStore }    = require('./keys.js');
+const { RiskData }    = require('./risk-data.js');
 
 // ── Config ────────────────────────────────────────────────────────
 const argv  = process.argv.slice(2);
@@ -34,15 +35,17 @@ const PORT  = parseInt(
 );
 
 // ── DB + Cache ───────────────────────────────────────────────────
-const nad  = new NADQuery();
-const keys = new KeyStore();
+const nad      = new NADQuery();
+const keys     = new KeyStore();
+const riskData = new RiskData();
 const ADMIN_SECRET          = process.env.NAD_ADMIN_SECRET    || 'nad_admin_localdev';
 const STRIPE_SECRET         = process.env.STRIPE_SECRET_KEY   || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_PRICES         = {
-  starter: process.env.STRIPE_PRICE_STARTER || '',
-  pro:     process.env.STRIPE_PRICE_PRO     || '',
-  metered: process.env.STRIPE_PRICE_METERED || '',
+  starter:        process.env.STRIPE_PRICE_STARTER         || '',
+  pro:            process.env.STRIPE_PRICE_PRO             || '',
+  pro_compliance: process.env.STRIPE_PRICE_PRO_COMPLIANCE  || '',
+  metered:        process.env.STRIPE_PRICE_METERED         || '',
 };
 const STRIPE_METER_ID    = process.env.STRIPE_METER_ID       || '';
 const BASE_URL           = process.env.NAD_BASE_URL           || `http://localhost:${PORT}`;
@@ -92,7 +95,10 @@ function keyEmail(apiKey, tier, limits) {
       <p style="color:#8b949e;margin:24px 0 8px;font-size:13px;">Limits: <strong style="color:#e6edf3">${limits.req_per_day.toLocaleString()} req/day</strong> · <strong style="color:#e6edf3">${limits.req_per_min} req/min</strong></p>
       <p style="color:#8b949e;font-size:13px;">Pass it as <code style="background:#21262d;padding:2px 6px;border-radius:4px;">X-Api-Key: ${apiKey.slice(0,24)}…</code> on every request.</p>
       <hr style="border:none;border-top:1px solid #30363d;margin:24px 0"/>
-      <p style="color:#8b949e;font-size:12px;">Questions? Reply to this email or visit <a href="https://geoclear.io" style="color:#388bfd;">geoclear.io</a></p>
+      <p style="color:#e6edf3;font-size:13px;margin-bottom:8px;font-weight:600;">30-second quickstart</p>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:14px;font-family:monospace;font-size:12px;color:#79c0ff;white-space:pre-wrap;">curl "https://geoclear.io/api/address?street=1600+Pennsylvania+Ave&city=Washington&state=DC" \\
+  -H "X-Api-Key: ${apiKey.slice(0,24)}…"</div>
+      <p style="color:#8b949e;font-size:12px;margin-top:20px;">Full docs at <a href="https://geoclear.io/docs.html" style="color:#388bfd;">geoclear.io/docs.html</a> · Questions? Reply to this email.</p>
     </div>`;
 }
 
@@ -302,8 +308,17 @@ function apiAuth(req, res, next) {
       upgrade: `${BASE_URL}/portal.html`,
     });
   }
+  // Warn at 80% of daily limit — nudge upgrade before they hit the wall
+  const usagePct = info.requests_today / info.limits.req_per_day;
+  if (usagePct >= 0.8 && info.tier !== 'enterprise') {
+    res.set('X-Quota-Warning', `${Math.round(usagePct * 100)}% of daily limit used — upgrade at ${BASE_URL}/portal.html`);
+  }
   req.keyInfo = info;
-  res.on('finish', () => keys.recordUsage(info.key_id, req.path, res.statusCode));
+  req._startAt = process.hrtime.bigint();
+  res.on('finish', () => {
+    const latencyMs = req._startAt ? Number(process.hrtime.bigint() - req._startAt) / 1e6 : null;
+    keys.recordUsage(info.key_id, req.path, res.statusCode, Math.round(latencyMs), info.tier);
+  });
   next();
 }
 
@@ -419,9 +434,11 @@ app.get('/api/address', (req, res) => {
   const results = raw.map(enrichAddress);
   if (!req.keyInfo?.limits?.enrichment) {
     const hint = { census_tract: null, flood_zone: null, flood_sfha: null,
-      _enrichment: { available: true, required_tier: 'pro', upgrade_url: 'https://geoclear.io/portal.html' } };
+      _enrichment: { available: true, required_tier: 'professional', upgrade_url: 'https://geoclear.io/portal.html' } };
     results.forEach(r => Object.assign(r, hint));
   }
+  // Ground-Truth Graph: record query signal for each returned address (fire-and-forget)
+  setImmediate(() => { for (const r of raw) keys.recordAddressQuery(r.nad_uuid); });
   ok(res, results, { count: results.length });
 });
 
@@ -548,19 +565,26 @@ app.get('/api/near', (req, res) => {
 // Point enrichment — census tract + FEMA flood zone  (?lat=&lon=)
 // Also accepts ?nad_uuid= to look up address first then enrich its coordinates
 app.get('/api/enrich', async (req, res) => {
-  // Enrichment requires Pro or Enterprise
   if (!req.keyInfo?.limits?.enrichment) {
     return res.status(402).json({
       ok: false,
       error: 'enrichment_requires_pro',
-      message: 'Census tract and FEMA flood zone data requires a Pro plan or higher.',
-      example_response: {
-        census: { tract: '010100', block_group: '1', geoid: '110010101001' },
-        fema:   { flood_zone: 'X', sfha: false, panel: '1100010001B' },
-        coordinates: { latitude: 38.8977, longitude: -77.0365 },
-      },
+      message: 'Census tract and FEMA flood zone data requires a Professional plan or higher.',
       upgrade_url: 'https://geoclear.io/portal.html',
     });
+  }
+  // Builder tier: metered monthly enrichment quota
+  const monthlyLimit = req.keyInfo.limits.enrichment_monthly_limit;
+  if (monthlyLimit !== null && monthlyLimit > 0) {
+    const quota = keys.checkEnrichmentQuota(req.keyInfo.key_id, monthlyLimit);
+    if (!quota.allowed) {
+      return res.status(402).json({
+        ok: false,
+        error: 'enrichment_monthly_limit_reached',
+        message: `Builder tier includes ${monthlyLimit} enrichment calls/month. Used: ${quota.used}/${quota.limit}. Upgrade to Professional for unlimited enrichment.`,
+        upgrade_url: 'https://geoclear.io/portal.html',
+      });
+    }
   }
 
   let { lat, lon, nad_uuid } = req.query;
@@ -651,6 +675,158 @@ function adminAuth(req, res, next) {
 app.get('/v1/admin/keys/stats', adminAuth, (req, res) => {
   ok(res, keys.stats());
 });
+
+// GET /v1/admin/signals — Ground-Truth Graph: top queried addresses + signal totals
+app.get('/v1/admin/signals', adminAuth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit || '100'), 1000);
+  const top   = keys.getTopQueriedAddresses(limit);
+  const total = keys.db.prepare('SELECT COUNT(*) AS n, SUM(query_count) AS hits FROM address_signals').get();
+  ok(res, { total_addresses_tracked: total.n, total_query_hits: total.hits, top });
+});
+// GET /v1/risk — Risk Score v1
+// Returns 4 dimensions (0–1) for any address. Available on Professional+ tiers.
+// ?nad_uuid=  OR  ?street=&city=&state=&zip=  OR  ?lat=&lon=
+//
+// Dimensions:
+//   deliverability — NAD placement + confidence + query activity
+//   fraud          — velocity (distinct keys querying same addr) + fraud_signal_count
+//   disaster       — FEMA flood zone (live); USFS wildfire + NOAA storm (pending data import)
+//   vacancy        — zero-query signal + addr_class heuristic
+app.get('/v1/risk', async (req, res) => {
+  // Require Professional or higher
+  if (!req.keyInfo?.limits?.enrichment) {
+    return res.status(402).json({
+      ok: false,
+      error: 'risk_requires_professional',
+      message: 'Risk Score requires a Professional plan or higher.',
+      upgrade_url: `${BASE_URL}/portal.html`,
+    });
+  }
+  if (!nad.isReady()) return res.status(503).json({ ok: false, error: 'Database not ready.' });
+
+  let { nad_uuid, street, number, city, state, zip, lat, lon } = req.query;
+
+  // ── 1. Resolve address row ────────────────────────────────────────
+  let addr = null;
+  if (nad_uuid) {
+    addr = nad.db.prepare(
+      `SELECT a.*, c.name AS county FROM addresses a
+       LEFT JOIN counties c ON c.id = a.county_id
+       WHERE a.nad_uuid = ? LIMIT 1`
+    ).get(nad_uuid);
+  } else if (street || zip) {
+    const rows = nad.findAddress({ addNumber: number, streetName: street, city, stateCode: state, zipCode: zip, limit: 1 });
+    addr = rows[0] || null;
+  } else if (lat && lon) {
+    // Nearest address within 50m
+    const rows = nad.findNear(parseFloat(lat), parseFloat(lon), 0.0005, 1);
+    addr = rows[0] || null;
+  }
+
+  if (!addr) return err(res, 'Address not found. Provide nad_uuid, street+city+state, or lat+lon.', 404);
+  if (!addr.nad_uuid) return err(res, 'Address record has no nad_uuid — cannot score.', 422);
+
+  const enriched = enrich(addr);
+  const addrLat  = parseFloat(addr.latitude  || lat  || 0);
+  const addrLon  = parseFloat(addr.longitude || lon  || 0);
+
+  // ── 2. Fetch signals in parallel ─────────────────────────────────
+  const countyFips5 = enriched.fips || null;
+  const [femaResult, signalRow, velocityRow, wildfireRow, stormRow] = await Promise.all([
+    (addrLat && addrLon) ? getFEMAFloodZone(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
+    Promise.resolve(keys.db.prepare(
+      `SELECT query_count, fraud_signal_count FROM address_signals WHERE nad_uuid = ?`
+    ).get(addr.nad_uuid) || { query_count: 0, fraud_signal_count: 0 }),
+    // Velocity: distinct API keys that queried any address with this nad_uuid in last 24h
+    Promise.resolve(keys.db.prepare(
+      `SELECT COUNT(DISTINCT key_id) AS n FROM usage_log
+       WHERE endpoint = '/api/address' AND ts >= datetime('now', '-1 day')`
+    ).get()),
+    Promise.resolve(countyFips5 ? riskData.getWildfireRisk(countyFips5) : null),
+    Promise.resolve(countyFips5 ? riskData.getStormRisk(countyFips5)    : null),
+  ]);
+
+  // CAL FIRE: CA addresses only, lat/lon required
+  const calFireRow = (addr.state === 'CA' && addrLat && addrLon)
+    ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
+
+  // ── 3. Score each dimension ───────────────────────────────────────
+
+  // Deliverability (0–1): confidence + placement + query activity
+  const confNorm      = (enriched.confidence || 50) / 100;
+  const placementBoost = { 'Structure - Rooftop': 0.15, Rooftop: 0.15, Parcel: 0.05 }[addr.placement] ?? 0;
+  // Addresses queried ≥10 times are behaviorally confirmed deliverable
+  const activityBoost = Math.min((signalRow.query_count || 0) / 20, 0.1);
+  const deliverability = Math.min(1, Math.max(0,
+    confNorm * 0.75 + placementBoost + activityBoost
+  ));
+
+  // Fraud (0–1): fraud signals + velocity anomaly
+  const fraudSignals  = signalRow.fraud_signal_count || 0;
+  const velocityScore = Math.min((velocityRow?.n || 0) / 50, 0.3); // 50+ distinct keys = max velocity
+  const fraudBase     = Math.min(fraudSignals / 5, 0.7);           // 5 signals = 0.7 score
+  const fraud         = Math.min(1, Math.max(0, fraudBase + velocityScore));
+
+  // Disaster (0–1): FEMA flood + USFS wildfire + NOAA storm + CAL FIRE FHSZ
+  let disasterFlood = 0;
+  if (femaResult) {
+    if (femaResult.sfha === true)                                                                            disasterFlood = 0.8;
+    else if (femaResult.flood_zone && femaResult.flood_zone !== 'X' && femaResult.flood_zone !== 'OUTSIDE') disasterFlood = 0.4;
+    else if (femaResult.flood_zone === 'X')                                                                  disasterFlood = 0.05;
+  }
+
+  // Wildfire: WHP class 1–5 → 0–0.4 contribution
+  const WHP_SCORE = { 1: 0.0, 2: 0.05, 3: 0.15, 4: 0.30, 5: 0.40 };
+  const disasterWildfire = wildfireRow ? (WHP_SCORE[wildfireRow.whp_score] ?? 0) : 0;
+
+  // CAL FIRE: overrides wildfire score for CA (more granular)
+  const CAL_FIRE_SCORE = { Moderate: 0.15, High: 0.30, 'Very High': 0.45 };
+  const disasterCalFire = calFireRow ? (CAL_FIRE_SCORE[calFireRow.fhsz_label] ?? 0) : 0;
+
+  // Storm: normalize 10-yr event count (>200 events/decade = high risk county)
+  const disasterStorm = stormRow ? Math.min((stormRow.event_count || 0) / 200, 0.3) : 0;
+
+  // Combine: flood dominates, wildfire/storm add on top (capped at 1.0)
+  const disasterWildfireFinal = Math.max(disasterCalFire, disasterWildfire);
+  const disaster = Math.min(1, Math.max(0, disasterFlood * 0.6 + disasterWildfireFinal * 0.25 + disasterStorm * 0.15));
+
+  // Vacancy (0–1): zero queries = potential vacancy; addr_class heuristic
+  const neverQueried  = (signalRow.query_count || 0) === 0 ? 0.3 : 0;
+  const classVacancy  = (addr.addr_class || '').toLowerCase().includes('vacant') ? 0.5 : 0;
+  const vacancy       = Math.min(1, Math.max(0, neverQueried + classVacancy));
+
+  // ── 4. Build response ─────────────────────────────────────────────
+  ok(res, {
+    nad_uuid:  addr.nad_uuid,
+    address:   enriched.full_address || `${addr.add_number || ''} ${addr.st_name || ''}`.trim(),
+    scores: {
+      deliverability: +deliverability.toFixed(3),
+      fraud:          +fraud.toFixed(3),
+      disaster:       +disaster.toFixed(3),
+      vacancy:        +vacancy.toFixed(3),
+    },
+    signals: {
+      confidence:          enriched.confidence,
+      placement:           addr.placement || null,
+      query_count:         signalRow.query_count,
+      fraud_signal_count:  signalRow.fraud_signal_count,
+      flood_zone:          femaResult?.flood_zone      || null,
+      flood_sfha:          femaResult?.sfha            ?? null,
+      wildfire_class:      wildfireRow?.whp_class      || calFireRow?.fhsz_label || null,
+      storm_events_10yr:   stormRow?.event_count       || null,
+      cal_fire_fhsz:       calFireRow?.fhsz_label      || null,
+    },
+    data_coverage: {
+      fema_flood:   femaResult !== null,
+      wildfire:     wildfireRow !== null,
+      storm:        stormRow    !== null,
+      cal_fire:     calFireRow  !== null,
+      ground_truth: (signalRow.query_count || 0) > 0,
+    },
+    version: '1.0-beta',
+  });
+});
+
 app.get('/v1/admin/keys', adminAuth, (req, res) => {
   const data = keys.list({ includeRevoked: req.query.include_revoked === 'true' });
   ok(res, data, { count: data.length });
@@ -690,6 +866,72 @@ async function runMeteredFlush() {
   console.log(`[metered-flush] ${new Date().toISOString()} — ${results.length} records`);
   return { flushed: results.length, results };
 }
+
+// ── Welcome email drip (Day 1 sent at signup; Day 3 + Day 7 via daily cron) ──
+
+function dripDay3Email(callCount) {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0d1117;color:#e6edf3;border-radius:8px;">
+      <h2 style="color:#2ea043;margin:0 0 8px">You've made ${callCount.toLocaleString()} address ${callCount === 1 ? 'lookup' : 'lookups'} 🎉</h2>
+      <p style="color:#8b949e;margin:0 0 20px">Here's what full enrichment looks like — one call returns flood zone, census tract, timezone, and RDI together:</p>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:16px;font-family:monospace;font-size:13px;color:#c9d1d9;overflow-x:auto;">
+        curl "https://geoclear.io/api/enrich?nad_uuid=&lt;uuid&gt;" \\<br>
+        &nbsp;&nbsp;-H "X-Api-Key: YOUR_KEY"
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:16px;font-family:monospace;font-size:13px;color:#c9d1d9;margin-top:12px;">
+        {<br>
+        &nbsp;&nbsp;"flood_zone": "AE",&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8b949e">// FEMA high-risk zone</span><br>
+        &nbsp;&nbsp;"flood_sfha": true,<br>
+        &nbsp;&nbsp;"census_tract": "007402",&nbsp;<span style="color:#8b949e">// HMDA required</span><br>
+        &nbsp;&nbsp;"timezone": "America/New_York"<br>
+        }
+      </div>
+      <p style="color:#8b949e;margin:20px 0 8px;font-size:13px;">Enrichment is included on Professional ($249/mo) — <a href="https://geoclear.io/portal.html" style="color:#388bfd;">upgrade here</a> if you need it on every call.</p>
+      <hr style="border:none;border-top:1px solid #30363d;margin:20px 0"/>
+      <p style="color:#8b949e;font-size:12px;">Questions? Just reply to this email.</p>
+    </div>`;
+}
+
+function dripDay7Email(tier) {
+  const onFree = tier === 'free';
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0d1117;color:#e6edf3;border-radius:8px;">
+      <h2 style="color:#2ea043;margin:0 0 8px">One week with GeoClear</h2>
+      <p style="color:#8b949e;margin:0 0 16px">${onFree
+        ? 'You\'re on the free tier (10K lookups/mo). Teams that need FEMA flood zone + census tract for compliance, insurance, or logistics are on Professional.'
+        : 'Thanks for being a GeoClear customer. A few things you might not know about:'
+      }</p>
+      <ul style="color:#8b949e;font-size:14px;line-height:1.8;padding-left:20px;margin:0 0 20px;">
+        <li><strong style="color:#e6edf3">FEMA flood zone</strong> — same NFHL source used for NFIP flood determination</li>
+        <li><strong style="color:#e6edf3">Census tract</strong> — required for HMDA and CRA compliance reporting</li>
+        <li><strong style="color:#e6edf3">Bulk verify</strong> — up to 1,000 addresses in a single POST /api/address/bulk</li>
+        <li><strong style="color:#e6edf3">Proximity search</strong> — GET /api/near?lat=&amp;lon=&amp;radius_km=</li>
+      </ul>
+      ${onFree ? `<a href="https://geoclear.io/portal.html" style="display:inline-block;padding:12px 24px;background:#2ea043;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Upgrade to Professional — $249/mo →</a>` : ''}
+      <hr style="border:none;border-top:1px solid #30363d;margin:24px 0"/>
+      <p style="color:#8b949e;font-size:12px;">Questions? Just reply to this email. We read everything.</p>
+    </div>`;
+}
+
+async function runDrip() {
+  const d3 = keys.getDripDay3Candidates();
+  for (const row of d3) {
+    await sendEmail(row.email, `You've made ${row.requests_total.toLocaleString()} address lookups — here's what enrichment looks like`, dripDay3Email(row.requests_total)).catch(() => {});
+    keys.markDripSent(row.id, 'd3');
+  }
+  const d7 = keys.getDripDay7Candidates();
+  for (const row of d7) {
+    await sendEmail(row.email, 'One week with GeoClear — features you might have missed', dripDay7Email(row.tier)).catch(() => {});
+    keys.markDripSent(row.id, 'd7');
+  }
+  console.log(`[drip] Day3: ${d3.length} sent, Day7: ${d7.length} sent`);
+  return { day3: d3.length, day7: d7.length };
+}
+
+// Manual trigger for drip (admin)
+app.post('/v1/admin/drip/run', adminAuth, async (req, res) => {
+  ok(res, await runDrip());
+});
 
 // Flush metered usage to Stripe (called by daily cron or manually)
 app.post('/v1/admin/metered/flush', adminAuth, async (req, res) => {
@@ -955,6 +1197,79 @@ app.delete('/v1/admin/data-file', adminAuth, (req, res) => {
   res.json({ ok: true, deleted: dest });
 });
 
+// GET /v1/admin/analytics — 30-day KPI pulse
+app.get('/v1/admin/analytics', adminAuth, (req, res) => {
+  try {
+    const db = keys.db;
+    const days = parseInt(req.query.days ?? '30', 10);
+
+    const requestsByDay = db.prepare(`
+      SELECT DATE(ts) AS day, COUNT(*) AS requests, COUNT(DISTINCT key_id) AS active_keys
+      FROM usage_log
+      WHERE ts >= datetime('now', ? || ' days')
+      GROUP BY DATE(ts)
+      ORDER BY day DESC
+    `).all(`-${days}`);
+
+    const topKeys = db.prepare(`
+      SELECT k.email, k.tier, k.requests_total, k.requests_today, k.last_used_at, k.first_call_at
+      FROM api_keys k
+      WHERE k.is_active = 1
+      ORDER BY k.requests_total DESC
+      LIMIT 10
+    `).all();
+
+    const tierBreakdown = db.prepare(`
+      SELECT tier, COUNT(*) AS keys, SUM(requests_total) AS total_requests
+      FROM api_keys
+      WHERE is_active = 1
+      GROUP BY tier
+      ORDER BY total_requests DESC
+    `).all();
+
+    const errorRate = db.prepare(`
+      SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END) AS errors
+      FROM usage_log
+      WHERE ts >= datetime('now', ? || ' days')
+    `).get(`-${days}`);
+
+    const newSignups = db.prepare(`
+      SELECT DATE(created_at) AS day, COUNT(*) AS signups, tier
+      FROM api_keys
+      WHERE created_at >= datetime('now', ? || ' days')
+      GROUP BY DATE(created_at), tier
+      ORDER BY day DESC
+    `).all(`-${days}`);
+
+    const avgLatency = db.prepare(`
+      SELECT ROUND(AVG(latency_ms), 1) AS avg_latency_ms, endpoint
+      FROM usage_log
+      WHERE ts >= datetime('now', ? || ' days') AND latency_ms IS NOT NULL
+      GROUP BY endpoint
+      ORDER BY avg_latency_ms DESC
+    `).all(`-${days}`);
+
+    res.json({
+      ok: true,
+      period_days: days,
+      requests_by_day: requestsByDay,
+      top_keys_by_volume: topKeys,
+      tier_breakdown: tierBreakdown,
+      error_rate: {
+        total: errorRate.total,
+        errors: errorRate.errors,
+        rate_pct: errorRate.total > 0 ? ((errorRate.errors / errorRate.total) * 100).toFixed(2) : '0.00',
+      },
+      new_signups_by_day: newSignups,
+      avg_latency_by_endpoint: avgLatency,
+    });
+  } catch (e) {
+    err(res, e.message);
+  }
+});
+
 // Open demo endpoint — no API key, IP rate-limited (10 req/hr)
 const demoLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -1070,6 +1385,9 @@ app.get('/privacy', (req, res) => {
 app.get('/terms', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'terms.html'));
 });
+app.get('/compliance', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'compliance.html'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
@@ -1112,4 +1430,15 @@ app.listen(PORT, () => {
       console.log(`  Metered flush : daily cron scheduled (next in ~${Math.round(msUntilMidnight / 3600000)}h at midnight UTC)`);
     })();
   }
+
+  // Daily welcome email drip cron (self-scheduling, runs 1h after midnight UTC)
+  (function scheduleDrip() {
+    const now = Date.now();
+    const next = new Date(new Date().setUTCHours(25, 0, 0, 0)); // 01:00 UTC next day
+    const msUntilNext = next - now;
+    setTimeout(async () => {
+      await runDrip().catch(e => console.error('[drip] cron error:', e.message));
+      scheduleDrip();
+    }, msUntilNext);
+  })();
 });

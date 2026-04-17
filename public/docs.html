@@ -502,6 +502,9 @@
   <a class="nav-link" href="#health">
     <span class="method-pill get">GET</span> /api/health
   </a>
+
+  <div class="nav-section" style="margin-top:12px">Resources</div>
+  <a class="nav-link" href="#vs-smartystreets">Why GeoClear vs SmartyStreets</a>
 </aside>
 
 <!-- ── TOPBAR ── -->
@@ -520,6 +523,7 @@
   <!-- INTRO -->
   <div class="section" id="intro">
     <div class="section-title">API Reference</div>
+    <p style="font-size:1rem;font-weight:600;color:var(--text);margin-bottom:6px;">198M US addresses. Census tract, FEMA flood zone, and timezone — one API call.</p>
     <div class="section-sub">Base URL: <code>https://geoclear.io</code> &nbsp;·&nbsp; All responses are JSON &nbsp;·&nbsp; All timestamps UTC</div>
 
     <div class="alert alert-info">
@@ -1066,6 +1070,58 @@ const { key } = await res.json();</pre></div>
   <span class="j-key">"addresses"</span>: <span class="j-num">198657535</span>,
   <span class="j-key">"version"</span>:   <span class="j-str">"1.0.0"</span>
 }</pre></div>
+  </div>
+
+  <!-- WHY GEOCLEAR vs SMARTYSTREETS -->
+  <div class="section" id="vs-smartystreets">
+    <div class="section-title">Why GeoClear vs SmartyStreets</div>
+    <p class="section-sub">The two most common alternatives — and what's different.</p>
+
+    <table style="width:100%;border-collapse:collapse;font-size:0.88rem;margin-top:16px;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border2);">
+          <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600;"></th>
+          <th style="text-align:center;padding:10px 14px;color:var(--sky);font-weight:700;">GeoClear</th>
+          <th style="text-align:center;padding:10px 14px;color:var(--muted);font-weight:600;">SmartyStreets</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:11px 14px;font-weight:500;">FEMA flood zone</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">✓ Included free</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--dim);">✗ Not available</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:11px 14px;font-weight:500;">Census tract (HMDA)</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">✓ Included free</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--dim);">✗ Not available</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:11px 14px;font-weight:500;">Address validation</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);">✓</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:11px 14px;font-weight:500;">Free tier</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">10,000 / month</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--muted);">250 / month</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:11px 14px;font-weight:500;">Starting price</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">$49 / month</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--muted);">$299 / month</td>
+        </tr>
+        <tr>
+          <td style="padding:11px 14px;font-weight:500;">Data sources</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">USDOT NAD + FEMA NFHL + Census Bureau</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--muted);">USPS + proprietary</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px;padding:14px 18px;background:var(--surface2);border-radius:8px;font-size:0.85rem;color:var(--muted);line-height:1.6;">
+      <strong style="color:var(--text);">Migration from SmartyStreets:</strong> Replace <code>smartystreets.com/street-address</code> calls with <code>geoclear.io/api/address?street=&city=&state=</code>. Response shape is similar — see <a href="#address-lookup">address lookup docs</a> above. FEMA flood zone and census tract are returned automatically on Professional and above.
+    </div>
   </div>
 
   <!-- CTA -->

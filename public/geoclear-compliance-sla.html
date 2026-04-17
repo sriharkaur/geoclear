@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoClear — Service Level Agreement</title>
+  <style>
+    @media print { body { font-size: 11pt; } .no-print { display: none; } }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; color: #111; background: #fff; padding: 48px; max-width: 800px; margin: 0 auto; line-height: 1.65; }
+    h1 { font-size: 22pt; margin-bottom: 4px; }
+    .subtitle { font-size: 11pt; color: #555; margin-bottom: 32px; }
+    h2 { font-size: 13pt; margin-top: 28px; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    p { margin-bottom: 12px; }
+    ul { margin: 8px 0 12px 20px; }
+    li { margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10pt; }
+    th { background: #f4f4f4; text-align: left; padding: 7px 10px; font-weight: 600; border: 1px solid #ccc; }
+    td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; }
+    .badge { display: inline-block; background: #0f172a; color: #fff; font-family: sans-serif; font-size: 9pt; padding: 2px 10px; border-radius: 3px; margin-bottom: 20px; }
+    .sig-block { margin-top: 48px; display: flex; gap: 48px; }
+    .sig-col { flex: 1; border-top: 1px solid #000; padding-top: 8px; font-size: 10pt; }
+    .footer { margin-top: 40px; font-size: 9pt; color: #888; font-family: sans-serif; text-align: center; }
+    .no-print { font-family: sans-serif; font-size: 11pt; text-align: center; margin-bottom: 32px; }
+    .print-btn { background: #0f172a; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 11pt; }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+</div>
+
+<div class="badge">Pro Compliance · Confidential</div>
+
+<h1>GeoClear Service Level Agreement</h1>
+<p class="subtitle">Effective for Pro Compliance subscribers · Version 1.0 · April 2026</p>
+
+<h2>1. Parties</h2>
+<p>This Service Level Agreement ("SLA") is entered into between <strong>GeoClear, Inc.</strong> ("Provider") and the subscriber identified in the associated order form ("Customer").</p>
+
+<h2>2. Service Commitment</h2>
+<p>Provider commits to the following service levels for the GeoClear Address Intelligence API:</p>
+<table>
+  <thead>
+    <tr><th>Metric</th><th>Commitment</th><th>Measurement Period</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>API Availability (Uptime)</td><td>99.9% monthly uptime</td><td>Calendar month</td></tr>
+    <tr><td>Response Latency (p95)</td><td>&lt; 200 ms for single-address lookup</td><td>30-day rolling window</td></tr>
+    <tr><td>Response Latency (p99)</td><td>&lt; 500 ms for single-address lookup</td><td>30-day rolling window</td></tr>
+    <tr><td>Bulk endpoint (/api/address/bulk)</td><td>&lt; 5 s per 1,000 addresses</td><td>Per request</td></tr>
+    <tr><td>Data freshness (NAD)</td><td>Updated within 90 days of USDOT quarterly release</td><td>Per release cycle</td></tr>
+  </tbody>
+</table>
+
+<h2>3. Support Response Times</h2>
+<table>
+  <thead>
+    <tr><th>Severity</th><th>Definition</th><th>Initial Response</th><th>Resolution Target</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>P1 — Critical</td><td>API fully unavailable or data corruption</td><td>1 hour</td><td>4 hours</td></tr>
+    <tr><td>P2 — High</td><td>Significant degradation (&gt; 20% error rate)</td><td>4 hours</td><td>24 hours</td></tr>
+    <tr><td>P3 — Medium</td><td>Partial feature impairment</td><td>1 business day</td><td>5 business days</td></tr>
+    <tr><td>P4 — Low</td><td>Questions, documentation, enhancements</td><td>2 business days</td><td>30 days</td></tr>
+  </tbody>
+</table>
+<p>Support is provided via email at <strong>support@geoclear.io</strong>. P1 incidents additionally trigger phone/SMS escalation to the on-call engineer.</p>
+
+<h2>4. Data Attestation</h2>
+<p>GeoClear certifies that all address records returned by the API are sourced from the following authoritative, auditable datasets:</p>
+<ul>
+  <li><strong>USDOT National Address Database (NAD r22)</strong> — 120M+ addresses, federal government dataset</li>
+  <li><strong>Overture Maps Foundation</strong> — 78M supplemental addresses, open data consortium (Meta, Microsoft, Amazon, TomTom)</li>
+  <li><strong>US Census Bureau TIGER/Line</strong> — county and jurisdiction boundary geometry</li>
+  <li><strong>FEMA National Flood Hazard Layer (NFHL)</strong> — flood zone designations for enrichment endpoint</li>
+</ul>
+<p>No third-party data brokers or re-sold data are included. All sources are publicly documented and independently verifiable.</p>
+
+<h2>5. Service Credits</h2>
+<p>If Provider fails to meet the 99.9% uptime commitment in any calendar month, Customer is eligible for service credits:</p>
+<table>
+  <thead>
+    <tr><th>Monthly Uptime Achieved</th><th>Credit</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>99.0% – 99.9%</td><td>10% of monthly subscription fee</td></tr>
+    <tr><td>95.0% – 98.9%</td><td>25% of monthly subscription fee</td></tr>
+    <tr><td>Below 95.0%</td><td>50% of monthly subscription fee</td></tr>
+  </tbody>
+</table>
+<p>Credits must be requested within 30 days of the incident via support@geoclear.io and are applied to the next billing cycle. Credits are the sole and exclusive remedy for uptime failures.</p>
+
+<h2>6. Exclusions</h2>
+<p>This SLA does not apply to downtime caused by: (a) Customer's own systems or third-party services; (b) scheduled maintenance windows communicated 48 hours in advance; (c) force majeure events; (d) Customer-initiated configuration changes; or (e) free-tier or trial accounts.</p>
+
+<h2>7. Uptime Calculation</h2>
+<p>Uptime is calculated as: <em>(Total minutes in month − Downtime minutes) / Total minutes in month × 100</em>. Downtime is defined as &gt; 5 consecutive minutes of API unavailability as measured by Provider's monitoring systems (UptimeRobot, 1-minute polling).</p>
+
+<h2>8. Term and Termination</h2>
+<p>This SLA is co-terminus with the active Pro Compliance subscription. It automatically renews on each billing renewal date. Either party may terminate the subscription with 30 days written notice.</p>
+
+<div class="sig-block">
+  <div class="sig-col">
+    <p><strong>GeoClear, Inc.</strong></p>
+    <p style="margin-top:32px">Signature: _____________________</p>
+    <p>Name: _____________________</p>
+    <p>Title: _____________________</p>
+    <p>Date: _____________________</p>
+  </div>
+  <div class="sig-col">
+    <p><strong>Customer</strong></p>
+    <p style="margin-top:32px">Signature: _____________________</p>
+    <p>Name: _____________________</p>
+    <p>Title: _____________________</p>
+    <p>Date: _____________________</p>
+  </div>
+</div>
+
+<div class="footer">
+  GeoClear, Inc. · support@geoclear.io · geoclear.io · SLA v1.0 · April 2026
+</div>
+
+</body>
+</html>

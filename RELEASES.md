@@ -10,6 +10,22 @@
 ## Unreleased
 > Features merged to main but not yet cut into a version.
 
+- **Landing page — full rewrite** — H1/H2/CTA updated; FEMA anchor copy above pricing; tier rename (Starter→Builder, Growth→Professional, Most Popular badge moved to Professional); Enterprise banner ($2,000/mo + Contact us CTA); data provenance section (4 sources); competitive comparison table (GeoClear vs SmartyStreets vs Lob vs Melissa)
+- **`/compliance` landing page** — NFIP-framed page with FEMA flood zone live JSON, census tract, $249/mo CTA, auditable source callout
+- **DB schema** — `first_call_at` on `api_keys`; `latency_ms` + `tier` on `usage_log`; `drip_sent` on `api_keys` for email drip tracking
+- **`GET /v1/admin/analytics`** — 30-day KPI pulse: requests by day, top keys, tier breakdown, error rate, new signups, avg latency by endpoint
+- **Welcome email drip** — Day 1 (existing), Day 3 (enrichment demo if ≥1 call made), Day 7 (upgrade prompt). Daily cron at 01:00 UTC. Manual trigger: `POST /v1/admin/drip/run`
+- **Latency tracking** — `process.hrtime.bigint()` in auth middleware; logged per request to `usage_log.latency_ms`
+
+- **`GET /v1/risk`** — Risk Score v1 (Professional+); `risk-data.js` module reads `risk.db` (separate from nad.db); `wildfire-import.js` + `storm-import.js` + `calfire-import.js` import scripts ready for staging; disaster score uses all 4 dimensions when data present (FEMA live, wildfire/storm/cal_fire activate automatically when risk.db populated):
+- **Risk data import scripts** — `wildfire-import.js` (USFS WHP by county), `storm-import.js` (NOAA Storm Events 10yr aggregate by county), `calfire-import.js` (CAL FIRE FHSZ grid cells 0.001° resolution); all write to `risk.db`; staging-first pipeline
+- **`GET /v1/risk`** — deliverability, fraud, disaster, vacancy scores (0–1); live FEMA flood zone; Ground-Truth Graph signals; `data_coverage` flags for pending USFS/NOAA/CAL FIRE dimensions; `version: "1.0-beta"`
+- **Ground-Truth Graph** — `address_signals` table in `keys.db`; fire-and-forget upsert on every `/api/address` hit; `GET /v1/admin/signals` for inspection; seeds deliverability + vacancy signals for Risk Score v1
+- **`pro_compliance` tier** — $499/mo, same as Professional + `sla: true`; TIERS entry in `keys.js`, STRIPE_PRICES in `web-server.js`, portal card; SLA document at `public/geoclear-compliance-sla.html` (printable, signable); linked from `/compliance`
+- **Builder enrichment taste** — 500 enrichment calls/month for Builder ($49) tier; `enrichment_calls_month` + `enrichment_month` columns; `checkEnrichmentQuota()` method; monthly reset logic; quota enforced on `/api/enrich`
+- **Docs — tagline + SmartyStreets comparison** — intro tagline "198M US addresses. Census tract, FEMA flood zone, and timezone — one API call."; "Why GeoClear vs SmartyStreets" 6-row comparison table + migration guide + sidebar nav link
+- **Activation funnel** — 30-second curl quickstart added to Day 1 welcome email; `X-Quota-Warning` response header at 80% daily limit (non-enterprise)
+
 - **Address disambiguation** — `findAddress()` now scores + re-ranks results by match specificity; adds `match_type: "exact" | "number+street" | "street+location" | "street" | "location"` to each result
 - **Coverage declaration** — `GET /api/address` responses include `coverage: "full" | "gap-fill" | "partial"`; `GET /api/state/:code` includes `coverage` + `coverage_source` (NAD r22 vs NAD r22 + Overture Maps)
 - **FK relink** — `POST /v1/admin/relink-fks` — background worker that populates `state_id`, `zip_code_id`, `county_id`, `city_id` for the ~64.9M Overture rows merged without hierarchy FK linkage; fixes `/api/states` 0-counts for MI, NJ, NV, NH, FL, CA, etc.
