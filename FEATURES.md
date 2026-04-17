@@ -176,6 +176,34 @@ Customers report real-world delivery/fraud/chargeback outcomes per `nad_uuid`. G
 
 **Primary use case**: Drone delivery companies (Wing, Zipline, Amazon Prime Air) report delivery success/failure per address → deliverability score becomes ground-truth-backed, not heuristic.
 
+### Climate Risk Score (Phase 1) — `/v1/risk` response field `climate_risk`
+
+Composite climate risk score (0–1) + per-hazard breakdown. Included in all `/v1/risk` responses.
+
+| Dimension | Source | Weight | Storage |
+|-----------|--------|--------|---------|
+| `flood` | FEMA NFHL (live API) | 30% | In-memory cache |
+| `wildfire` | USFS WHP (pre-imported) | 25% | `risk.db wildfire_risk` |
+| `storm` | NOAA Storm Events 10yr (pre-imported) | 20% | `risk.db storm_risk` |
+| `earthquake` | USGS ASCE7-22 by county centroid | 15% | `risk.db earthquake_risk` (import) / live API fallback |
+| `drought` | USDA Drought Monitor 26-week avg | 10% | `risk.db drought_risk` (import) / live API fallback |
+
+Import scripts: `earthquake-import.js` (USGS, 3,221 counties), `drought-import.js` (USDA, 3,221 counties). Run on staging before upload to prod. Drought data should be refreshed monthly.
+
+Response shape:
+```json
+"climate_risk": {
+  "composite": 0.295,
+  "flood": 0.0,
+  "wildfire": 0.0,
+  "storm": 1.0,
+  "earthquake": { "score": 0.594, "pgam": 0.67, "sdc": "D", "label": "High" },
+  "drought": { "score": 0.06, "current_level": "None", "weeks_sampled": 27 }
+}
+```
+
+Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-GDDP-CMIP6), sea level rise (NOAA SLR).
+
 ---
 
 ## Infrastructure & Observability

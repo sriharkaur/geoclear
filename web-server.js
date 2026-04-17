@@ -902,8 +902,12 @@ app.get('/v1/risk', async (req, res) => {
     Promise.resolve(countyFips5 ? riskData.getWildfireRisk(countyFips5) : null),
     Promise.resolve(countyFips5 ? riskData.getStormRisk(countyFips5)    : null),
     Promise.resolve(keys.getOutcomeStats(addr.nad_uuid)),
-    (addrLat && addrLon) ? getEarthquakeRisk(addrLat, addrLon).catch(() => null) : Promise.resolve(null),
-    countyFips5 ? getDroughtRisk(countyFips5).catch(() => null) : Promise.resolve(null),
+    // Earthquake: DB lookup first (pre-imported), fall back to live USGS API
+    Promise.resolve(countyFips5 ? riskData.getEarthquakeRisk(countyFips5) : null)
+      .then(r => r ?? ((addrLat && addrLon) ? getEarthquakeRisk(addrLat, addrLon).catch(() => null) : null)),
+    // Drought: DB lookup first (pre-imported), fall back to live USDA API
+    Promise.resolve(countyFips5 ? riskData.getDroughtRisk(countyFips5) : null)
+      .then(r => r ?? (countyFips5 ? getDroughtRisk(countyFips5).catch(() => null) : null)),
   ]);
 
   // CAL FIRE: CA addresses only, lat/lon required
