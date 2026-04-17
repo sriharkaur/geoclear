@@ -26,6 +26,8 @@
 - **Docs — tagline + SmartyStreets comparison** — intro tagline "198M US addresses. Census tract, FEMA flood zone, and timezone — one API call."; "Why GeoClear vs SmartyStreets" 6-row comparison table + migration guide + sidebar nav link
 - **Activation funnel** — 30-second curl quickstart added to Day 1 welcome email; `X-Quota-Warning` response header at 80% daily limit (non-enterprise)
 
+- **Storm risk data live** — `storm-import.js` ran locally against NOAA NCEI 10-year Storm Events CSV data; 3,257 counties, 338,864 events (2017–2026); uploaded to prod `/data/risk.db`; `/v1/risk` now returns `data_coverage.storm: true` with real county-level tornado/hurricane/hail/flood counts
+
 - **Address disambiguation** — `findAddress()` now scores + re-ranks results by match specificity; adds `match_type: "exact" | "number+street" | "street+location" | "street" | "location"` to each result
 - **Coverage declaration** — `GET /api/address` responses include `coverage: "full" | "gap-fill" | "partial"`; `GET /api/state/:code` includes `coverage` + `coverage_source` (NAD r22 vs NAD r22 + Overture Maps)
 - **FK relink** — `POST /v1/admin/relink-fks` — background worker that populates `state_id`, `zip_code_id`, `county_id`, `city_id` for the ~64.9M Overture rows merged without hierarchy FK linkage; fixes `/api/states` 0-counts for MI, NJ, NV, NH, FL, CA, etc.
