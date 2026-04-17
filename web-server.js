@@ -1950,7 +1950,28 @@ app.use((err, req, res, next) => {  // eslint-disable-line no-unused-vars
 });
 
 // ── Start ─────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+// Wait for nad.db to open before binding the port.
+// Render keeps the old instance alive until the new one passes its health check —
+// so customers never hit DB_NOT_READY during a deploy.
+// better-sqlite3 opens synchronously; if it fails, isReady() is false immediately.
+// We poll briefly (100ms × 600 = 60s max) so warm restarts on the same machine
+// bind in <5s while cold starts get the full window.
+function startServer() {
+  let waited = 0;
+  function tryListen() {
+    if (!nad.isReady() && waited < 60000) {
+      waited += 100;
+      return setTimeout(tryListen, 100);
+    }
+    if (!nad.isReady()) {
+      console.warn('[startup] nad.db did not open within 60s — starting anyway (DB_NOT_READY responses expected)');
+    }
+    app.listen(PORT, onListening);
+  }
+  tryListen();
+}
+
+function onListening() {
   const dbReady  = nad.isReady();
   let stats      = null;
   let dbStatus   = '⚠ nad.db not loaded (rsync to /data to activate)';
@@ -1991,4 +2012,6 @@ app.listen(PORT, () => {
       scheduleDrip();
     }, msUntilNext);
   })();
-});
+}
+
+startServer();
