@@ -92,6 +92,26 @@ class RiskData {
     } catch (_) { return null; }
   }
 
+  /**
+   * Nearest Microsoft Building Footprint within ~100m of a lat/lon.
+   * Returns { area_sqm, building_type } or null if table not populated yet.
+   * Populated by: building-import.js (staging pipeline).
+   */
+  getBuildingFootprint(lat, lon) {
+    if (!this.db || !lat || !lon) return null;
+    try {
+      const delta = 0.001; // ~111m bounding box
+      return this.db.prepare(
+        `SELECT area_sqm, building_type,
+                (lat - ?) * (lat - ?) + (lon - ?) * (lon - ?) AS dist2
+         FROM building_footprints
+         WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?
+         ORDER BY dist2
+         LIMIT 1`
+      ).get(lat, lat, lon, lon, lat - delta, lat + delta, lon - delta, lon + delta) || null;
+    } catch (_) { return null; }
+  }
+
   /** Check which tables are populated (for data_coverage response field) */
   coverage() {
     if (!this.db) return { wildfire: false, storm: false, cal_fire: false, earthquake: false, drought: false };
@@ -101,11 +121,12 @@ class RiskData {
       } catch (_) { return false; }
     };
     return {
-      wildfire:   check('wildfire_risk'),
-      storm:      check('storm_risk'),
-      cal_fire:   check('calfire_fhsz'),
-      earthquake: check('earthquake_risk'),
-      drought:    check('drought_risk'),
+      wildfire:             check('wildfire_risk'),
+      storm:                check('storm_risk'),
+      cal_fire:             check('calfire_fhsz'),
+      earthquake:           check('earthquake_risk'),
+      drought:              check('drought_risk'),
+      building_footprints:  check('building_footprints'),
     };
   }
 }

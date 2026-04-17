@@ -1654,15 +1654,15 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </div>
       </div>
       <div class="calc-result">
-        <div class="calc-result-plan" id="calc-plan">Starter</div>
-        <div class="calc-result-price" id="calc-price">$49 / month</div>
-        <div class="calc-result-note" id="calc-note">50,000 lookups included</div>
+        <div class="calc-result-plan" id="calc-plan">Growth</div>
+        <div class="calc-result-price" id="calc-price">$199 / month</div>
+        <div class="calc-result-note" id="calc-note">150,000 lookups included</div>
         <div class="calc-result-metered" id="calc-metered" style="display:none;margin-top:8px;font-size:0.82rem;color:var(--muted);"></div>
       </div>
     </div>
 
     <p style="text-align:center;font-size:0.88rem;color:var(--muted);margin-bottom:28px;padding:14px 20px;background:var(--bg-alt);border-radius:var(--r);border:1px solid var(--border);">
-      Manual flood zone determination costs <strong>$3–$15 per address</strong>. GeoClear Professional includes unlimited flood zone lookups for <strong>$249/mo</strong>.
+      Manual flood zone determination costs <strong>$3–$15 per address</strong>. GeoClear Professional includes unlimited flood zone lookups for <strong>$499/mo</strong>.
     </p>
 
     <div class="pricing-grid" data-fade-group>
@@ -1683,43 +1683,26 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <button class="plan-cta plan-cta-secondary" onclick="openModal()">Get free key</button>
       </div>
 
-      <div class="price-card" data-plan="starter">
-        <div class="plan-name">Starter</div>
+      <div class="price-card" data-plan="growth">
+        <div class="plan-name">Growth</div>
         <div class="plan-price-row">
-          <span class="plan-price"><sup>$</sup>49</span>
+          <span class="plan-price"><sup>$</sup>199</span>
         </div>
         <div class="plan-price-note">per month</div>
         <div class="plan-divider"></div>
         <div class="plan-features">
-          <div class="plan-feature">50,000 lookups / month</div>
+          <div class="plan-feature">150,000 lookups / month</div>
           <div class="plan-feature">All enrichment fields</div>
           <div class="plan-feature">Autocomplete + bulk API</div>
-          <div class="plan-feature">100 req/min rate limit</div>
+          <div class="plan-feature">500 req/min rate limit</div>
           <div class="plan-feature">Email support</div>
         </div>
-        <button class="plan-cta plan-cta-primary" onclick="openCheckout('starter')">Get started →</button>
+        <button class="plan-cta plan-cta-primary" onclick="openCheckout('growth')">Get started →</button>
       </div>
 
-      <div class="price-card featured" data-plan="growth">
+      <div class="price-card featured" data-plan="pro">
         <div class="featured-badge">Most Popular</div>
         <div class="plan-name">Professional</div>
-        <div class="plan-price-row">
-          <span class="plan-price"><sup>$</sup>249</span>
-        </div>
-        <div class="plan-price-note">per month</div>
-        <div class="plan-divider"></div>
-        <div class="plan-features">
-          <div class="plan-feature">500,000 lookups / month</div>
-          <div class="plan-feature">All enrichment fields</div>
-          <div class="plan-feature">1,000 bulk limit</div>
-          <div class="plan-feature">1,000 req/min rate limit</div>
-          <div class="plan-feature">Priority email support</div>
-        </div>
-        <button class="plan-cta plan-cta-secondary" onclick="openCheckout('growth')">Get started →</button>
-      </div>
-
-      <div class="price-card" data-plan="pro_compliance">
-        <div class="plan-name">Pro Compliance</div>
         <div class="plan-price-row">
           <span class="plan-price"><sup>$</sup>499</span>
         </div>
@@ -1727,13 +1710,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="plan-divider"></div>
         <div class="plan-features">
           <div class="plan-feature">500,000 lookups / month</div>
-          <div class="plan-feature">FEMA flood zone + SFHA flag</div>
-          <div class="plan-feature">Census tract + block group</div>
-          <div class="plan-feature">HMDA / NFIP / CRA fields</div>
-          <div class="plan-feature">Compliance SLA + audit logs</div>
-          <div class="plan-feature">Priority support</div>
+          <div class="plan-feature">All enrichment + risk fields</div>
+          <div class="plan-feature">FEMA flood · census tract · HMDA</div>
+          <div class="plan-feature">Drone deliverability flag</div>
+          <div class="plan-feature">1,000 req/min rate limit</div>
+          <div class="plan-feature">Priority support + compliance SLA</div>
         </div>
-        <a href="/compliance" class="plan-cta plan-cta-secondary" style="display:block;text-align:center;text-decoration:none;">Learn more →</a>
+        <button class="plan-cta plan-cta-secondary" onclick="openCheckout('pro')">Get started →</button>
       </div>
 
       <div class="price-card" data-plan="scale">
@@ -2396,13 +2379,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     { label:'1K',    n:1000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
     { label:'5K',    n:5000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
     { label:'10K',   n:10000,   plan:'Free',         price:'Free',      note:'10,000 lookups/mo cap',     key:'free'       },
-    { label:'25K',   n:25000,   plan:'Starter',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
-    { label:'50K',   n:50000,   plan:'Starter',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
-    { label:'100K',  n:100000,  plan:'Professional', price:'$249 / mo', note:'500,000 lookups included',  key:'growth'     },
-    { label:'250K',  n:250000,  plan:'Professional', price:'$249 / mo', note:'500,000 lookups included',  key:'growth'     },
-    { label:'500K',  n:500000,  plan:'Scale',        price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },
-    { label:'1M',    n:1000000, plan:'Scale',        price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },
-    { label:'5M+',   n:5000000, plan:'Enterprise',   price:'Custom',    note:'Unlimited — talk to us',    key:'enterprise' },
+    { label:'25K',   n:25000,   plan:'Growth',        price:'$199 / mo', note:'150,000 lookups included',  key:'growth'     },
+    { label:'50K',   n:50000,   plan:'Growth',        price:'$199 / mo', note:'150,000 lookups included',  key:'growth'     },
+    { label:'100K',  n:100000,  plan:'Growth',        price:'$199 / mo', note:'150,000 lookups included',  key:'growth'     },
+    { label:'250K',  n:250000,  plan:'Professional',  price:'$499 / mo', note:'500,000 lookups included',  key:'pro'        },
+    { label:'500K',  n:500000,  plan:'Scale',         price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },
+    { label:'1M',    n:1000000, plan:'Scale',         price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },
+    { label:'5M+',   n:5000000, plan:'Enterprise',    price:'Custom',    note:'Unlimited — talk to us',    key:'enterprise' },
   ];
 
   function updateCalc() {

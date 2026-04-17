@@ -39,6 +39,7 @@ const nhdCache        = new Map();
 const calfireCache    = new Map();
 const earthquakeCache = new Map();
 const droughtCache    = new Map();
+const droneCache      = new Map();
 
 function pruneCache(map) {
   if (map.size > CACHE_MAX) {
@@ -600,9 +601,52 @@ async function getDroughtRisk(countyFips) {
   return result;
 }
 
+/**
+ * FAA UAS Facility Map (UASFM) — authorized drone altitude ceilings near airports.
+ * Uses the FAA's public ArcGIS REST service (no API key required).
+ *
+ * Returns:
+ *   { in_controlled_airspace: bool, authorized_altitude_ft: int|null,
+ *     airport_id: string|null, laanc_available: bool }
+ *
+ * If point is not in any UASFM grid cell → Class G uncontrolled, 400ft part 107 ceiling.
+ * If in a cell with ceiling = 0 → controlled airspace, no auto-authorization (need waiver).
+ * If in a cell with ceiling > 0 → LAANC available up to that ceiling.
+ */
+async function getFAADroneAirspace(lat, lon) {
+  const key = cacheKey(lat, lon);
+  if (droneCache.has(key)) return droneCache.get(key);
+
+  const CLASS_G_DEFAULT = { in_controlled_airspace: false, authorized_altitude_ft: 400, airport_id: null, laanc_available: false };
+  let result = CLASS_G_DEFAULT;
+  try {
+    const url = 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/us_uas_facilities_map/FeatureServer/0/query' +
+      `?geometry=${encodeURIComponent(`${lon},${lat}`)}&geometryType=esriGeometryPoint&inSR=4326` +
+      `&spatialRel=esriSpatialRelIntersects&outFields=UASFM_CEILING%2CAIRPORT_ID%2CAIRPORT_NAME` +
+      `&returnGeometry=false&f=json`;
+    const body = await httpGetText(url, 6000);
+    const data = JSON.parse(body);
+    if (data.features && data.features.length > 0) {
+      const attrs   = data.features[0].attributes || {};
+      const ceiling = parseInt(attrs.UASFM_CEILING ?? -1);
+      result = {
+        in_controlled_airspace: true,
+        authorized_altitude_ft: ceiling >= 0 ? ceiling : null,
+        airport_id:             attrs.AIRPORT_ID   || null,
+        airport_name:           attrs.AIRPORT_NAME || null,
+        laanc_available:        ceiling > 0,
+      };
+    }
+  } catch (_) {}
+
+  droneCache.set(key, result);
+  setTimeout(() => droneCache.delete(key), 6 * 3600 * 1000); // 6hr cache
+  return result;
+}
+
 module.exports = {
   getCensusTract, getFEMAFloodZone, getElevation,
   getNearestStructures, getNearestGNIS, getNearestWaterway, getCALFireFHSZ,
-  getEarthquakeRisk, getDroughtRisk,
+  getEarthquakeRisk, getDroughtRisk, getFAADroneAirspace,
   enrichPoint,
 };

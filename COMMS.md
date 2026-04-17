@@ -232,3 +232,27 @@ _(Confirm auto-deploy is re-enabled in Render dashboard)_
 Same content as #5. Submit after G2 is live (use G2 listing URL as a reference in Capterra).
 
 ---
+
+### #7 — Create new Stripe prices for Q-105 pricing reframe (Action required by you)
+**Status:** 🆕 NEW
+**Action required:** You — in Stripe Dashboard (live mode), create two new recurring prices and set env vars on Render.
+
+**Step 1: Create prices in Stripe (Products → Add product)**
+| Product name | Price | Interval | Lookup key |
+|---|---|---|---|
+| GeoClear Growth | $199.00 | Monthly | `growth` |
+| GeoClear Professional | $499.00 | Monthly | `pro_v2` |
+| GeoClear Scale | $999.00 | Monthly | `scale` |
+
+**Step 2: Set env vars on Render (prod service `srv-d7ep7bfavr4c73d46gng`)**
+```
+STRIPE_PRICE_GROWTH = price_xxx   ← from Growth product above
+STRIPE_PRICE_PRO    = price_xxx   ← from Professional product above (replaces old $249)
+STRIPE_PRICE_SCALE  = price_xxx   ← from Scale product above
+```
+
+**Step 3: Leave `STRIPE_PRICE_STARTER` unchanged** — grandfathered $49 customers still billed at their original price. Do NOT delete the old Stripe price; just stop exposing it on the pricing page (already done in code).
+
+**Why:** New pricing floor is $199 (Q-105). The $49 Starter card has been removed from the landing page. `openCheckout('growth')` now maps to `STRIPE_PRICE_GROWTH` server-side. Until Render env vars are set, checkout for `growth`/`scale` tiers will return "Stripe price not configured" — this is safe, no revenue lost.
+
+---

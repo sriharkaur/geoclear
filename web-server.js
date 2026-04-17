@@ -21,7 +21,7 @@ const crypto     = require('crypto');
 const path       = require('path');
 const { NADQuery }    = require('./query.js');
 const { enrich }      = require('./enrich.js');
-const { enrichPoint, getFEMAFloodZone, getEarthquakeRisk, getDroughtRisk } = require('./geocode.js');
+const { enrichPoint, getFEMAFloodZone, getEarthquakeRisk, getDroughtRisk, getFAADroneAirspace } = require('./geocode.js');
 const { KeyStore }    = require('./keys.js');
 const { RiskData }    = require('./risk-data.js');
 
@@ -42,10 +42,12 @@ const ADMIN_SECRET          = process.env.NAD_ADMIN_SECRET    || 'nad_admin_loca
 const STRIPE_SECRET         = process.env.STRIPE_SECRET_KEY   || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_PRICES         = {
-  starter:        process.env.STRIPE_PRICE_STARTER         || '',
-  pro:            process.env.STRIPE_PRICE_PRO             || '',
-  pro_compliance: process.env.STRIPE_PRICE_PRO_COMPLIANCE  || '',
-  metered:        process.env.STRIPE_PRICE_METERED         || '',
+  starter:        process.env.STRIPE_PRICE_STARTER         || '',  // $49 — grandfathered, not shown on pricing page
+  growth:         process.env.STRIPE_PRICE_GROWTH          || '',  // $199 — current entry tier
+  pro:            process.env.STRIPE_PRICE_PRO             || '',  // $499 — Professional
+  scale:          process.env.STRIPE_PRICE_SCALE           || '',  // $999 — Scale
+  pro_compliance: process.env.STRIPE_PRICE_PRO_COMPLIANCE  || '',  // retained for webhook compat only
+  metered:        process.env.STRIPE_PRICE_METERED         || '',  // PAYG $0.001/lookup
 };
 const STRIPE_PRICES_BULK    = {
   bulk_1m:        process.env.STRIPE_PRICE_BULK_1M         || 'price_1TN4qvClBrXaJBXitL6R21rO',
@@ -752,8 +754,39 @@ app.get('/api/enrich', async (req, res) => {
   if (!lat || !lon) return err(res, 'lat and lon required (or nad_uuid).');
 
   try {
-    const data = await enrichPoint(parseFloat(lat), parseFloat(lon));
-    ok(res, data);
+    const fLat = parseFloat(lat);
+    const fLon = parseFloat(lon);
+    const hardNull = (ms) => new Promise(r => setTimeout(() => r(null), ms));
+    const [data, airspace] = await Promise.all([
+      enrichPoint(fLat, fLon),
+      Promise.race([getFAADroneAirspace(fLat, fLon).catch(() => null), hardNull(5000)]),
+    ]);
+
+    // Building footprint from risk.db (populated by building-import.js, staging pipeline)
+    const building   = riskData.getBuildingFootprint(fLat, fLon);
+    const openSqm    = building ? Math.max(0, 400 - (building.area_sqm || 0)) : null;
+
+    // Drone deliverability: Class G + open yard ≥ 50 sqm → deliverable
+    const inControlled   = airspace?.in_controlled_airspace ?? false;
+    const authAlt        = airspace?.authorized_altitude_ft ?? (inControlled ? 0 : 400);
+    const canFly         = !inControlled || (authAlt >= 50);
+    const hasLandingZone = openSqm === null ? null : openSqm >= 50;
+    const deliverable    = canFly && (hasLandingZone !== false);
+    const confidence     = building ? (airspace ? 'high' : 'medium') : (airspace ? 'low' : 'low');
+
+    ok(res, {
+      ...data,
+      drone: {
+        deliverable,
+        airspace_class:        inControlled ? 'controlled' : 'G',
+        authorized_altitude_ft: authAlt,
+        laanc_available:        airspace?.laanc_available ?? false,
+        airport_id:             airspace?.airport_id      ?? null,
+        estimated_open_sqm:     openSqm,
+        building_area_sqm:      building?.area_sqm ?? null,
+        confidence,
+      },
+    });
   } catch (e) {
     err(res, `Enrichment failed: ${e.message}`, 500);
   }
@@ -1807,7 +1840,7 @@ app.post('/v1/checkout', async (req, res) => {
   if (!stripe) return err(res, 'Stripe not configured. Set STRIPE_SECRET_KEY env var.', 503);
   const { email, tier } = req.body || {};
   if (!email || !tier) return err(res, 'email and tier required.');
-  if (!['starter', 'pro', 'metered'].includes(tier)) return err(res, 'tier must be "starter", "pro", or "metered".');
+  if (!['growth', 'pro', 'scale', 'metered', 'starter'].includes(tier)) return err(res, 'tier must be "growth", "pro", "scale", or "metered".');
   const priceId = STRIPE_PRICES[tier];
   if (!priceId) return err(res, `Stripe price not configured for ${tier}. Set STRIPE_PRICE_${tier.toUpperCase()} env var.`, 503);
   try {
