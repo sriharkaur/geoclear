@@ -206,3 +206,29 @@ curl -s -X POST -H "Authorization: Bearer $RENDER_API_KEY" \
 _(Confirm auto-deploy is re-enabled in Render dashboard)_
 
 ---
+
+### #5 — G2 listing (manual submission needed)
+**Status:** 🆕 NEW
+**Action required:** You — submit at g2.com/sell (create vendor account if needed)
+**Category:** Address Verification Software
+
+**Listing content (copy-paste ready):**
+
+- **Product name:** GeoClear
+- **Tagline:** "198M US addresses. FEMA flood zone + census tract in one call."
+- **Description:** GeoClear is a US address intelligence API built on the USDOT National Address Database (198M+ records). Verify and enrich US addresses with FEMA flood zone, census tract, county FIPS, timezone, and residential classification — all in a single API call. Free tier (1K/day, no card). Professional plan $249/mo includes unlimited enrichment. No contract. Instant API key.
+- **Pricing:** Free, then from $49/mo
+- **Website:** https://geoclear.io
+- **Category:** Address Verification Software
+- **Keywords:** bulk address validation, address API, FEMA flood zone, census tract, address enrichment
+
+---
+
+### #6 — Capterra listing (manual submission needed)
+**Status:** 🆕 NEW
+**Action required:** You — submit at capterra.com/vendors/sign-up
+**Category:** Address Verification Software (same content as G2)
+
+Same content as #5. Submit after G2 is live (use G2 listing URL as a reference in Capterra).
+
+---

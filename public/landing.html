@@ -1451,6 +1451,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div class="calc-result-plan" id="calc-plan">Builder</div>
         <div class="calc-result-price" id="calc-price">$49 / month</div>
         <div class="calc-result-note" id="calc-note">50,000 lookups included</div>
+        <div class="calc-result-metered" id="calc-metered" style="display:none;margin-top:8px;font-size:0.82rem;color:var(--muted);"></div>
       </div>
     </div>
 
@@ -2081,27 +2082,44 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 
   /* ── Pricing volume calculator ──────────────────────────────────────────── */
   const volSteps = [
-    { label:'1K',    plan:'Free',       price:'Free',       note:'up to 10,000 lookups/mo',   key:'free'       },
-    { label:'5K',    plan:'Free',       price:'Free',       note:'up to 10,000 lookups/mo',   key:'free'       },
-    { label:'10K',   plan:'Free',       price:'Free',       note:'10,000 lookups/mo cap',      key:'free'       },
-    { label:'25K',   plan:'Builder',       price:'$49 / mo',   note:'50,000 lookups included',   key:'starter'    },
-    { label:'50K',   plan:'Builder',       price:'$49 / mo',   note:'50,000 lookups included',   key:'starter'    },
-    { label:'100K',  plan:'Professional',  price:'$249 / mo',  note:'500,000 lookups included',  key:'growth'     },
-    { label:'250K',  plan:'Professional',  price:'$249 / mo',  note:'500,000 lookups included',  key:'growth'     },
-    { label:'500K',  plan:'Scale',      price:'$999 / mo',  note:'5,000,000 lookups included',key:'scale'      },
-    { label:'1M',    plan:'Scale',      price:'$999 / mo',  note:'5,000,000 lookups included',key:'scale'      },
-    { label:'5M+',   plan:'Enterprise', price:'Custom',     note:'Unlimited — talk to us',    key:'enterprise' },
+    { label:'1K',    n:1000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
+    { label:'5K',    n:5000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
+    { label:'10K',   n:10000,   plan:'Free',         price:'Free',      note:'10,000 lookups/mo cap',     key:'free'       },
+    { label:'25K',   n:25000,   plan:'Builder',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
+    { label:'50K',   n:50000,   plan:'Builder',      price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
+    { label:'100K',  n:100000,  plan:'Professional', price:'$249 / mo', note:'500,000 lookups included',  key:'growth'     },
+    { label:'250K',  n:250000,  plan:'Professional', price:'$249 / mo', note:'500,000 lookups included',  key:'growth'     },
+    { label:'500K',  n:500000,  plan:'Scale',        price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },
+    { label:'1M',    n:1000000, plan:'Scale',        price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },
+    { label:'5M+',   n:5000000, plan:'Enterprise',   price:'Custom',    note:'Unlimited — talk to us',    key:'enterprise' },
   ];
 
   function updateCalc() {
-    const idx = parseInt(document.getElementById('vol-slider').value);
-    const s   = volSteps[idx];
+    const idx  = parseInt(document.getElementById('vol-slider').value);
+    const s    = volSteps[idx];
     document.getElementById('calc-plan').textContent  = s.plan;
     document.getElementById('calc-price').textContent = s.price;
     document.getElementById('calc-note').textContent  = s.note;
     document.querySelectorAll('.price-card').forEach(c => c.classList.remove('calc-highlight'));
     const card = document.querySelector(`[data-plan="${s.key}"]`);
     if (card) card.classList.add('calc-highlight');
+
+    // metered comparison: $0.002/lookup (Pay-as-you-go rate)
+    const meteredEl = document.getElementById('calc-metered');
+    const subPrice = parseInt(s.price.replace(/[^0-9]/g, ''), 10);
+    if (s.key !== 'free' && s.key !== 'enterprise' && s.n && subPrice > 0) {
+      const meteredTotal = s.n * 0.002;
+      const meteredFmt   = meteredTotal.toLocaleString('en-US', { style:'currency', currency:'USD', maximumFractionDigits:0 });
+      const savePct      = Math.round((1 - subPrice / meteredTotal) * 100);
+      if (savePct > 0) {
+        meteredEl.textContent = `Pay-as-you-go for ${s.label} lookups = ${meteredFmt}/mo — subscription saves ${savePct}%`;
+        meteredEl.style.display = '';
+      } else {
+        meteredEl.style.display = 'none';
+      }
+    } else {
+      meteredEl.style.display = 'none';
+    }
   }
 
   const slider = document.getElementById('vol-slider');

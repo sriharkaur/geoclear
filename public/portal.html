@@ -112,6 +112,13 @@
 
     .usage-dashboard { display: none; margin-top: 16px; }
 
+    .usage-history { margin: 16px 0; }
+    .usage-history-title { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .usage-history-chart { display: flex; align-items: flex-end; gap: 3px; height: 50px; }
+    .usage-history-bar { flex: 1; background: var(--green); border-radius: 2px 2px 0 0; min-height: 2px; transition: height 0.3s ease; cursor: default; }
+    .usage-history-bar:hover { background: var(--green-dark, #1e7a57); }
+    .usage-history-labels { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); margin-top: 4px; }
+
     .usage-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
     .tier-chip {
       font-size: 0.72rem; font-weight: 800; padding: 4px 12px; border-radius: 20px;
@@ -406,6 +413,13 @@
         </div>
       </div>
 
+      <!-- Usage history chart -->
+      <div class="usage-history" id="ud-history" style="display:none">
+        <div class="usage-history-title">Requests — last 30 days</div>
+        <div class="usage-history-chart" id="ud-history-chart"></div>
+        <div class="usage-history-labels" id="ud-history-labels"></div>
+      </div>
+
       <!-- Upgrade CTA (shown at ≥70%) -->
       <div class="upgrade-cta" id="ud-upgrade-cta" style="display:none">
         <div>
@@ -582,6 +596,24 @@ async function lookupMyKey() {
   epNote.textContent = hasEnrich
     ? 'Call GET /api/enrich?lat=&lon= to get full enrichment data for any coordinate.'
     : 'These fields are available via GET /api/enrich on Pro and Enterprise plans.';
+
+  // Usage history sparkline
+  const history = d.usage_history || [];
+  const histSection = document.getElementById('ud-history');
+  const histChart   = document.getElementById('ud-history-chart');
+  const histLabels  = document.getElementById('ud-history-labels');
+  if (history.length > 0) {
+    const maxVal = Math.max(...history.map(h => h.requests), 1);
+    histChart.innerHTML = history.map(h =>
+      `<div class="usage-history-bar" style="height:${Math.max(2, (h.requests / maxVal) * 50)}px" title="${h.day}: ${h.requests.toLocaleString()} requests"></div>`
+    ).join('');
+    const first = history[0].day.slice(5);
+    const last  = history[history.length - 1].day.slice(5);
+    histLabels.innerHTML = `<span>${first}</span><span>${last}</span>`;
+    histSection.style.display = '';
+  } else {
+    histSection.style.display = 'none';
+  }
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────

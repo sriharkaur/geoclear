@@ -106,7 +106,7 @@ _Last updated: 2026-04-17 (session 24 — Risk Score v2 ✅ complete: outcome fe
 
 - [x] **CSV upload → enriched CSV download** ✅ 2026-04-17 — `POST /api/address/csv` (text/csv, max 5K rows, 10MB). Auto-detects columns. Returns: geo_verified, nad_uuid, confidence, residential, fips, timezone, coverage, match_type. RFC 4180 inline. **Pending**: portal drag-drop UI + pro-tier external enrichment (flood_zone, census_tract).
 - [x] **Add metered cost calculator to pricing slider** ✅ 2026-04-17 — Shows "Pay-as-you-go equivalent: $X/mo — saves Y%" for Builder/Professional/Scale positions. File: `public/landing.html`
-- [ ] **Usage dashboard for customers** — self-serve usage over time in portal (calls/day, quota used, cost accrued for metered). File: `public/portal.html`
+- [x] **Usage dashboard for customers** ✅ 2026-04-17 — `GET /v1/me` returns `usage_history` (per-day counts, 30d default). Portal renders 30-day sparkline bar chart. Files: `keys.js`, `web-server.js`, `public/portal.html`
 - [ ] **API usage analytics endpoint** — `GET /v1/admin/analytics`: requests/day by tier, top keys by volume, error rate. *(also in Phase 1 Week 4 — done there, remove when complete)*
 - [ ] **Add 500-call enrichment taste to Builder tier** — *(also in Phase 2 — remove this entry when done)*
 - [ ] **FCC broadband tier by address** — $42B BEAD program demand. Enrichment field addition.

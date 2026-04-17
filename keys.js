@@ -385,6 +385,18 @@ class KeyStore {
     return null;
   }
 
+  /** Return daily request counts for the last N days for a key */
+  getUsageHistory(keyId, days = 30) {
+    return this.db.prepare(`
+      SELECT date(ts, 'unixepoch') AS day, COUNT(*) AS requests
+      FROM usage_log
+      WHERE key_id = ?
+        AND ts >= strftime('%s', 'now', ? || ' days')
+      GROUP BY day
+      ORDER BY day ASC
+    `).all(keyId, `-${days}`);
+  }
+
   /** Return all metered keys with unreported usage (for Stripe flush) */
   getMeteredKeysWithUsage() {
     return this.db.prepare(`

@@ -1535,6 +1535,7 @@ app.get('/v1/me', (req, res) => {
   const rawKey = req.headers['x-api-key'] || req.query.key;
   const info   = keys.validate(rawKey);
   if (!info) return err(res, 'Invalid or missing API key.', 401);
+  const days = Math.min(parseInt(req.query.history_days || '30', 10), 90);
   ok(res, {
     tier:           info.tier,
     email:          info.email,
@@ -1542,6 +1543,7 @@ app.get('/v1/me', (req, res) => {
     requests_today: info.requests_today,
     requests_total: info.requests_total,
     created_at:     info.created_at,
+    usage_history:  keys.getUsageHistory(info.id, days),
   });
 });
 

@@ -117,7 +117,7 @@ Live Stripe Billing Meter: `mtr_61UVWpc...` | Event name: `geoclear_lookup`
 | Free tier self-serve signup | `POST /v1/signup` | Email only, 5/hr/IP rate limit; SendGrid email delivery |
 | Paid tier checkout | `POST /v1/checkout` | Stripe-hosted checkout; `starter`, `pro`, `metered` |
 | Poll for key post-payment | `GET /v1/checkout/session/:id` | Returns `status: pending | complete` + key |
-| Key status & usage | `GET /v1/me` | Tier, limits, usage today / total |
+| Key status & usage | `GET /v1/me` | Tier, limits, usage today / total + `usage_history` (per-day 30d, `?history_days=N` up to 90) |
 | Rate limiting | per-key per-tier | `req_per_min` enforced via express-rate-limit |
 | Daily quota | per-key per-tier | `req_per_day` enforced in auth middleware |
 
@@ -222,7 +222,7 @@ Customers report real-world delivery/fraud/chargeback outcomes per `nad_uuid`. G
 | Animated metric counters | landing page | 120M+ / 8+ / 10K count up from 0 on scroll-into-view; `<5ms` uses prefix token; 1.4s duration at 60fps |
 | Use-case industry switcher | landing page — code section | 5 pills (General / Insurance / Fintech / E-commerce / Logistics); clicking fades and swaps h2 + description to persona-specific copy; no page reload |
 | Pricing volume calculator | landing page — pricing section | Range slider 1K–5M+ lookups/month; auto-highlights matching price card with glow border; shows plan name, price, and included volume in real time |
-| Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel |
+| Customer portal | `/portal.html` | Key display, upgrade/cancel, checkout success/cancel, 30-day sparkline usage chart |
 | Status | `/status.html` | Real UptimeRobot data via `/api/status` proxy — uptime table (1d/7d/30d/90d), live response time, external dep checks (Census, FEMA) |
 | API explorer | `/explorer` | Interactive API docs |
 | Privacy Policy | `/privacy` | Data collection, retention, third-party services |

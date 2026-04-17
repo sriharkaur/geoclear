@@ -15,6 +15,8 @@
 - **Bulk Credits Pack in Stripe** — two one-time products: 1M credits $199 (`prod_ULmPbW3DgGenEh`) and 5M credits $799 (`prod_ULmPjIOpbCdElY`). Price IDs: `STRIPE_PRICE_BULK_1M` + `STRIPE_PRICE_BULK_5M`. `POST /v1/checkout/bulk` endpoint (`{ email, pack:"1m"|"5m" }`) → Stripe payment mode checkout. `buyBulk()` in `bulk.html` wired. Success banner shown on `?success=1`.
 - **Render Health Check Path** — set to `/api/health` on prod service `srv-d7ep7bfavr4c73d46gng`. Render will auto-restart on health failure.
 - **Pricing slider metered comparison** — `updateCalc()` now shows "Pay-as-you-go equivalent: $X/mo — subscription saves Y%" for Builder/Professional/Scale slider positions. Helps conversion at subscription tiers.
+- **Usage history on `GET /v1/me`** — `usage_history` array: per-day request counts for last 30 days (capped at 90 via `?history_days=N`). `getUsageHistory(keyId, days)` method in `KeyStore`. Portal renders as a sparkline bar chart.
+- **Customer usage dashboard in portal** — `portal.html` renders 30-day sparkline from `usage_history`; CSS bar chart, hover tooltips with date + count, first/last date labels. No external chart library.
 - **`/sitemap.xml`** — 8-URL sitemap covering all public pages; `application/xml` content-type; explicit route added before catch-all. Google Search Console: geoclear.io Domain property verified via Cloudflare DNS TXT integration (automatic); sitemap submitted with status Success, 7 URLs discovered.
 - **Render auto-deploy fix** — documented manual trigger via `POST /v1/services/srv-d7ep7bfavr4c73d46gng/deploys`; logged in COMMS.md #4 for dashboard investigation.
 > Features merged to main but not yet cut into a version.
