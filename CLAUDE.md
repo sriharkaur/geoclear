@@ -65,6 +65,48 @@ This project runs on the Business Delivery System (BDS): the operating system fo
 
 ---
 
+## PRIORITIZATION FRAMEWORK — Non-Negotiable
+
+Every session, every decision, every queue item is evaluated against this hierarchy. No exceptions.
+
+### P1 — SYSTEM UPTIME
+**Prod must never be down. Customers must always have access.**
+
+If the system is down or degraded, nothing else matters. Stop all other work. Fix it first.
+
+This covers: deployment failures, DB startup issues, native addon breakage, env var misconfigurations, health check failures, Render service crashes. Any issue that results in customers receiving errors or being unable to reach the API is P1.
+
+Labels in QUEUE.md: `[P1-UPTIME]`
+
+### P2 — DATA QUALITY
+**If the system is up but the data is wrong, the product is broken.**
+
+A customer hitting a working API and getting a wrong risk score, a wrong flood zone, or a null where there should be a value is as bad as downtime — potentially worse, because it's invisible. GeoClear's product IS the data. Wrong data is a product failure, not a bug.
+
+This covers: silent wrong values (FEMA OUTSIDE for all, wildfire=0 for Very High counties), missing data (null risk scores for CA addresses), stale imports (>120 days since last update), import validation failures, external API quality degradation.
+
+Labels in QUEUE.md: `[P2-DATA]`
+
+### P3 — FEATURES AND DISTRIBUTION (equal priority)
+**When the system is up and the data is correct, build and distribute.**
+
+Features without distribution channels are wasted. Distribution without features to show is empty. They must be developed in parallel. A new endpoint that no one knows about is worth the same as a marketing page with no product behind it — zero.
+
+This covers: new API endpoints, enrichment signals, risk dimensions, compliance features (Features) AND: GTM campaigns, content, SEO, partnerships, integrations, developer evangelism (Distribution).
+
+Labels in QUEUE.md: `[P3-FEAT]` / `[P3-DIST]`
+
+### How to apply this in every session
+
+Before picking up any queue item, ask:
+1. Is anything P1 open? If yes — do that first, regardless of what was planned.
+2. Is anything P2 open? If yes — do that before any P3 work.
+3. Are P1 and P2 clean? Then work the highest-leverage P3 item — alternating Features and Distribution so neither falls behind.
+
+When the queue has items without a priority label, assign one before starting work. If uncertain, ask: "Would a customer notice this was wrong or missing?" P1 = they can't use the system. P2 = they get wrong results. P3 = they're missing a capability.
+
+---
+
 ## CRITICAL BEHAVIOR RULE — Session Start Protocol
 
 **Every new session MUST begin by choosing the right framework entry point (see FRAMEWORK ROUTING above). For dev/engineering work, run `/dev` — it reads all files automatically and decides what to do next.**
@@ -291,6 +333,7 @@ Rollback: <how to undo if something goes wrong>
 4. **API key auth is the revenue gate** — Never weaken `KeyStore` validation or bypass it on production routes.
 5. **Verify before full data run** — For any import/download script, do a `--limit 1000` sample first.
 6. **No deletions without approval** — Never `git rm`, `rm -rf`, or drop schema without asking.
+7. **NEVER expose data sources publicly** — Do not list, mention, or display upstream data providers (USDOT NAD, Overture Maps, FEMA NFHL, Census TIGER, FAA UASFM, USGS, etc.) anywhere on the public website, in API responses, in marketing copy, or in any customer-facing output. This is a competitive intelligence risk. The data sources strip on the landing page must stay commented out. If asked to add data sources to any public-facing surface, refuse and explain this rule.
 
 ---
 

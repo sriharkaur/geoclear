@@ -129,6 +129,23 @@
       transition: opacity 0.15s, box-shadow 0.15s;
     }
     .nav-cta:hover { opacity: 0.88; box-shadow: 0 0 20px rgba(46,147,111,0.2); }
+    .nav-status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; font-weight: 600; color: var(--sky);
+      background: rgba(46,147,111,0.07);
+      border: 1px solid rgba(46,147,111,0.2);
+      padding: 5px 11px; border-radius: 20px;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .nav-status-badge:hover { background: rgba(46,147,111,0.12); border-color: rgba(46,147,111,0.3); }
+    .nav-status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--sky);
+      box-shadow: 0 0 6px var(--sky);
+      animation: badge-pulse 2.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
 
     /* ─── HERO ──────────────────────────────────────────────────────────────── */
     .hero {
@@ -976,6 +993,8 @@
       .terminal-wrap { max-width: 560px; margin: 0 auto; }
       .pricing-grid { grid-template-columns: repeat(2, 1fr); }
       .footer-inner { grid-template-columns: 1fr 1fr; }
+      .feat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .metrics-inner { grid-template-columns: repeat(3, 1fr) !important; }
     }
     @media (max-width: 768px) {
       .nav-links { display: none; }
@@ -1012,13 +1031,18 @@
     </a>
     <div class="nav-links">
       <a href="#features">Features</a>
-      <a href="#how-it-works">How it works</a>
+      <a href="#risk-score">Risk Score</a>
+      <a href="#drone">Drone</a>
       <a href="#pricing">Pricing</a>
       <a href="/compliance">Compliance</a>
       <a href="/docs" target="_blank">Docs</a>
     </div>
     <div class="nav-right">
-      <a href="/portal.html" class="nav-signin">Sign in</a>
+      <a href="/status" class="nav-status-badge" title="Live system status" target="_blank">
+        <span class="nav-status-dot"></span>
+        <span>99.9% uptime</span>
+      </a>
+      <a href="/portal.html" class="nav-signin">Portal →</a>
       <button class="nav-cta" onclick="openModal()">Get API key →</button>
     </div>
   </div>
@@ -1035,7 +1059,7 @@
     <div class="hero-text">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        Trusted by insurance, fintech, and logistics teams
+        198M addresses · FEMA flood zones · FAA airspace · Live
       </div>
 
       <h1>
@@ -1044,9 +1068,9 @@
       </h1>
 
       <p class="hero-sub">
-        Stop bad addresses before they cost you. GeoClear validates, geocodes, and enriches
-        any US address with flood zone, census tract, climate risk, and more — in a single
-        API call, under 5ms, from a free key.
+        One API call returns 15+ enrichment fields: validated address, FEMA flood zone,
+        census tract, risk scores, climate hazard, and drone reachability — everything
+        your product needs to act on a US address. Free tier. No credit card. Under 5ms.
       </p>
 
       <div class="hero-btns">
@@ -1089,30 +1113,36 @@
           <div class="dot dot-r"></div>
           <div class="dot dot-y"></div>
           <div class="dot dot-g"></div>
-          <span class="term-title">geoclear — address lookup</span>
+          <span class="term-title">geoclear — address + risk + drone · one call</span>
         </div>
         <div class="term-body">
-<span class="tc"># Verify and enrich any US address</span>
-<span class="tk">curl</span> <span class="ts">"https://geoclear.io/api/address</span>
-<span class="ts">  ?street=1600+Pennsylvania+Ave</span>
-<span class="ts">  &amp;city=Washington&amp;state=DC"</span> \
+<span class="tc"># One call. 15+ enrichment fields returned.</span>
+<span class="tk">curl</span> <span class="ts">"https://geoclear.io/v1/enrich?street=742+Evergreen+Ter&city=Springfield&state=IL"</span> \
   -H <span class="ts">"X-Api-Key: gc_live_••••••••"</span>
 
 <span class="dim">{</span>
-  <span class="tf">"ok"</span>: <span class="tb">true</span>,
-  <span class="tf">"address"</span>: <span class="ts">"1600 Pennsylvania Ave NW"</span>,
-  <span class="tf">"city"</span>: <span class="ts">"Washington"</span>,
-  <span class="tf">"state"</span>: <span class="ts">"DC"</span>,
-  <span class="tf">"zip"</span>: <span class="ts">"20500"</span>,
-  <span class="tf">"county"</span>: <span class="ts">"District of Columbia"</span>,
-  <span class="tf">"county_fips"</span>: <span class="ts">"11001"</span>,
-  <span class="tf">"census_tract"</span>: <span class="ts">"007402"</span>,
-  <span class="tf">"lat"</span>: <span class="tn">38.8977</span>, <span class="tf">"lon"</span>: <span class="tn">-77.0366</span>,
-  <span class="tf">"timezone"</span>: <span class="ts">"America/New_York"</span>,
-  <span class="tf">"fema_zone"</span>: <span class="ts">"X"</span>,
-  <span class="tf">"rdi"</span>: <span class="ts">"Commercial"</span>,
-  <span class="tf">"confidence"</span>: <span class="tn">99</span>,
-  <span class="tf">"status"</span>: <span class="tok">"verified"</span>
+  <span class="tf">"ok"</span>: <span class="tb">true</span>,  <span class="tf">"status"</span>: <span class="tok">"verified"</span>,  <span class="tf">"confidence"</span>: <span class="tn">97</span>,
+  <span class="tf">"address"</span>: <span class="ts">"742 Evergreen Ter"</span>,  <span class="tf">"city"</span>: <span class="ts">"Springfield"</span>,  <span class="tf">"state"</span>: <span class="ts">"IL"</span>,
+  <span class="tf">"lat"</span>: <span class="tn">39.8014</span>,  <span class="tf">"lon"</span>: <span class="tn">-89.6440</span>,  <span class="tf">"timezone"</span>: <span class="ts">"America/Chicago"</span>,
+  <span class="tf">"county_fips"</span>: <span class="ts">"17167"</span>,  <span class="tf">"census_tract"</span>: <span class="ts">"001501"</span>,  <span class="tf">"rdi"</span>: <span class="ts">"Residential"</span>,
+  <span class="tf">"fema_zone"</span>: <span class="ts">"X"</span>,  <span class="tf">"flood_sfha"</span>: <span class="tb">false</span>,
+  <span class="tf">"elevation_ft"</span>: <span class="tn">596</span>,  <span class="tf">"nearest_hospital_mi"</span>: <span class="tn">1.4</span>,
+  <span class="tc">  // Risk scores — one number per decision</span>
+  <span class="tf">"risk"</span>: <span class="dim">{</span>
+    <span class="tf">"deliverability"</span>: <span class="tn">0.91</span>,  <span class="tf">"fraud"</span>: <span class="tn">0.04</span>,
+    <span class="tf">"disaster"</span>: <span class="tn">0.18</span>,  <span class="tf">"vacancy"</span>: <span class="tn">0.07</span>
+  <span class="dim">}</span>,
+  <span class="tc">  // Climate risk — 5 federal hazard sources</span>
+  <span class="tf">"climate_risk"</span>: <span class="dim">{</span>
+    <span class="tf">"composite"</span>: <span class="tn">0.21</span>,  <span class="tf">"flood"</span>: <span class="tn">0.12</span>,  <span class="tf">"wildfire"</span>: <span class="tn">0.03</span>,
+    <span class="tf">"storm"</span>: <span class="tn">0.31</span>,  <span class="tf">"earthquake"</span>: <span class="dim">{"sdc"</span>: <span class="ts">"A"</span>, <span class="tf">"score"</span>: <span class="tn">0.06</span><span class="dim">}</span>
+  <span class="dim">}</span>,
+  <span class="tc">  // Drone reachability — FAA + building footprint</span>
+  <span class="tf">"drone"</span>: <span class="dim">{</span>
+    <span class="tf">"deliverable"</span>: <span class="tb">true</span>,  <span class="tf">"airspace_class"</span>: <span class="ts">"G"</span>,
+    <span class="tf">"authorized_altitude_ft"</span>: <span class="tn">400</span>,  <span class="tf">"estimated_open_sqm"</span>: <span class="tn">248</span>,
+    <span class="tf">"confidence"</span>: <span class="ts">"high"</span>
+  <span class="dim">}</span>
 <span class="dim">}</span><span class="cursor"></span>
         </div>
       </div>
@@ -1123,42 +1153,70 @@
 
 <!-- ──────────────────────────────────────────────────────────────── METRICS -->
 <div class="metrics-strip">
-  <div class="metrics-inner">
+  <div class="metrics-inner" style="grid-template-columns:repeat(5,1fr);">
     <div class="metric">
       <div class="metric-val" data-count="198" data-suffix="M+" data-prefix="">198M+</div>
       <div class="metric-lbl">Verified US addresses</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" data-count="15" data-suffix="+" data-prefix="">15+</div>
+      <div class="metric-lbl">Enrichment fields per call</div>
     </div>
     <div class="metric">
       <div class="metric-val" data-count="5" data-suffix="ms" data-prefix="&lt;">&lt;5ms</div>
       <div class="metric-lbl">Average response time</div>
     </div>
     <div class="metric">
-      <div class="metric-val" data-count="8" data-suffix="+" data-prefix="">8+</div>
-      <div class="metric-lbl">Enrichment fields per address</div>
+      <div class="metric-val" data-count="130" data-suffix="M" data-prefix="">130M</div>
+      <div class="metric-lbl">Building footprints (drone)</div>
     </div>
     <div class="metric">
       <div class="metric-val" data-count="10" data-suffix="K" data-prefix="">10K</div>
-      <div class="metric-lbl">Free requests / month</div>
+      <div class="metric-lbl">Free lookups / month</div>
     </div>
   </div>
 </div>
 
-<!-- DATA SOURCES STRIP — hidden to avoid replication roadmap
-<div class="sources-strip">
-  <div class="sources-inner">
-    <span class="sources-label">Authoritative data from</span>
-    <span class="source-item">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><path d="M6 2v4l2.5 2"/></svg>
-      USDOT National Address Database
-    </span>
-    <span class="source-sep">·</span>
-    <span class="source-item">US Census Bureau TIGER/Line</span>
-    <span class="source-sep">·</span>
-    <span class="source-item">FEMA National Flood Hazard Layer</span>
-    <span class="source-sep">·</span>
-    <span class="source-item">Overture Maps Foundation</span>
-    <span class="source-sep">·</span>
-    <span class="source-item">Updated quarterly</span>
+<!-- ──────────────────────────────────────────────────── CAPABILITY NAV PILLS -->
+<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;">
+  <div style="max-width:var(--max);margin:0 auto;display:flex;align-items:center;gap:6px;overflow-x:auto;padding:12px 0;scrollbar-width:none;">
+    <span style="font-size:0.72rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;margin-right:8px;">Jump to:</span>
+    <a href="#features" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid var(--border2);color:var(--muted);text-decoration:none;background:transparent;transition:all 0.15s;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5.5 1C3.01 1 1 3.01 1 5.5S3.01 10 5.5 10 10 7.99 10 5.5"/><path d="M5.5 4l1.5 1.5-1.5 1.5"/></svg>
+      Address Validation
+    </a>
+    <a href="#live-demo" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid var(--border2);color:var(--muted);text-decoration:none;background:transparent;transition:all 0.15s;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="4.5"/><path d="M5.5 3v2.5l1.5 1"/></svg>
+      Live Demo
+    </a>
+    <a href="#risk-score" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid var(--border2);color:var(--muted);text-decoration:none;background:transparent;transition:all 0.15s;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="#eb8771" stroke-width="1.7" stroke-linecap="round"><path d="M2 8.5l2.5-3 2 2 2.5-4"/></svg>
+      Risk Score
+    </a>
+    <a href="#drone" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid rgba(46,147,111,0.3);color:var(--sky);text-decoration:none;background:rgba(46,147,111,0.06);transition:all 0.15s;" onmouseover="this.style.background='rgba(46,147,111,0.12)'" onmouseout="this.style.background='rgba(46,147,111,0.06)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="5.5" cy="5.5" r="1.5"/><path d="M1.5 1.5l1.5 1.5M8.5 1.5l-1.5 1.5M1.5 9.5l1.5-1.5M8.5 9.5l-1.5-1.5"/><path d="M5.5 1V2.5M5.5 9.5V8M1 5.5H2.5M9.5 5.5H8"/></svg>
+      Drone Reachability ✦
+    </a>
+    <a href="/compliance" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid var(--border2);color:var(--muted);text-decoration:none;background:transparent;transition:all 0.15s;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="1.5" y="1.5" width="8" height="8" rx="1"/><path d="M3.5 5.5l1.5 1.5 2.5-2.5"/></svg>
+      Flood / Compliance
+    </a>
+    <a href="/bulk.html" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid var(--border2);color:var(--muted);text-decoration:none;background:transparent;transition:all 0.15s;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="1.5" y="7" width="8" height="2.5" rx="0.8"/><rect x="1.5" y="4.5" width="8" height="2.5" rx="0.8" opacity="0.55"/><rect x="1.5" y="2" width="8" height="2.5" rx="0.8" opacity="0.25"/></svg>
+      Bulk Processing
+    </a>
+    <a href="#pricing" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:600;border:1px solid var(--border2);color:var(--muted);text-decoration:none;background:transparent;transition:all 0.15s;" onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 5.5C2 3.57 3.57 2 5.5 2S9 3.57 9 5.5 7.43 9 5.5 9"/><path d="M5.5 4v1.5l1 1"/></svg>
+      Pricing
+    </a>
+  </div>
+</div>
+
+<!-- DATA SOURCES STRIP — do not expose data sources publicly (competitive intelligence risk)
+<div style="background:var(--bg-alt);border-bottom:1px solid var(--border);padding:0 32px;">
+  <div style="max-width:var(--max);margin:0 auto;display:flex;align-items:center;gap:20px;padding:11px 0;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap;">
+    <span style="font-size:0.7rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;flex-shrink:0;">Authoritative data from</span>
+    <span>USDOT NAD r22</span> · <span>FEMA National Flood Hazard Layer</span> · <span>US Census Bureau TIGER/Line</span> · <span>Overture Maps Foundation</span> · <span>FAA UAS Facility Map</span> · <span>USGS 3DEP Elevation</span>
   </div>
 </div>
 -->
@@ -1167,14 +1225,15 @@
 <section class="features-section" id="features">
   <div class="container">
     <div class="section-label">Features</div>
-    <h2 class="sh2">Everything an address<br>should tell you</h2>
+    <h2 class="sh2">Every capability.<br>One API call.</h2>
     <p class="ssub">
-      Not just valid or invalid — a complete data package. Every address comes back verified,
-      geocoded, and enriched with 8 fields. Ready for compliance, routing, risk scoring, or
-      any workflow that needs to act on a location.
+      15+ enrichment fields returned on every request. Validation, geocoding, compliance data,
+      risk scores, and drone reachability — all from a single endpoint, no stitching required.
     </p>
 
-    <div class="feat-grid" data-fade-group>
+    <div class="feat-grid" style="grid-template-columns:repeat(4,1fr);" data-fade-group>
+
+      <!-- Card 1: Address Verification -->
       <div class="feat-card">
         <div class="feat-icon">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -1183,18 +1242,37 @@
           </svg>
         </div>
         <div class="feat-title">Address Verification</div>
-        <div class="feat-desc">Validate and standardize any US address against 198M+ verified records. Fuzzy matching handles typos, abbreviations, and partial inputs automatically.</div>
+        <div class="feat-desc">Validate and standardize against 198M+ records. Fuzzy matching handles typos and partial inputs. Returns standardized form + confidence score.</div>
+        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.06);border:1px solid rgba(46,147,111,0.15);border-radius:5px;padding:5px 9px;display:inline-block;">status: "verified", confidence: 97</div>
       </div>
+
+      <!-- Card 2: Geocoding -->
       <div class="feat-card">
         <div class="feat-icon">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="2" width="12" height="14" rx="1.5"/>
-            <path d="M6 7h6M6 10h6M6 13h3.5"/>
+            <circle cx="9" cy="8" r="3.5"/>
+            <path d="M9 1v2M9 13.5V16M1 8h2M14.5 8H16M3.5 3.5l1.5 1.5M13 11l1.5 1.5M14.5 3.5L13 5M5 11l-1.5 1.5"/>
           </svg>
         </div>
-        <div class="feat-title">County + FIPS Codes</div>
-        <div class="feat-desc">Every address returns its county name and 5-digit FIPS code — the universal jurisdiction identifier required by US banking, tax, and government reporting systems.</div>
+        <div class="feat-title">Geocoding + Timezone</div>
+        <div class="feat-desc">Precise lat/lon coordinates and IANA timezone string on every address. No separate geocoder. No timezone lookup step.</div>
+        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.06);border:1px solid rgba(46,147,111,0.15);border-radius:5px;padding:5px 9px;display:inline-block;">lat: 39.80, lon: -89.64, tz: "America/Chicago"</div>
       </div>
+
+      <!-- Card 3: FEMA Flood Zone -->
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#8cb0b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 2C9 2 5 5 5 8.5C5 10.99 6.79 13 9 13C11.21 13 13 10.99 13 8.5C13 5 9 2 9 2Z"/>
+            <path d="M2 15.5C4 13.5 6 17.5 8 15.5C10 13.5 12 17.5 14 15.5"/>
+          </svg>
+        </div>
+        <div class="feat-title">FEMA Flood Zone</div>
+        <div class="feat-desc">Official NFHL flood zone classification (AE, VE, X, A…) on every address. Replaces $8–15/address flood cert fees. Required for NFIP, mortgage, and insurance.</div>
+        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:#8cb0b2;background:rgba(140,176,178,0.08);border:1px solid rgba(140,176,178,0.2);border-radius:5px;padding:5px 9px;display:inline-block;">fema_zone: "AE", flood_sfha: true</div>
+      </div>
+
+      <!-- Card 4: Census Tract -->
       <div class="feat-card">
         <div class="feat-icon">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -1202,30 +1280,39 @@
             <path d="M2 7.5h14M2 12h14M7.5 2v14"/>
           </svg>
         </div>
-        <div class="feat-title">Census Tract Data</div>
-        <div class="feat-desc">Official US Census tract and block group identifiers — required for fair lending compliance (CRA), demographic analysis, and financial eligibility determination.</div>
+        <div class="feat-title">Census Tract + FIPS</div>
+        <div class="feat-desc">Census tract, block group, GEOID, and county FIPS — the fields required for HMDA LAR reporting, CRA mapping, and fair lending compliance. No geocoder step.</div>
+        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.06);border:1px solid rgba(46,147,111,0.15);border-radius:5px;padding:5px 9px;display:inline-block;">census_tract: "010100", fips: "06037"</div>
       </div>
+
+      <!-- Card 5: Risk Score -->
+      <div class="feat-card" style="border-color:rgba(235,135,113,0.25);background:linear-gradient(135deg,var(--surface) 80%,rgba(235,135,113,0.03))">
+        <div class="feat-icon" style="background:rgba(235,135,113,0.08);border-color:rgba(235,135,113,0.2);">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#eb8771" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 13l3-4 2.5 2.5 3.5-5 3 3.5"/>
+            <circle cx="9" cy="4.5" r="1.5"/>
+          </svg>
+        </div>
+        <div class="feat-title">Risk Score <span style="font-size:0.68rem;font-weight:700;background:var(--sky);color:#fff;padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px">LIVE DEMO</span></div>
+        <div class="feat-desc">Deliverability, fraud, disaster, vacancy, climate risk — 5 scores per address. One prevented chargeback pays for a year of GeoClear.</div>
+        <a href="#risk-score" style="display:inline-flex;align-items:center;gap:5px;margin-top:14px;font-size:0.75rem;font-weight:600;color:#eb8771;text-decoration:none;">Try live demo ↓</a>
+      </div>
+
+      <!-- Card 6: Climate Risk -->
       <div class="feat-card">
         <div class="feat-icon">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 2C9 2 5 5 5 8.5C5 10.99 6.79 13 9 13C11.21 13 13 10.99 13 8.5C13 5 9 2 9 2Z"/>
-            <path d="M2 15.5C4 13.5 6 17.5 8 15.5C10 13.5 12 17.5 14 15.5C15.5 13.9 16.5 17.5 16 16"/>
+            <path d="M9 3C6 3 3.5 5.5 3.5 8.5C3.5 11.5 6 14 9 14C12 14 14.5 11.5 14.5 8.5"/>
+            <path d="M14.5 3v5h-5"/>
+            <path d="M6 9.5l1.5 1.5 3-3"/>
           </svg>
         </div>
-        <div class="feat-title">Flood Zone Classification</div>
-        <div class="feat-desc">Instant flood risk classification (Zone A, AE, X, VE, etc.) from the US government's National Flood Hazard Layer — required for mortgage lending, property insurance, and real estate decisions.</div>
+        <div class="feat-title">Climate Risk — 5 Dimensions</div>
+        <div class="feat-desc">Flood, wildfire, storm, seismic, and drought — a weighted composite from 5 federal hazard sources across all 3,221 US counties. Used for P&amp;C underwriting and reinsurance.</div>
+        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.06);border:1px solid rgba(46,147,111,0.15);border-radius:5px;padding:5px 9px;display:inline-block;">climate_risk.composite: 0.41</div>
       </div>
-      <div class="feat-card">
-        <div class="feat-icon">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="7.5" cy="7.5" r="4.5"/>
-            <path d="M10.5 10.5L16 16"/>
-            <path d="M4 7.5h7M7.5 4v7" stroke-width="1" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="feat-title">Autocomplete &amp; Suggest</div>
-        <div class="feat-desc">Real-time address autocomplete as users type. Reduce form abandonment and eliminate data entry errors at the source.</div>
-      </div>
+
+      <!-- Card 7: Bulk Processing -->
       <div class="feat-card">
         <div class="feat-icon">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -1235,17 +1322,25 @@
           </svg>
         </div>
         <div class="feat-title">Bulk Processing</div>
-        <div class="feat-desc">Verify and enrich up to 1,000 addresses per request. Clean entire datasets — CRM exports, property lists, customer uploads — in seconds, not hours.</div>
+        <div class="feat-desc">Verify and enrich up to 1,000 addresses per request via JSON, or upload a CSV and download enriched results. Clean an entire CRM in seconds.</div>
+        <a href="/bulk.html" style="display:inline-flex;align-items:center;gap:5px;margin-top:14px;font-size:0.75rem;font-weight:600;color:var(--sky);text-decoration:none;">Try bulk uploader ↗</a>
       </div>
-      <div class="feat-card" style="border-color:rgba(46,147,111,0.25);background:linear-gradient(135deg,var(--surface) 80%,rgba(46,147,111,0.04))">
-        <div class="feat-icon">
+
+      <!-- Card 8: Drone Reachability — FEATURED -->
+      <div class="feat-card" style="border-color:rgba(46,147,111,0.35);background:linear-gradient(135deg,var(--surface) 60%,rgba(46,147,111,0.06));position:relative;">
+        <div style="position:absolute;top:14px;right:14px;font-size:0.62rem;font-weight:700;background:var(--grad);color:#fff;padding:2px 8px;border-radius:10px;letter-spacing:0.04em;">NEW</div>
+        <div class="feat-icon" style="background:rgba(46,147,111,0.12);border-color:rgba(46,147,111,0.25);">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2e936f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 2"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="M3 3l1.8 1.8M15 3l-1.8 1.8M3 15l1.8-1.8M15 15l-1.8-1.8"/>
+            <path d="M9 1v2.5M9 14.5V17M1 9h2.5M14.5 9H17"/>
           </svg>
         </div>
-        <div class="feat-title">Risk Score <span style="font-size:0.7rem;font-weight:700;background:var(--sky);color:#fff;padding:2px 7px;border-radius:10px;vertical-align:middle;margin-left:4px">PRO</span></div>
-        <div class="feat-desc">Five scores per address: deliverability, fraud, disaster, vacancy, and climate risk. Flood + wildfire + storm + earthquake + drought — 5 federal sources, one call. <a href="#risk-score" style="color:var(--sky)">See live demo ↓</a></div>
+        <div class="feat-title">Drone Reachability</div>
+        <div class="feat-desc">FAA airspace class, open landing zone estimate, and a single <code style="font-size:0.75em;color:var(--sky)">drone_deliverable</code> boolean. Built for Wing, Zipline, Prime Air, and every autonomous last-mile operator.</div>
+        <a href="#drone" style="display:inline-flex;align-items:center;gap:5px;margin-top:14px;font-size:0.75rem;font-weight:600;color:var(--sky);text-decoration:none;">See full details ↓</a>
       </div>
+
     </div>
   </div>
 </section>
@@ -1597,103 +1692,169 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 </section>
 
 <!-- ──────────────────────────────────────────────────────────────── DRONE SECTION -->
-<section style="padding:80px 0;background:var(--bg-alt);border-top:1px solid var(--border);">
-  <div style="max-width:var(--max);margin:0 auto;padding:0 32px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+<section id="drone" style="padding:96px 0;background:linear-gradient(160deg,#0a1a12 0%,#061510 50%,#0a1a12 100%);border-top:1px solid rgba(46,147,111,0.2);position:relative;overflow:hidden;">
+  <!-- Drone background grid -->
+  <div style="position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(46,147,111,0.1) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 0%,transparent 100%);-webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 0%,transparent 100%);"></div>
+  <!-- Glowing orb -->
+  <div style="position:absolute;top:-120px;right:-120px;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(46,147,111,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+  <div style="max-width:var(--max);margin:0 auto;padding:0 32px;position:relative;z-index:1;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;">
 
       <div>
-        <div class="section-label" style="justify-content:flex-start;">Drone &amp; Autonomous Delivery</div>
-        <h2 class="sh2" style="margin-bottom:16px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(46,147,111,0.15);border:1px solid rgba(46,147,111,0.3);border-radius:20px;padding:5px 12px;font-size:0.72rem;font-weight:700;color:#5ccfa3;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:20px;">
+          <span style="width:5px;height:5px;border-radius:50%;background:#5ccfa3;box-shadow:0 0 8px #5ccfa3;animation:badge-pulse 2s infinite;"></span>
+          New · Drone &amp; Autonomous Delivery
+        </div>
+        <h2 style="font-size:clamp(2.4rem,4vw,3.6rem);font-weight:800;letter-spacing:-0.04em;line-height:1.05;margin-bottom:20px;color:#f5f3ee;">
           The landing decision<br>in one API call.
         </h2>
-        <p style="font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:28px;">
-          Every autonomous vehicle — drone, robot, or sidewalk courier — needs to know three things before a delivery attempt: is this airspace clear, is there a safe landing zone, and is the address reachable? GeoClear answers all three in a single call, under 5ms.
+        <p style="font-size:1.05rem;color:rgba(245,243,238,0.65);line-height:1.75;margin-bottom:28px;">
+          Every autonomous vehicle — drone, robot, or sidewalk courier — needs to know three things before a delivery attempt: is the airspace clear, is there a safe landing zone, and is the address reachable? GeoClear answers all three in one call, under 5ms. The only API built for the robot delivery era.
         </p>
 
-        <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:32px;">
-          <div style="display:flex;gap:14px;align-items:flex-start;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(46,147,111,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M2 8l3.5 3.5L13 3.5"/></svg>
+        <!-- Drone stat row -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;">
+          <div style="padding:16px;background:rgba(46,147,111,0.1);border:1px solid rgba(46,147,111,0.2);border-radius:10px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:800;color:#5ccfa3;letter-spacing:-0.04em;">130M</div>
+            <div style="font-size:0.68rem;color:rgba(245,243,238,0.5);margin-top:3px;">building footprints</div>
+          </div>
+          <div style="padding:16px;background:rgba(46,147,111,0.1);border:1px solid rgba(46,147,111,0.2);border-radius:10px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:800;color:#5ccfa3;letter-spacing:-0.04em;">FAA</div>
+            <div style="font-size:0.68rem;color:rgba(245,243,238,0.5);margin-top:3px;">UASFM real-time</div>
+          </div>
+          <div style="padding:16px;background:rgba(46,147,111,0.1);border:1px solid rgba(46,147,111,0.2);border-radius:10px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:800;color:#5ccfa3;letter-spacing:-0.04em;">&lt;5ms</div>
+            <div style="font-size:0.68rem;color:rgba(245,243,238,0.5);margin-top:3px;">per decision</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:32px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(46,147,111,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;border:1px solid rgba(46,147,111,0.3);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#5ccfa3" stroke-width="2" stroke-linecap="round"><path d="M2 7l3 3L11 3"/></svg>
             </div>
             <div>
-              <div style="font-weight:600;color:var(--text);font-size:0.95rem;">FAA airspace classification</div>
-              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">Class G (400ft free), Class B/C/D (LAANC authorization required), no-fly zones — resolved per lat/lon from the FAA UAS Facility Map. Real-time, no API key.</div>
+              <div style="font-weight:600;color:#f5f3ee;font-size:0.92rem;">FAA airspace classification</div>
+              <div style="color:rgba(245,243,238,0.5);font-size:0.82rem;margin-top:2px;">Class G (400ft free), Class B/C/D (LAANC required), restricted zones — resolved per lat/lon from FAA UAS Facility Map.</div>
             </div>
           </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(46,147,111,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M2 8l3.5 3.5L13 3.5"/></svg>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(46,147,111,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;border:1px solid rgba(46,147,111,0.3);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#5ccfa3" stroke-width="2" stroke-linecap="round"><path d="M2 7l3 3L11 3"/></svg>
             </div>
             <div>
-              <div style="font-weight:600;color:var(--text);font-size:0.95rem;">Open yard estimate</div>
-              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">Building footprint area subtracted from parcel size — returns estimated open landing zone in sqm. Single-family home vs. apartment rooftop detected automatically.</div>
+              <div style="font-weight:600;color:#f5f3ee;font-size:0.92rem;">Open landing zone estimate (sqm)</div>
+              <div style="color:rgba(245,243,238,0.5);font-size:0.82rem;margin-top:2px;">Building footprint subtracted from parcel area. Detects single-family yard vs. apartment rooftop automatically.</div>
             </div>
           </div>
-          <div style="display:flex;gap:14px;align-items:flex-start;">
-            <div style="width:32px;height:32px;border-radius:8px;background:rgba(46,147,111,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round"><path d="M2 8l3.5 3.5L13 3.5"/></svg>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(46,147,111,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;border:1px solid rgba(46,147,111,0.3);">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#5ccfa3" stroke-width="2" stroke-linecap="round"><path d="M2 7l3 3L11 3"/></svg>
             </div>
             <div>
-              <div style="font-weight:600;color:var(--text);font-size:0.95rem;">Confidence scoring</div>
-              <div style="color:var(--dim);font-size:0.85rem;margin-top:2px;">High (FAA + building data both present), Medium (FAA only), Low (address-level only). Your dispatch system can gate on confidence — no human review queue for high-confidence deliveries.</div>
+              <div style="font-weight:600;color:#f5f3ee;font-size:0.92rem;">High/Medium/Low confidence gating</div>
+              <div style="color:rgba(245,243,238,0.5);font-size:0.82rem;margin-top:2px;">Your dispatch system gates on confidence level — no human review queue for high-confidence deliveries.</div>
             </div>
           </div>
         </div>
 
-        <div style="font-size:0.8rem;color:var(--dim);margin-bottom:20px;padding:12px 16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);">
-          Used by autonomous delivery teams targeting Wing, Zipline, Starship, Amazon Prime Air, and last-mile 3PL operators. Add-on pricing: $0.005/call.
+        <div style="font-size:0.78rem;color:rgba(245,243,238,0.4);margin-bottom:24px;padding:11px 15px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+          Built for Wing, Zipline, Starship, Amazon Prime Air, and last-mile 3PL operators entering autonomous delivery. Add-on: $0.005/call.
         </div>
 
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button class="btn-primary" onclick="openModal()" style="font-size:0.875rem;padding:10px 20px;">Get API key →</button>
-          <a href="/docs" class="btn-ghost" style="font-size:0.875rem;padding:10px 20px;">See docs ↗</a>
+          <button onclick="openModal()" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2e936f,#5ccfa3);color:#fff;border:none;padding:12px 22px;border-radius:8px;font-size:0.875rem;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(46,147,111,0.35);">Get API key →</button>
+          <a href="/docs" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);color:rgba(245,243,238,0.7);border:1px solid rgba(255,255,255,0.12);padding:12px 22px;border-radius:8px;font-size:0.875rem;font-weight:500;text-decoration:none;">See docs ↗</a>
         </div>
       </div>
 
       <div>
-        <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--rxl);overflow:hidden;">
-          <div style="padding:12px 16px;background:rgba(0,0,0,0.2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-            <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></div>
-            <div style="width:10px;height:10px;border-radius:50%;background:#28c840;"></div>
-            <span style="font-size:0.75rem;color:var(--dim);margin-left:6px;">geoclear — drone enrichment</span>
-          </div>
-          <pre style="margin:0;padding:22px 24px;font-size:0.8rem;line-height:1.75;color:var(--text);overflow-x:auto;"><code><span style="color:var(--dim)"># /v1/enrich response — drone block</span>
-<span style="color:var(--sky)">"drone"</span>: {
-  <span style="color:var(--sky)">"deliverable"</span>:            <span style="color:#86EFAC">true</span>,
-  <span style="color:var(--sky)">"airspace_class"</span>:          <span style="color:#FCD34D">"G"</span>,
-  <span style="color:var(--sky)">"authorized_altitude_ft"</span>:  <span style="color:#C4B5FD">400</span>,
-  <span style="color:var(--sky)">"laanc_available"</span>:         <span style="color:#F87171">false</span>,
-  <span style="color:var(--sky)">"airport_id"</span>:              <span style="color:#94A3B8">null</span>,
-  <span style="color:var(--sky)">"estimated_open_sqm"</span>:      <span style="color:#C4B5FD">312</span>,
-  <span style="color:var(--sky)">"building_area_sqm"</span>:       <span style="color:#C4B5FD">148</span>,
-  <span style="color:var(--sky)">"confidence"</span>:              <span style="color:#FCD34D">"high"</span>
-}
-
-<span style="color:var(--dim)"># Near-airport example — LAANC required</span>
-<span style="color:var(--sky)">"drone"</span>: {
-  <span style="color:var(--sky)">"deliverable"</span>:            <span style="color:#F87171">false</span>,
-  <span style="color:var(--sky)">"airspace_class"</span>:          <span style="color:#FCD34D">"controlled"</span>,
-  <span style="color:var(--sky)">"authorized_altitude_ft"</span>:  <span style="color:#C4B5FD">0</span>,
-  <span style="color:var(--sky)">"laanc_available"</span>:         <span style="color:#F87171">false</span>,
-  <span style="color:var(--sky)">"airport_id"</span>:              <span style="color:#FCD34D">"DCA"</span>,
-  <span style="color:var(--sky)">"confidence"</span>:              <span style="color:#FCD34D">"high"</span>
-}</code></pre>
+        <!-- Drone SVG illustration -->
+        <div style="display:flex;justify-content:center;margin-bottom:24px;">
+          <svg width="280" height="180" viewBox="0 0 280 180" fill="none" aria-hidden="true" style="filter:drop-shadow(0 0 32px rgba(46,147,111,0.25));">
+            <!-- Ground circle / target -->
+            <ellipse cx="140" cy="158" rx="70" ry="12" fill="rgba(46,147,111,0.08)" stroke="rgba(46,147,111,0.2)" stroke-width="1"/>
+            <ellipse cx="140" cy="158" rx="45" ry="7" fill="rgba(46,147,111,0.06)" stroke="rgba(46,147,111,0.15)" stroke-width="1"/>
+            <ellipse cx="140" cy="158" rx="20" ry="3" fill="rgba(46,147,111,0.12)" stroke="rgba(46,147,111,0.25)" stroke-width="1.5"/>
+            <!-- Target cross -->
+            <line x1="140" y1="145" x2="140" y2="171" stroke="rgba(46,147,111,0.25)" stroke-width="1"/>
+            <line x1="127" y1="158" x2="153" y2="158" stroke="rgba(46,147,111,0.25)" stroke-width="1"/>
+            <!-- Drop shadow -->
+            <ellipse cx="140" cy="158" rx="8" ry="2" fill="rgba(46,147,111,0.3)"/>
+            <!-- Drone body -->
+            <rect x="120" y="62" width="40" height="24" rx="6" fill="#0e2a1e" stroke="rgba(92,207,163,0.4)" stroke-width="1.5"/>
+            <!-- Center orb / camera -->
+            <circle cx="140" cy="74" r="7" fill="rgba(46,147,111,0.2)" stroke="rgba(92,207,163,0.5)" stroke-width="1.5"/>
+            <circle cx="140" cy="74" r="3" fill="#5ccfa3"/>
+            <!-- Arm TL -->
+            <line x1="124" y1="66" x2="100" y2="46" stroke="rgba(92,207,163,0.4)" stroke-width="2" stroke-linecap="round"/>
+            <!-- Arm TR -->
+            <line x1="156" y1="66" x2="180" y2="46" stroke="rgba(92,207,163,0.4)" stroke-width="2" stroke-linecap="round"/>
+            <!-- Arm BL -->
+            <line x1="124" y1="82" x2="100" y2="100" stroke="rgba(92,207,163,0.4)" stroke-width="2" stroke-linecap="round"/>
+            <!-- Arm BR -->
+            <line x1="156" y1="82" x2="180" y2="100" stroke="rgba(92,207,163,0.4)" stroke-width="2" stroke-linecap="round"/>
+            <!-- Motor TL -->
+            <circle cx="97" cy="44" r="10" fill="#0e2a1e" stroke="rgba(92,207,163,0.35)" stroke-width="1.5"/>
+            <!-- Motor TR -->
+            <circle cx="183" cy="44" r="10" fill="#0e2a1e" stroke="rgba(92,207,163,0.35)" stroke-width="1.5"/>
+            <!-- Motor BL -->
+            <circle cx="97" cy="102" r="10" fill="#0e2a1e" stroke="rgba(92,207,163,0.35)" stroke-width="1.5"/>
+            <!-- Motor BR -->
+            <circle cx="183" cy="102" r="10" fill="#0e2a1e" stroke="rgba(92,207,163,0.35)" stroke-width="1.5"/>
+            <!-- Propellers TL -->
+            <ellipse cx="97" cy="44" rx="18" ry="3" fill="rgba(92,207,163,0.15)" stroke="rgba(92,207,163,0.3)" stroke-width="1"/>
+            <!-- Propellers TR -->
+            <ellipse cx="183" cy="44" rx="18" ry="3" fill="rgba(92,207,163,0.15)" stroke="rgba(92,207,163,0.3)" stroke-width="1"/>
+            <!-- Propellers BL -->
+            <ellipse cx="97" cy="102" rx="18" ry="3" fill="rgba(92,207,163,0.15)" stroke="rgba(92,207,163,0.3)" stroke-width="1"/>
+            <!-- Propellers BR -->
+            <ellipse cx="183" cy="102" rx="18" ry="3" fill="rgba(92,207,163,0.15)" stroke="rgba(92,207,163,0.3)" stroke-width="1"/>
+            <!-- Vertical dashed descent line -->
+            <line x1="140" y1="90" x2="140" y2="148" stroke="rgba(92,207,163,0.35)" stroke-width="1" stroke-dasharray="4 4"/>
+            <!-- Landing legs -->
+            <line x1="128" y1="84" x2="125" y2="98" stroke="rgba(92,207,163,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="152" y1="84" x2="155" y2="98" stroke="rgba(92,207,163,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="120" y1="98" x2="130" y2="98" stroke="rgba(92,207,163,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="150" y1="98" x2="160" y2="98" stroke="rgba(92,207,163,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+            <!-- Glow -->
+            <circle cx="140" cy="74" r="30" fill="rgba(46,147,111,0.04)"/>
+            <!-- Status badge -->
+            <rect x="50" y="52" width="34" height="16" rx="4" fill="rgba(46,147,111,0.2)" stroke="rgba(92,207,163,0.4)" stroke-width="1"/>
+            <circle cx="57" cy="60" r="2.5" fill="#5ccfa3"/>
+            <text x="63" y="64" font-family="monospace" font-size="7" fill="#5ccfa3">G OK</text>
+            <!-- Airspace label -->
+            <rect x="196" y="52" width="46" height="16" rx="4" fill="rgba(46,147,111,0.2)" stroke="rgba(92,207,163,0.4)" stroke-width="1"/>
+            <text x="202" y="64" font-family="monospace" font-size="7" fill="#5ccfa3">400ft free</text>
+          </svg>
         </div>
 
-        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-          <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center;">
-            <div style="font-size:1.1rem;font-weight:700;color:var(--green);">130M</div>
-            <div style="font-size:0.72rem;color:var(--dim);margin-top:2px;">building footprints</div>
+        <!-- Code block -->
+        <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(92,207,163,0.2);border-radius:14px;overflow:hidden;">
+          <div style="padding:11px 16px;background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:7px;">
+            <div style="width:9px;height:9px;border-radius:50%;background:#ff5f57;"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#febc2e;"></div>
+            <div style="width:9px;height:9px;border-radius:50%;background:#28c840;"></div>
+            <span style="font-size:0.7rem;color:rgba(245,243,238,0.3);margin-left:6px;font-family:monospace;">geoclear /v1/enrich — drone block</span>
           </div>
-          <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center;">
-            <div style="font-size:1.1rem;font-weight:700;color:var(--sky);">FAA</div>
-            <div style="font-size:0.72rem;color:var(--dim);margin-top:2px;">UASFM real-time</div>
-          </div>
-          <div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);text-align:center;">
-            <div style="font-size:1.1rem;font-weight:700;color:var(--text);">&lt;5ms</div>
-            <div style="font-size:0.72rem;color:var(--dim);margin-top:2px;">per call</div>
-          </div>
+          <pre style="margin:0;padding:20px 22px;font-size:0.78rem;line-height:1.8;overflow-x:auto;"><code><span style="color:rgba(255,255,255,0.25)"># Suburban home — Class G, clear to land</span>
+<span style="color:#7dd3fc">"drone"</span>: {
+  <span style="color:#7dd3fc">"deliverable"</span>:           <span style="color:#86EFAC">true</span>,
+  <span style="color:#7dd3fc">"airspace_class"</span>:         <span style="color:#FCD34D">"G"</span>,
+  <span style="color:#7dd3fc">"authorized_altitude_ft"</span>: <span style="color:#C4B5FD">400</span>,
+  <span style="color:#7dd3fc">"estimated_open_sqm"</span>:     <span style="color:#C4B5FD">312</span>,
+  <span style="color:#7dd3fc">"building_area_sqm"</span>:      <span style="color:#C4B5FD">148</span>,
+  <span style="color:#7dd3fc">"confidence"</span>:             <span style="color:#FCD34D">"high"</span>
+}
+
+<span style="color:rgba(255,255,255,0.25)"># Near DCA airport — LAANC required, blocked</span>
+<span style="color:#7dd3fc">"drone"</span>: {
+  <span style="color:#7dd3fc">"deliverable"</span>:           <span style="color:#F87171">false</span>,
+  <span style="color:#7dd3fc">"airspace_class"</span>:         <span style="color:#FCD34D">"controlled"</span>,
+  <span style="color:#7dd3fc">"authorized_altitude_ft"</span>: <span style="color:#C4B5FD">0</span>,
+  <span style="color:#7dd3fc">"airport_id"</span>:             <span style="color:#FCD34D">"DCA"</span>,
+  <span style="color:#7dd3fc">"confidence"</span>:             <span style="color:#FCD34D">"high"</span>
+}</code></pre>
         </div>
       </div>
 
@@ -2042,6 +2203,52 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <a class="btn-ghost" style="font-size:1rem;padding:15px 28px;" href="mailto:hello@geoclear.io">
         Talk to us
       </a>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────── PORTAL + STATUS TRUST ROW -->
+<section style="padding:56px 0;background:var(--bg-alt);border-top:1px solid var(--border);">
+  <div style="max-width:var(--max);margin:0 auto;padding:0 32px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;">
+
+      <!-- Portal callout -->
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--rxl);padding:32px;display:flex;align-items:center;gap:24px;">
+        <div style="width:52px;height:52px;border-radius:12px;background:rgba(46,147,111,0.08);border:1px solid rgba(46,147,111,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <circle cx="12" cy="16" r="1.5"/>
+          </svg>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;margin-bottom:4px;">Already a customer?</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">Your API key, usage history, and billing are in your portal. 30-day sparkline, one-click upgrade.</div>
+          <a href="/portal.html" style="display:inline-flex;align-items:center;gap:7px;background:var(--text);color:var(--bg);padding:9px 18px;border-radius:8px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Go to Portal →</a>
+        </div>
+      </div>
+
+      <!-- Status callout -->
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--rxl);padding:32px;display:flex;align-items:center;gap:24px;">
+        <div style="width:52px;height:52px;border-radius:12px;background:rgba(46,147,111,0.08);border:1px solid rgba(46,147,111,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--sky)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10z"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-0.02em;">Live system status</div>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;color:var(--sky);background:rgba(46,147,111,0.08);border:1px solid rgba(46,147,111,0.2);padding:2px 8px;border-radius:10px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:var(--sky);box-shadow:0 0 6px var(--sky);animation:badge-pulse 2s infinite;"></span>
+              99.9% uptime
+            </span>
+          </div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">Real-time uptime and response time via UptimeRobot. If something's wrong, you'll know before we do.</div>
+          <a href="/status" target="_blank" style="display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--sky);padding:9px 18px;border-radius:8px;font-size:0.82rem;font-weight:600;text-decoration:none;border:1px solid var(--border2);transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--border3)'" onmouseout="this.style.borderColor='var(--border2)'">View status page ↗</a>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>

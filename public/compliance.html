@@ -538,7 +538,7 @@
     </div>
     <div class="nav-right">
       <a href="/portal.html" style="font-size:0.85rem;color:var(--muted);text-decoration:none;padding:8px 12px;">Sign in</a>
-      <a href="/portal.html" class="nav-cta">Get API key →</a>
+      <a href="/#signup" class="nav-cta">Get API key →</a>
     </div>
   </div>
 </nav>
@@ -561,7 +561,7 @@
         One API call returns flood zone determination, SFHA flag, census tract, county FIPS, and more. Audit-ready compliance data. No per-determination fees.
       </p>
       <div class="hero-btns">
-        <a href="/portal.html" class="btn-primary">Start free — 10K calls/mo <span>→</span></a>
+        <a href="/#signup" class="btn-primary">Start free — 10K calls/mo <span>→</span></a>
         <a href="/docs" class="btn-ghost">View API docs</a>
       </div>
       <div class="hero-trust">
@@ -603,6 +603,186 @@
 }</pre>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOOD ZONE MAP ILLUSTRATION -->
+<section style="padding:72px 0;background:var(--bg);border-bottom:1px solid var(--border);">
+  <div class="container" style="max-width:var(--max);margin:0 auto;padding:0 32px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;">
+
+      <!-- Left: copy -->
+      <div>
+        <div style="display:inline-flex;align-items:center;gap:7px;font-size:0.72rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">
+          <span style="display:block;width:16px;height:1.5px;background:var(--sky);opacity:0.7;"></span>
+          Address-level precision
+        </div>
+        <h2 style="font-size:clamp(1.8rem,3vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:18px;">
+          Zone AE next door.<br>Zone X at your door.
+        </h2>
+        <p style="font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:28px;">
+          Flood risk isn't a ZIP code problem — two houses on the same street can be in different FEMA zones. GeoClear resolves flood classification at the individual address level, the same way FEMA does it: by matching coordinates against the National Flood Hazard Layer polygon boundaries.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:14px;height:14px;border-radius:3px;background:rgba(59,130,246,0.25);border:1.5px solid rgba(59,130,246,0.5);flex-shrink:0;"></div>
+            <span style="font-size:0.88rem;color:var(--text);font-weight:500;">Zone AE — Special Flood Hazard Area (SFHA). Mandatory flood insurance for federally backed mortgages.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:14px;height:14px;border-radius:3px;background:rgba(46,147,111,0.15);border:1.5px solid rgba(46,147,111,0.35);flex-shrink:0;"></div>
+            <span style="font-size:0.88rem;color:var(--text);font-weight:500;">Zone X — Moderate or minimal flood hazard. Outside SFHA; insurance not federally required.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:14px;height:14px;border-radius:3px;background:rgba(234,179,8,0.15);border:1.5px solid rgba(234,179,8,0.4);flex-shrink:0;"></div>
+            <span style="font-size:0.88rem;color:var(--text);font-weight:500;">Zone A — SFHA without detailed elevation data. High risk; Base Flood Elevation not published.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: flood zone map SVG -->
+      <div style="position:relative;">
+        <svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:480px;filter:drop-shadow(0 16px 48px rgba(0,0,0,0.08));" aria-label="Flood zone map illustration">
+
+          <!-- Background -->
+          <rect width="480" height="360" rx="16" fill="#f7f6f3"/>
+          <rect width="480" height="360" rx="16" fill="none" stroke="#e8e4de" stroke-width="1"/>
+
+          <!-- Map grid lines (streets) -->
+          <!-- Horizontal streets -->
+          <line x1="0" y1="90"  x2="480" y2="90"  stroke="#e2ddd8" stroke-width="1"/>
+          <line x1="0" y1="180" x2="480" y2="180" stroke="#e2ddd8" stroke-width="1"/>
+          <line x1="0" y1="270" x2="480" y2="270" stroke="#e2ddd8" stroke-width="1"/>
+          <!-- Vertical streets -->
+          <line x1="120" y1="0"  x2="120" y2="360" stroke="#e2ddd8" stroke-width="1"/>
+          <line x1="240" y1="0"  x2="240" y2="360" stroke="#e2ddd8" stroke-width="1"/>
+          <line x1="360" y1="0"  x2="360" y2="360" stroke="#e2ddd8" stroke-width="1"/>
+
+          <!-- Zone AE fill (left side — flood zone) -->
+          <path d="M0 0 L220 0 Q210 40 215 90 Q205 130 200 180 Q195 230 205 270 Q210 310 200 360 L0 360 Z"
+                fill="rgba(59,130,246,0.10)" />
+          <!-- Zone AE boundary line -->
+          <path d="M220 0 Q210 40 215 90 Q205 130 200 180 Q195 230 205 270 Q210 310 200 360"
+                stroke="rgba(59,130,246,0.55)" stroke-width="2.5" stroke-dasharray="8 5"/>
+
+          <!-- Zone A small patch (top right, near water) -->
+          <path d="M360 0 L480 0 L480 90 L400 90 Q390 50 360 30 Z"
+                fill="rgba(234,179,8,0.10)" />
+          <path d="M360 0 Q390 50 400 90 L480 90"
+                stroke="rgba(234,179,8,0.45)" stroke-width="1.5" stroke-dasharray="6 4"/>
+
+          <!-- Zone X fill (right/center — safe zone) -->
+          <!-- This is the background areas not covered by AE/A -->
+
+          <!-- Water body (river) - left edge -->
+          <path d="M0 0 L45 0 Q50 30 42 90 Q38 140 44 180 Q48 220 40 270 Q35 310 44 360 L0 360 Z"
+                fill="rgba(96,165,250,0.22)"/>
+          <!-- Water ripples -->
+          <path d="M8 60  Q18 55 28 62" stroke="rgba(96,165,250,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M10 80 Q22 75 30 83" stroke="rgba(96,165,250,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M6 140 Q16 135 26 142" stroke="rgba(96,165,250,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M8 160 Q20 155 28 162" stroke="rgba(96,165,250,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M7 220 Q17 215 27 222" stroke="rgba(96,165,250,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+
+          <!-- Street labels -->
+          <text x="125" y="86" font-family="Inter,system-ui,sans-serif" font-size="9" fill="#a09690" font-weight="500">Elm St</text>
+          <text x="245" y="86" font-family="Inter,system-ui,sans-serif" font-size="9" fill="#a09690" font-weight="500">Oak Ave</text>
+          <text x="110" y="176" font-family="Inter,system-ui,sans-serif" font-size="9" fill="#a09690" font-weight="500">Main St</text>
+          <text x="244" y="176" font-family="Inter,system-ui,sans-serif" font-size="9" fill="#a09690" font-weight="500">Maple Ln</text>
+
+          <!-- Zone labels -->
+          <rect x="56" y="108" width="52" height="18" rx="4" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1"/>
+          <text x="82" y="121" font-family="Inter,system-ui,sans-serif" font-size="9" fill="rgba(59,130,246,0.9)" font-weight="700" text-anchor="middle">Zone AE</text>
+
+          <rect x="56" y="198" width="52" height="18" rx="4" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.4)" stroke-width="1"/>
+          <text x="82" y="211" font-family="Inter,system-ui,sans-serif" font-size="9" fill="rgba(59,130,246,0.9)" font-weight="700" text-anchor="middle">Zone AE</text>
+
+          <rect x="280" y="108" width="46" height="18" rx="4" fill="rgba(46,147,111,0.12)" stroke="rgba(46,147,111,0.35)" stroke-width="1"/>
+          <text x="303" y="121" font-family="Inter,system-ui,sans-serif" font-size="9" fill="rgba(46,147,111,0.9)" font-weight="700" text-anchor="middle">Zone X</text>
+
+          <rect x="380" y="108" width="42" height="18" rx="4" fill="rgba(234,179,8,0.15)" stroke="rgba(234,179,8,0.45)" stroke-width="1"/>
+          <text x="401" y="121" font-family="Inter,system-ui,sans-serif" font-size="9" fill="rgba(180,130,0,0.9)" font-weight="700" text-anchor="middle">Zone A</text>
+
+          <!-- SFHA boundary label -->
+          <rect x="158" y="42" width="80" height="16" rx="4" fill="rgba(59,130,246,0.08)" stroke="rgba(59,130,246,0.3)" stroke-width="1"/>
+          <text x="198" y="54" font-family="Inter,system-ui,sans-serif" font-size="8" fill="rgba(59,130,246,0.8)" font-weight="600" text-anchor="middle">← SFHA boundary</text>
+
+          <!-- Houses in Zone AE (flood risk) -->
+          <!-- House 1: Zone AE, 110 Elm -->
+          <g transform="translate(80, 100)">
+            <rect x="-14" y="6" width="28" height="22" rx="2" fill="#fff" stroke="rgba(59,130,246,0.5)" stroke-width="1.5"/>
+            <path d="M-17 8 L0 -4 L17 8" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.5)" stroke-width="1.5"/>
+            <rect x="-4" y="14" width="8" height="14" rx="1" fill="rgba(59,130,246,0.2)"/>
+            <!-- SFHA flag -->
+            <rect x="12" y="-10" width="28" height="12" rx="3" fill="rgba(59,130,246,0.9)"/>
+            <text x="26" y="-2" font-family="Inter,system-ui,sans-serif" font-size="7" fill="white" font-weight="700" text-anchor="middle">SFHA</text>
+          </g>
+
+          <!-- House 2: Zone AE, 114 Elm -->
+          <g transform="translate(80, 196)">
+            <rect x="-14" y="6" width="28" height="22" rx="2" fill="#fff" stroke="rgba(59,130,246,0.5)" stroke-width="1.5"/>
+            <path d="M-17 8 L0 -4 L17 8" fill="rgba(59,130,246,0.15)" stroke="rgba(59,130,246,0.5)" stroke-width="1.5"/>
+            <rect x="-4" y="14" width="8" height="14" rx="1" fill="rgba(59,130,246,0.2)"/>
+            <rect x="12" y="-10" width="28" height="12" rx="3" fill="rgba(59,130,246,0.9)"/>
+            <text x="26" y="-2" font-family="Inter,system-ui,sans-serif" font-size="7" fill="white" font-weight="700" text-anchor="middle">SFHA</text>
+          </g>
+
+          <!-- Houses in Zone X (safe) -->
+          <!-- House 3: Zone X, 302 Oak -->
+          <g transform="translate(300, 100)">
+            <rect x="-14" y="6" width="28" height="22" rx="2" fill="#fff" stroke="rgba(46,147,111,0.4)" stroke-width="1.5"/>
+            <path d="M-17 8 L0 -4 L17 8" fill="rgba(46,147,111,0.1)" stroke="rgba(46,147,111,0.4)" stroke-width="1.5"/>
+            <rect x="-4" y="14" width="8" height="14" rx="1" fill="rgba(46,147,111,0.15)"/>
+            <rect x="12" y="-10" width="32" height="12" rx="3" fill="rgba(46,147,111,0.85)"/>
+            <text x="28" y="-2" font-family="Inter,system-ui,sans-serif" font-size="7" fill="white" font-weight="700" text-anchor="middle">No req.</text>
+          </g>
+
+          <!-- House 4: Zone X, 304 Oak -->
+          <g transform="translate(300, 240)">
+            <rect x="-14" y="6" width="28" height="22" rx="2" fill="#fff" stroke="rgba(46,147,111,0.4)" stroke-width="1.5"/>
+            <path d="M-17 8 L0 -4 L17 8" fill="rgba(46,147,111,0.1)" stroke="rgba(46,147,111,0.4)" stroke-width="1.5"/>
+            <rect x="-4" y="14" width="8" height="14" rx="1" fill="rgba(46,147,111,0.15)"/>
+            <rect x="12" y="-10" width="32" height="12" rx="3" fill="rgba(46,147,111,0.85)"/>
+            <text x="28" y="-2" font-family="Inter,system-ui,sans-serif" font-size="7" fill="white" font-weight="700" text-anchor="middle">No req.</text>
+          </g>
+
+          <!-- API response callout for Zone AE house -->
+          <rect x="130" y="126" width="140" height="74" rx="7" fill="white" stroke="rgba(59,130,246,0.3)" stroke-width="1.2"
+                style="filter:drop-shadow(0 4px 12px rgba(0,0,0,0.08))"/>
+          <rect x="130" y="126" width="140" height="14" rx="7" fill="rgba(59,130,246,0.08)"/>
+          <rect x="130" y="133" width="140" height="7" rx="0" fill="rgba(59,130,246,0.08)"/>
+          <text x="138" y="136" font-family="monospace" font-size="7.5" fill="#3b82f6" font-weight="700">110 Elm St — Zone AE</text>
+          <text x="138" y="150" font-family="monospace" font-size="7" fill="#64748b">"flood_zone":  "AE"</text>
+          <text x="138" y="163" font-family="monospace" font-size="7" fill="#ef4444">"flood_sfha":  true</text>
+          <text x="138" y="176" font-family="monospace" font-size="7" fill="#64748b">"census_tract": "001200"</text>
+          <text x="138" y="189" font-family="monospace" font-size="7" fill="#64748b">"county_fips":  "48453"</text>
+
+          <!-- API response callout for Zone X house -->
+          <rect x="320" y="148" width="140" height="60" rx="7" fill="white" stroke="rgba(46,147,111,0.3)" stroke-width="1.2"
+                style="filter:drop-shadow(0 4px 12px rgba(0,0,0,0.08))"/>
+          <rect x="320" y="148" width="140" height="14" rx="7" fill="rgba(46,147,111,0.07)"/>
+          <rect x="320" y="155" width="140" height="7" rx="0" fill="rgba(46,147,111,0.07)"/>
+          <text x="328" y="158" font-family="monospace" font-size="7.5" fill="#2e936f" font-weight="700">302 Oak Ave — Zone X</text>
+          <text x="328" y="172" font-family="monospace" font-size="7" fill="#64748b">"flood_zone":  "X"</text>
+          <text x="328" y="185" font-family="monospace" font-size="7" fill="#16a34a">"flood_sfha":  false</text>
+          <text x="328" y="198" font-family="monospace" font-size="7" fill="#64748b">"census_tract": "001202"</text>
+
+          <!-- Connector lines from callouts to houses -->
+          <line x1="130" y1="163" x2="98" y2="118" stroke="rgba(59,130,246,0.3)" stroke-width="1" stroke-dasharray="3 2"/>
+          <line x1="320" y1="172" x2="317" y2="118" stroke="rgba(46,147,111,0.3)" stroke-width="1" stroke-dasharray="3 2"/>
+
+          <!-- "Same street, different zones" annotation -->
+          <rect x="148" y="282" width="184" height="26" rx="6" fill="#242220" opacity="0.88"/>
+          <text x="240" y="299" font-family="Inter,system-ui,sans-serif" font-size="9.5" fill="#f5f3ee" font-weight="600" text-anchor="middle">Same street. Different flood zones.</text>
+
+        </svg>
+
+        <!-- Caption -->
+        <p style="margin-top:12px;font-size:0.75rem;color:var(--dim);text-align:center;font-style:italic;">
+          Flood risk is address-level, not ZIP-level. GeoClear resolves it per coordinate against FEMA NFHL polygons.
+        </p>
+      </div>
+
     </div>
   </div>
 </section>
@@ -797,7 +977,7 @@
         <div class="price-main">$249</div>
         <div class="price-period">per month</div>
         <div class="price-note">10K lookups free, no credit card</div>
-        <a href="/portal.html" class="btn-primary" style="margin-top:20px;white-space:nowrap;">Start free →</a>
+        <a href="/#signup" class="btn-primary" style="margin-top:20px;white-space:nowrap;">Start free →</a>
       </div>
     </div>
   </div>
@@ -809,7 +989,7 @@
     <div class="cta-section">
       <h2>Ready to automate flood determination?</h2>
       <p>Get your free API key in 60 seconds. 10K lookups/mo free, no credit card required.</p>
-      <a href="/portal.html" class="btn-primary-inv">Get your free API key →</a>
+      <a href="/#signup" class="btn-primary-inv">Get your free API key →</a>
       <p class="cta-note">Questions? Reply to the email that brought you here — we respond same day.</p>
     </div>
   </div>
