@@ -1599,14 +1599,18 @@ app.get('/api/demo/risk', demoLimiter, async (req, res) => {
   const fips5    = enriched.fips || null;
 
   const hardNull = (ms) => new Promise(r => setTimeout(() => r(null), ms));
-  const [femaResult, wildfireRow, stormRow, eqRow, droughtRow] = await Promise.all([
-    (addrLat && addrLon)
-      ? Promise.race([getFEMAFloodZone(addrLat, addrLon).catch(() => null), hardNull(5000)])
-      : Promise.resolve(null),
-    Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5)   : null),
-    Promise.resolve(fips5 ? riskData.getStormRisk(fips5)      : null),
-    Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null),
-    Promise.resolve(fips5 ? riskData.getDroughtRisk(fips5)    : null),
+  const femaPromise = (addrLat && addrLon)
+    ? Promise.race([getFEMAFloodZone(addrLat, addrLon).catch(() => null), hardNull(4000)])
+    : Promise.resolve(null);
+  const [femaResult, wildfireRow, stormRow, eqRow, droughtRow] = await Promise.race([
+    Promise.all([
+      femaPromise,
+      Promise.resolve(fips5 ? riskData.getWildfireRisk(fips5)   : null),
+      Promise.resolve(fips5 ? riskData.getStormRisk(fips5)      : null),
+      Promise.resolve(fips5 ? riskData.getEarthquakeRisk(fips5) : null),
+      Promise.resolve(fips5 ? riskData.getDroughtRisk(fips5)    : null),
+    ]),
+    hardNull(5500).then(() => [null, null, null, null, null]),
   ]);
   const calFireRow = (addr.state === 'CA' && addrLat && addrLon) ? riskData.getCalFireFHSZ(addrLat, addrLon) : null;
 
