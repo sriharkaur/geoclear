@@ -1,0 +1,32 @@
+name: Weekly Data Quality Audit
+
+on:
+  workflow_run:
+    workflows: ["Weekly Database Schema Backup"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  soda_scan:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Soda Core
+        run: pip install soda-core-postgres
+
+      - name: Run Data Quality Scan
+        run: soda scan -d xata_prod -c scripts/quality/configuration.yml drizzle/quality/risk_data.yml
+        env:
+          XATA_PG_HOST:     ${{ secrets.XATA_PG_HOST }}
+          XATA_PG_USER:     ${{ secrets.XATA_PG_USER }}
+          XATA_PG_PASSWORD: ${{ secrets.XATA_PG_PASSWORD }}
+          XATA_PG_DB:       ${{ secrets.XATA_PG_DB }}
+          XATA_API_KEY:     ${{ secrets.XATA_API_KEY }}

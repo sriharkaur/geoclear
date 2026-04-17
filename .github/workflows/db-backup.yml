@@ -1,0 +1,40 @@
+name: Weekly Database Schema Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # Every Sunday at 03:00 UTC
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  schema_backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Xata CLI
+        run: npm install -g @xata.io/cli
+
+      - name: Authenticate Xata
+        run: xata auth login --api-key ${{ secrets.XATA_API_KEY }}
+
+      - name: Pull schema from main branch
+        run: xata pull main
+        env:
+          XATA_API_KEY: ${{ secrets.XATA_API_KEY }}
+
+      - name: Commit schema snapshot if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .xata/
+          if git diff --cached --quiet; then
+            echo "Schema unchanged — no commit needed"
+          else
+            git commit -m "chore: weekly Xata schema snapshot $(date -u +%Y-%m-%d)"
+            git push
+          fi

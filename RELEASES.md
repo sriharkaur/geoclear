@@ -9,6 +9,7 @@
 
 ## Unreleased
 
+- **Q-185 Migration window skeleton** — monorepo structure (`src/api/v1/`, `src/api/v2/`, `src/db/`, `src/dashboard/`, `src/web/`, `scripts/`); pipeline scripts moved from root with updated Worker paths in web-server.js; `render.yaml` three-service skeleton; `src/db/client.ts` pg.Pool singleton + `src/db/schema.ts` placeholder + `drizzle.config.ts`; drizzle-orm + drizzle-kit installed; `.github/workflows/db-backup.yml` (weekly Xata schema backup) + `data-quality.yml` (Soda Core scan) + Soda Core contracts in `scripts/quality/` and `drizzle/quality/`; `docs/roadmap.md` three-phase migration plan.
 - **RUNBOOK-ENV-VARS.md** — full env var audit checklist per service (prod + staging): required vars, Node version pin verification, cache-clear deploy procedure, failure mode table. Covers Q-144 + Q-145.
 - **risk.db startup logging** — `onListening()` now logs `[startup] risk.db: ✓ ready / ✗ not-found` alongside nad.db.
 - **risk_data_unavailable error** — `/v1/risk` and `/api/demo/risk` return `{"ok":false,"error":"risk_data_unavailable"}` (HTTP 503) when risk.db is absent; previously returned silent nulls across all risk fields. Covers Q-146.

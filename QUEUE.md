@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions confirmed prod. DevOps Standards retro completed: 10 incident patterns → 16 queue items Q-144–Q-159 added. UptimeRobot expanded to 5 GeoClear monitors. Full retro: sessions/RETRO-2026-04-17-devops-standards.md)_
+_Last updated: 2026-04-17 (session 32 — Q-185 added (migration window skeleton sprint). Reference links added to Q-054, Q-161, Q-166, Q-169, Q-171, Q-179, Q-180, Q-181, Q-182, Q-184.)_
 
 ---
 
@@ -79,14 +79,108 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 - ✅ **Q-145 · [P1-UPTIME] Env var audit checklist — all services** — Document every required env var in runbook. Checklist: `DATA_DIR=/data`, `STRIPE_*`, `NAD_ADMIN_SECRET`, `NODE_VERSION=20`. Missing required var = deploy abort. *Effort: 1 hr* · DONE 2026-04-17
 - ✅ **Q-146 · [P1-UPTIME] Extend DB readiness gate to risk.db** — Add `isReady()` to `risk-data.js`. Log risk.db status at startup alongside nad.db. Endpoints that need risk.db return explicit `risk_data_unavailable` error when not ready, not silent null. *Effort: 1 hr* · DONE 2026-04-17
 - [ ] **Q-147 · [P1-UPTIME] /api/health/detailed endpoint** — Returns: nad.db status + address count, risk.db table list + row counts + last import dates, Node version, external API probe (FEMA + USGS spot check). Returns `"degraded"` if any table below minimum row count. Used by UptimeRobot keyword monitor (Q-158). *Effort: 2 hr*
-- [ ] **Q-148 · [P1-UPTIME] Standardize all import scripts to DATA_DIR env var** — Replace `__dirname`-relative DB paths in `wildfire-import.js`, `storm-import.js`, `calfire-import.js` with `DATA_DIR` env var. Add grep gate to catch regressions. *Effort: 1 hr*
-- [ ] **Q-149 · [P1-UPTIME] Import scripts self-contained** — No CWD dependency. Runner scripts resolve `NODE_PATH` dynamically via `path.resolve(process.cwd(), 'node_modules')`. Document run invocation in each script header. *Effort: 2 hr*
-- [ ] **Q-150 · [P1-UPTIME] Pre-upload check script** — `scripts/pre-upload-check.js`: fetches prod + staging manifests (Q-151), diffs tables + row counts, prints go/no-go. Blocks upload if staging missing any prod table. Run before every `stream-upload`. *Effort: 2 hr. Needs Q-151.*
-- [ ] **Q-151 · [P1-UPTIME] GET /v1/admin/data-manifest endpoint** — Returns all tables, row counts, import dates, min/max expected ranges. Powers Q-150 pre-upload check and Q-158 UptimeRobot monitor. *Effort: 2 hr*
-- [ ] **Q-152 · [P1-UPTIME] Staging replica procedure** — Documented in RUNBOOK-DATA.md: verify staging is superset of prod → run imports → validate → upload. No deviation. *Effort: 1 hr doc*
+- [ ] ~~**Q-148 · [P1-UPTIME] Standardize all import scripts to DATA_DIR env var**~~ — **SUPERSEDED by Q-161 (Xata migration).** With `XATA_DATABASE_URL`, all DB connections are URLs — no file paths, no `DATA_DIR`, no `__dirname`. The entire failure class this was preventing disappears.
+- [ ] ~~**Q-149 · [P1-UPTIME] Import scripts self-contained**~~ — **SUPERSEDED by Q-161 (Xata migration).** Database is a connection string, not a filesystem artifact. No CWD dependency possible.
+- [ ] ~~**Q-150 · [P1-UPTIME] Pre-upload check script**~~ — **SUPERSEDED by Q-161 (Xata migration).** Xata CoW branching replaces the entire upload/manifest/diff pipeline. No upload script needed.
+- [ ] ~~**Q-151 · [P1-UPTIME] GET /v1/admin/data-manifest endpoint**~~ — **SUPERSEDED by Q-161 (Xata migration).** Branch comparison + `pg_stat_user_tables` replaces a hand-built manifest endpoint.
+- [ ] ~~**Q-152 · [P1-UPTIME] Staging replica procedure**~~ — **SUPERSEDED by Q-161 (Xata migration).** Xata branches ARE staging replicas. CoW branching eliminates the staging pipeline entirely.
 - [ ] **Q-158 · [P1-UPTIME] UptimeRobot /api/health/detailed keyword monitor** — Keyword check for `"status":"ok"` (not `"degraded"`). Fires on missing tables, stale data, FEMA probe failures. *30 min after Q-147.*
 - [ ] **Q-159 · [P1-UPTIME] UptimeRobot address resolution smoke test** — Already created (ID 802868421). Verify it's firing correctly once Q-147 is up.
 - [x] **Q-160 · [P1-UPTIME] Set NAD_ADMIN_SECRET on prod** ✅ 2026-04-17 — Generated `nad_admin_` + 56-char random secret, set in Render prod env vars alongside full Neon migration env var restore.
+
+---
+
+## 🔵 INFRASTRUCTURE MIGRATION — Xata + Hono
+> **Architecture decisions 2026-04-17.** Full analysis: `architecture/ARCH-ANALYSIS-2026-04-17-postgres-xata.md` · `architecture/ARCH-ANALYSIS-2026-04-17-hono-framework.md`
+> Sequenced: Q-161 → Q-162 → Q-163 / Q-164 / Q-165 in order. Q-163/164/165 are the 3 B2B2D Trojan Horse items.
+
+- [ ] **Q-161 · [P1-INFRA] Xata Phase 0 — migrate risk.db + keys.db to Xata PostgreSQL** — (1) Enable PostGIS + pgvector + pg_cron + pg_duckdb on Xata branch settings; (2) migrate `wildfire_risk`, `storm_risk`, `earthquake_risk`, `drought_risk`, `nri_risk` + `api_keys`, `usage_log`, `address_signals`, `data_sources` from SQLite → Xata schemas `risk.*` + `keys.*` using **`xata-clone`** (not pg_dump — xata-clone handles the 150GB pull directly into a Xata branch without manual dump/restore); (3) run `COUNT(*)` across all tables in both SQLite source and Xata destination to verify data parity before cutover; (4) swap `better-sqlite3` → `pg` driver in `risk-data.js` + `keys.js`, connect via `XATA_DATABASE_URL`; (5) nad.db stays SQLite for now. **Unlocks Q-154 (pg_cron), Q-156 (freshness SQL), Q-153 (CHECK constraints). Supersedes Q-148, Q-149, Q-150, Q-151, Q-152 — those are SQLite pipeline workarounds that disappear when DB is a URL.** *Effort: 4 hr*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 1. Phase Migration Map + § 4. Database-as-Code Workflow (Postgres-as-Code golden rule — merge Xata branch BEFORE git push)
+
+- [ ] **Q-162 · [P1-INFRA] Migrate Express → Hono** — Rewrite `web-server.js` (1,956 lines, 55 routes) into structured Hono app. Split into `routes/api.js`, `routes/v1.js`, `routes/admin.js`, `routes/demo.js`, `routes/webhooks.js`. Route logic in `query.js`, `enrich.js`, `risk-data.js`, `keys.js` unchanged — HTTP layer only. Special care: Stripe raw body (`c.req.arrayBuffer()`), streaming upload, static files. `npm install hono @hono/zod-openapi zod && npm remove express`. **Prerequisite for Q-163, Q-164, Q-165.** *Effort: 2–3 days*
+
+- [ ] **Q-163 · [P3-FEAT] Hono RPC → @geoclear/client typed npm package** — Export Hono `AppType` from server. Publish as `@geoclear/client` on npm. Developers get full TypeScript autocomplete on every endpoint and every response field — feels like calling a local function, not a remote 150GB database. **Supersedes Q-106 (Node.js SDK).** *Effort: 4 hr after Q-162. B2B2D Trojan Horse item 1.*
+
+- [ ] **Q-164 · [P3-FEAT] Zod + OpenAPI → Swagger UI at /explorer + /openapi.json** — Add Zod request/response schemas to all public routes via `@hono/zod-openapi`. Generates: (1) live Swagger UI at `/explorer` — interactive playground, no Postman needed; (2) `/openapi.json` spec — feeds RapidAPI, auto-generates Python/Go/Java SDKs via `openapi-generator`. Input validation at HTTP boundary = SQL injection prevention + enterprise audit-ready. **Partially supersedes Q-107 (Python SDK).** *Effort: 1 day after Q-162. B2B2D Trojan Horse item 2.*
+
+- [ ] **Q-165 · [P3-FEAT] Cloudflare Workers edge deployment for /api/* routes** — Deploy public API routes to Cloudflare Workers. Hono runs identically on CF Workers — zero code changes to routes. Result: ~30ms latency globally vs 200–400ms from single Render region. CF handles TLS, DDoS, edge rate limiting, static caching. **Gate: nad.db must be on Xata (Phase 3) before this ships — Workers require a URL-based DB, not a file path.** *Effort: 1 day. B2B2D Trojan Horse item 3.*
+
+---
+
+## 🛠 DEV SETUP & POSTGRES-AS-CODE
+> **Source:** `research/dev_architecture_setup.docx` + `research/dev_system.docx` · Reviewed 2026-04-17.
+> Local dev discipline, branch-first workflow, schema-as-code, GitHub integration, repo structure, and operational stability rules. Run **after Q-161 (Xata Phase 0)** is complete — these assume `XATA_DATABASE_URL` exists.
+> Sequenced: Q-166 (schema capture) → Q-167 (local dev) → Q-168 (branch workflow) → Q-169 (repo structure) → Q-170 (GitHub + CI/CD) → Q-171–Q-175 (operational stability, run in parallel after Q-161).
+
+- [ ] **Q-166 · [P1-INFRA] Drizzle-Kit schema capture — introspect Xata → schema.ts** — Run `npx drizzle-kit introspect` against `XATA_DATABASE_URL` after Q-161 completes. Outputs `src/db/schema.ts` with TypeScript table definitions matching actual Xata tables. Run `npx drizzle-kit generate` → outputs `drizzle/0001_init.sql`. Commit both. Purpose: (1) schema-as-code in git — full Postgres-as-Code discipline; (2) insurance policy — if Xata ever closes, `0001_init.sql` + `pg_dump` recreates the DB anywhere. `npm install -D drizzle-orm drizzle-kit`. **No ORM usage in application code at this point — schema.ts is documentation + migration source only.** *Effort: 1 hr after Q-161.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 3. Drizzle-Kit — Schema-as-Code Tool + § 13. Migration Window Skeleton (Step 3)
+
+- [ ] **Q-167 · [P1-INFRA] Local dev environment — Docker Postgres + seed.sql** — Add `docker-compose.yml` with `postgres:16` service on port 5432. Add `scripts/seed.sql` with ~1,000 representative rows across `keys.*` and `risk.*` tables (never the full 150GB). Add `.env.example` with `DATABASE_URL=postgresql://localhost:5432/geoclear_dev` and `XATA_BRANCH_URL=` placeholder. Update `README` dev setup section. Goal: `docker compose up` → local Postgres ready in 30 seconds, no Render dependency for local work. *Effort: 2 hr.*
+
+- [ ] **Q-168 · [P1-INFRA] Branch-first discipline — xata branch workflow enforced** — Document and enforce: every feature starts with `xata branch create <feature-name> --from main`. Local `.env` points to `XATA_BRANCH_URL` (feature branch) not `XATA_DATABASE_URL` (main). Explicit migration cycle: (1) modify `src/db/schema.ts`; (2) `npx drizzle-kit generate` → review generated `.sql`; (3) apply via `xata dbshell < drizzle/<migration>.sql`; (4) merge Xata branch → then `git push`. **Render deploy order: merge Xata schema FIRST, then git push to GitHub. Never the reverse.** Add this sequence to `RUNBOOK-ENV-VARS.md` and `CLAUDE.md` deployment section. *Effort: 1 hr + doc update.*
+
+- [ ] **Q-169 · [P1-INFRA] Modular monorepo structure** — Reorganise repo to match the agreed structure from `dev_system.docx`: `drizzle/` (migration .sql files), `scripts/` (data pipeline scripts — import, validate, seed — never inside API routes), `src/db/schema.ts` (Drizzle table defs), `src/db/client.ts` (pg.Pool singleton), `src/api/v1/` (current Hono routes after Q-162), `src/api/v2/` (placeholder for new endpoints), `middleware/` (auth, rate-limit, logging). Move existing data pipeline scripts from root into `scripts/`. Add `render.yaml` (multi-service config) and `xata.toml` (project config). *Effort: 2–3 hr after Q-162.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 2. Modular Monorepo Structure (full directory tree)
+
+- [ ] **Q-170 · [P1-INFRA] GitHub Actions — weekly schema backup workflow** — Add `.github/workflows/db-backup.yml`: runs weekly (Sunday 02:00 UTC, `cron: '0 0 * * 0'`) + `workflow_dispatch` for manual runs. Steps: (1) `npm install -g @xata.io/cli`; (2) `xata pull main` (pulls latest schema from Xata production branch); (3) commit `xata.toml` + `/drizzle/*.sql` back to repo with message `Auto-backup: Latest Xata Schema [YYYY-MM-DD]`. Add GitHub Secrets: `XATA_API_KEY`, `DATABASE_URL`, `XATA_BRANCH_URL`. Set repo Actions permissions to "Read and Write." Purpose: (1) zero lock-in — weekly schema state in git history; (2) audit trail for enterprise customers; (3) replaying `/drizzle` SQL files on any Postgres host recreates the full structure. *Effort: 2 hr.*
+
+- [ ] **Q-171 · [P2-DATA] pg.Pool singleton — connection leak prevention** — Extract `pg.Pool` initialisation into `src/db/client.ts`, initialised once at process start outside request handlers. Import this singleton in `keys.js`, `risk-data.js`, `query.js`. Current pattern (creating pool per request or per module) leaks connections under load. Xata enforces a connection limit; leaks cause `too many connections` 500s. Add pool size config: `max: 10` for Render free tier, `max: 20` for paid. *Effort: 1 hr.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 5. src/db/client.ts Singleton Pool (complete TypeScript implementation)
+
+- [ ] **Q-172 · [P1-UPTIME] pino structured JSON logging** — Replace `console.log` throughout with `pino` logger. Output: `{"level":"info","time":1234,"msg":"address lookup","latency_ms":45,"endpoint":"/v1/address"}`. Add request correlation ID (`x-request-id` header, fallback to `crypto.randomUUID()`). Structured logs are required for Xata query alerts (Q-173) and future log aggregation (Datadog/Logtail). `npm install pino pino-http`. *Effort: 2 hr.*
+
+- [ ] **Q-173 · [P2-DATA] Xata long-running query alerts** — Configure Xata query performance alerts: alert on queries >2s P95, alert on connection count >15. Integrate with UptimeRobot or SendGrid. Required companion to Q-172 (structured logs surface the slow queries). *Effort: 1 hr setup in Xata dashboard.*
+
+- [ ] **Q-174 · [P1-UPTIME] Weekly pg_dump to S3 — zero lock-in exit policy** — Add `scripts/backup-full.sh`: connects via `XATA_DATABASE_URL`, runs `pg_dump` (data + schema), uploads to S3 bucket `geoclear-backups/YYYY-MM-DD/`. Trigger: GitHub Actions weekly cron OR Render cron job. This is the unconditional exit ramp — if Xata closes or prices 10x, a full `pg_dump` restores to any PostgreSQL host in < 1 hour. Add to deployment checklist. *Effort: 2 hr.*
+
+- [ ] **Q-175 · [P3-FEAT] Feature flag table in keys schema** — Add `feature_flags` table to `keys.*`: `(flag_name TEXT PRIMARY KEY, enabled BOOLEAN, description TEXT, updated_at TIMESTAMP)`. Add `GET /v1/admin/flags` and `PUT /v1/admin/flags/:name` endpoints (admin-auth only). Use to toggle: new enrichment signals, v2 endpoints, experimental risk dimensions on prod without a code deploy. Seed with initial flags for Xata migration gates (`xata_risk_enabled`, `xata_keys_enabled`, `hono_v2_enabled`). *Effort: 3 hr.*
+
+- [ ] **Q-176 · [P3-FEAT] TanStack Start — SaaS dashboard frontend** — Build the authenticated customer dashboard in TanStack Start. Responsibilities: API key management, usage graphs (calls/day from `usage_log`), billing/upgrade flow (Stripe Customer Portal link), account settings. Uses Hono RPC `AppType` export for 100% end-to-end type safety — change a response field in the API and the dashboard shows a TypeScript error immediately. Lives at `src/dashboard/` in the monorepo. Serve from `geoclear.io/app` or a separate subdomain. Stack: TanStack Start + TanStack Router + Tailwind 4.0 + Shadcn/ui. **Gate: Q-162 (Hono migration) must be done first — RPC types come from the Hono AppType export.** *Effort: 3–5 days.*
+
+- [ ] **Q-177 · [P3-DIST] Astro 5.x — marketing + docs website** — Rebuild the marketing site in Astro 5.x. Zero-JS by default → perfect Lighthouse scores → better SEO than the current static `public/` HTML. Features: Server Islands (dynamic login button / "Welcome back" on a fully static page), View Transitions (app-like feel between pages), PWA config (customers can install docs offline). Integrate a headless CMS (Prismic or Cosmic JS) so marketing copy, blog posts, and changelog entries update without a code deploy. Lives at `src/web/` in the monorepo. Deployed to Vercel or Netlify edge for <1s global load. **Independent of Hono/Xata — can start any time.** Stack: Astro 5.x + Tailwind 4.0 + Shadcn + Prismic/Cosmic. *Effort: 2–3 days.*
+
+- [ ] **Q-178 · [P1-INFRA] Render Background Worker — data pipeline as separate service** — Extract all data import scripts (`overture-import.js`, `calfire-import.js`, future NAD imports) from the API service into a dedicated Render Background Worker (`geoclear-pipeline` in `render.yaml`). Start command: `node dist/scripts/import-worker.js`. This ensures: (1) a stuck 150GB import cannot OOM-kill the live API service; (2) worker can be scaled independently (more RAM/CPU during import runs); (3) clean separation — API routes never spawn long-running processes. Worker connects via same `XATA_DATABASE_URL`. **Add to `render.yaml` alongside the existing prod + staging services.** *Effort: 2 hr.*
+
+- [ ] **Q-179 · [P1-INFRA] render.yaml — full multi-service configuration** — Write the complete `render.yaml` covering all three production services: (1) `geoclear-marketing` (Astro, `build:web`, `start:web`); (2) `geoclear-api` (Hono, `plan: pro`, `healthCheckPath: /api/health`, `fromSecret: XATA_DATABASE_URL`); (3) `geoclear-pipeline` (Background Worker, `node dist/scripts/import-worker.js`). Add optional `databases: geoclear-cache` (Redis, free plan) for shared rate-limiting state across services — prevents rate limit bypass when API scales to multiple instances. Add root `package.json` build scripts: `build:web`, `start:web`, `build:api`, `start:api`, `build:scripts`. This replaces the current single-service manual Render dashboard config with an IaC file committed to git — every Render service is reproducible from `render.yaml`. **Gate: Q-177 (Astro) and Q-178 (Worker) should exist before finalising.** *Effort: 1 hr.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 7. render.yaml Blueprint (complete YAML with all three services)
+
+- [ ] **Q-180 · [P2-DATA] Soda Core — Data Quality as Code for 150GB pipeline** — Add `scripts/quality/` folder with two files: (1) `configuration.yml` — Xata Postgres connection using `XATA_PG_HOST/USER/PASSWORD/DB` env vars; (2) `checks.yml` — SodaCL contracts: `row_count > 1000000`, `missing_count(latitude) = 0`, `missing_count(longitude) = 0`, `avg(risk_score) between 0 and 100`, `duplicate_count(address_hash) = 0`, `freshness(updated_at) < 24h`. Add geospatial checks: "Null Island" (`lat = 0 AND lng = 0`), North America bounding box (`lat < 24 OR lat > 49` → warn >100, fail >1000), join integrity (`row_count_diff_percentage(address_signals) < 1%`). Add GitHub Action `.github/workflows/data-quality.yml`: triggers on `workflow_run` after the Sunday backup completes, runs `pip install soda-core-postgres` → `soda scan`. Saves pass/fail results to `data_health` table in Xata (`flag_name, status, checked_at, details`). **Soda Core is Python — requires `python: 3.11` in the CI step.** *Effort: 3 hr.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 9. Data Quality — Soda Core (complete checks.yml + configuration.yml + GitHub Action)
+
+- [ ] **Q-181 · [P1-INFRA] PostGIS setup — geom column + GIST index on risk_data** — Enable PostGIS on Xata branch: `CREATE EXTENSION IF NOT EXISTS postgis`. Add `geom geography(Point, 4326)` column to `risk_data`, `wildfire_risk`, `flood_zones` tables. Populate: `UPDATE risk_data SET geom = ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`. Create GIST spatial index: `CREATE INDEX idx_risk_data_spatial ON risk_data USING GIST (geom)` — this makes `ST_DWithin` index-aware and < 100ms on 150GB. Add Drizzle custom type in `schema.ts`: `const geometry = customType<{ data: string }>({ dataType: () => 'geometry(Point, 4326)' })`. **Validation:** run `EXPLAIN ANALYZE` on a test `ST_DWithin` query and confirm "Index Scan using idx_risk_data_spatial" appears. **Gate: Q-161 (Xata Phase 0). Run on a feature branch first, merge only after EXPLAIN ANALYZE confirms index use.** *Effort: 2 hr.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 10. PostGIS — Spatial Engine Setup (CREATE EXTENSION, geom column, GIST index, EXPLAIN ANALYZE validation SQL)
+
+- [ ] **Q-182 · [P3-FEAT] `/v2/proximity` Hono endpoint — ST_DWithin proximity search** — New file `src/api/v2/proximity.ts`. Zod schema: `lat` (string → Number), `lng` (string → Number), `radius_meters` (default 500), `limit` (default 50). Core query uses `ST_DWithin(geom, ST_MakePoint($1,$2)::geography, $3)` for index-aware radius filter + `ST_Distance` for sort. Returns `{ meta: { center, radius, count }, data: [{ id, risk_score, address_hash, lat, lng, distance_meters }] }`. `::geography` cast handles Earth curvature — 500m in London = 500m in New York. `ST_X(geom)` / `ST_Y(geom)` extract clean floats (not hex strings) for developer maps. Mount at `app.route('/v2', v2)`. **This is the headline v2 endpoint — the product differentiation over any REST-only competitor.** *Effort: 3 hr. Gate: Q-162 (Hono) + Q-181 (PostGIS + GIST index).*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 11. /v2/proximity Hono Endpoint (complete proximity.ts implementation with Zod schema + ST_DWithin query)
+
+- [ ] **Q-183 · [P3-FEAT] `/status/data` public data health page** — Astro page at `geoclear.io/status/data`. Reads from `data_health` table (populated by Soda Core, Q-180). Displays: Last Check timestamp, pass/fail per check, Data Freshness (hours since last `updated_at`), check history (last 4 weeks). **Enterprise selling point** — share this URL with B2B prospects as a "Data Health Certificate" proving the 150GB product is actively monitored. Can be gated behind auth or left public (public is more credible). *Effort: 2 hr. Gate: Q-177 (Astro) + Q-180 (Soda Core + data_health table).*
+
+- [ ] **Q-184 · [P2-DATA] Data freshness SLA test in Vitest + GitHub Actions summary** — Add `src/db/health.ts` with `getDataFreshness()`: queries `MAX(updated_at)` from `risk_data`, returns `{ lastUpdate, hoursOld }`. Add Vitest SLA test (`src/api/v2/data-health.test.ts`): `expect(hoursOld).toBeLessThan(24)` — fails CI build if the 150GB data is stale. Add GitHub Actions step that appends a "GeoClear Data Health Report" block to `$GITHUB_STEP_SUMMARY` (status, threshold, last update). **Why:** code tests pass even when the Sunday import fails silently. This test catches the data staleness before customers see wrong scores on Monday. *Effort: 1 hr. Gate: Q-054 (Vitest setup) + Q-161 (Xata migration — needs real `updated_at` column).*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 12. Data Freshness SLA Test
+
+- ✅ **Q-185 · [P1-INFRA] Migration Window Skeleton Sprint — parallel work while xata-clone runs** · DONE 2026-04-17 — xata-clone of 150GB takes 1–3 hours. Use that window to build the skeleton of the new system so code is ready the moment clone finishes. Five steps, ~2 hours total, all safe (no DB write, no prod change):
+
+  **Step 1 — Monorepo folder structure** (~60 min)
+  Create the agreed directory layout (from `dev_system.docx`): `src/api/v1/` (move current Express/Hono routes), `src/api/v2/` (placeholder `index.ts`), `src/db/` (empty — populated by Q-166 after clone), `scripts/` (move `overture-import.js`, `calfire-import.js`, pipeline scripts from root), `drizzle/` (empty — populated by `drizzle-kit generate` after Q-166), `src/dashboard/` (placeholder for Q-176 TanStack Start), `src/web/` (placeholder for Q-177 Astro). Update all relative `require()` / `import` paths. Run `node web-server.js` locally — must start cleanly after restructure.
+
+  **Step 2 — render.yaml skeleton** (~20 min)
+  Create `render.yaml` with three service stubs: `geoclear-api` (Hono, `plan: pro`, `healthCheckPath: /api/health`), `geoclear-marketing` (Astro, placeholder), `geoclear-pipeline` (Background Worker, placeholder). Add `fromSecret` refs for `XATA_DATABASE_URL`, `NAD_ADMIN_SECRET`, `STRIPE_*`. Does not deploy anything — Render only reads this file when you trigger a new deploy. Gate: finalise in Q-179.
+
+  **Step 3 — Drizzle + client.ts skeleton** (~20 min)
+  Create `src/db/client.ts` with the `pg.Pool` singleton (full code in DEV-SYSTEM-REF § 5). Tables intentionally empty — `drizzle-kit introspect` fills `schema.ts` after Q-161 clone completes. Create `src/db/schema.ts` with one comment: `// Auto-generated by drizzle-kit introspect after Q-161 — do not hand-edit`. Install deps: `npm install pg drizzle-orm` and `npm install -D drizzle-kit`. Add `drizzle.config.ts` pointing at `XATA_DATABASE_URL` with `out: 'drizzle/'`.
+
+  **Step 4 — GitHub Actions scaffolding** (~15 min)
+  Create `.github/workflows/db-backup.yml` (weekly `xata pull main` schema backup — full spec in Q-170). Create `.github/workflows/data-quality.yml` (Soda Core scan after Sunday backup — full spec in Q-180). Both workflows reference `XATA_API_KEY` secret — add to GitHub repo Secrets now (value from `~/.zshrc` or Xata dashboard) so CI runs the moment clone finishes.
+
+  **Step 5 — docs/roadmap.md** (~5 min)
+  Create `docs/roadmap.md` with the three-phase migration plan:
+  - Phase 0: xata-clone + Drizzle schema capture (Q-161, Q-166)
+  - Phase 1: Hono migration + pg.Pool singleton (Q-162, Q-171)
+  - Phase 2: PostGIS + /v2/proximity + Soda Core (Q-181, Q-182, Q-180)
+
+  **Gate:** Start during xata-clone run (Q-161). Steps 1–5 are safe to do on `main` directly (structural moves + new files, no data change). Commit each step separately for clean rollback. After all 5 steps: the repo structure is Xata-ready before the first query is routed to it.
+  *Effort: ~2 hr. Run in parallel with Q-161 xata-clone.*
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 13. Migration Window Skeleton
 
 ---
 
@@ -121,14 +215,14 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 
 #### Path to Push
 
-- [ ] **Q-148 · Standardize all import scripts to DATA_DIR env var** — Audit every `*-import.js` for `path.join(__dirname, 'data', ...)` or `path.join(__dirname, ...)` that constructs a DB path. Replace with `path.join(process.env.DATA_DIR || path.join(__dirname, 'data'), 'risk.db')`. Affected: `wildfire-import.js`, `storm-import.js`, `calfire-import.js` (others already use `--db=` arg which is fine). Add lint rule / grep to CI: fail if `__dirname.*risk.db` appears in any import script. Prevents P-4 class permanently. *Effort: 1 hr*
-- [ ] **Q-149 · Import scripts self-contained — no CWD dependency** — Every import script header must document its run invocation: `DATA_DIR=/data NODE_PATH=$(pwd)/node_modules node /data/<script>.js --db=/data/risk.db`. Runner scripts (`run-all-imports.js`) must resolve `NODE_PATH` dynamically via `path.resolve(process.cwd(), 'node_modules')`. Never hardcode `/home/render/...` or any absolute infrastructure path. Add `--help` output to each script showing required env vars. Prevents P-10 class. *Effort: 2 hr*
-- [ ] **Q-150 · Pre-upload check script** — `scripts/pre-upload-check.js`: (1) fetches prod data manifest via `GET /v1/admin/data-manifest` (Q-151), (2) fetches staging manifest, (3) diffs — errors if staging is missing any table that prod has, (4) checks every expected table meets minimum row count, (5) prints go/no-go. Run before every `stream-upload` to prod. Prevents P-5 (staging wiping prod tables) class. *Effort: 2 hr. Depends on Q-151.*
+- [ ] ~~**Q-148 · Standardize all import scripts to DATA_DIR env var**~~ — **SUPERSEDED by Q-161.** Xata migration removes all file-path DB patterns.
+- [ ] ~~**Q-149 · Import scripts self-contained — no CWD dependency**~~ — **SUPERSEDED by Q-161.** DB is a URL, not a path.
+- [ ] ~~**Q-150 · Pre-upload check script**~~ — **SUPERSEDED by Q-161.** Xata CoW branching eliminates the upload pipeline.
 
 #### Data / Code Separation
 
-- [ ] **Q-151 · GET /v1/admin/data-manifest endpoint** — Returns JSON: `{tables: [{name, row_count, last_import_date, min_expected, max_expected}], nad_db: {addresses, last_updated}, generated_at}`. Includes min/max expected row counts hardcoded per table (wildfire: 3100–3300, storm: 3200–3300, earthquake: 3200–3250, drought: 3200–3250, nri_risk: 3100–3250). Used by Q-150 pre-upload check and Q-158 UptimeRobot monitor. *Effort: 2 hr*
-- [ ] **Q-152 · Staging replica procedure — documented and enforced** — `docs/runbooks/RUNBOOK-DATA.md` section "Before any import run": (1) run `scripts/pre-upload-check.js --target=staging --source=prod` to verify staging has all prod tables, (2) if missing, download prod risk.db to staging via `stream-download` (add this endpoint), (3) then run new imports on staging, (4) validate (Q-153), (5) upload to prod. No deviation from this sequence. Prevents P-5 permanently. *Effort: 2 hr*
+- [ ] ~~**Q-151 · GET /v1/admin/data-manifest endpoint**~~ — **SUPERSEDED by Q-161.** `pg_stat_user_tables` + Xata branch diffs replace a custom manifest endpoint.
+- [ ] ~~**Q-152 · Staging replica procedure — documented and enforced**~~ — **SUPERSEDED by Q-161.** Xata branches are instant staging replicas. The procedure no longer needs to exist.
 
 #### Data Quality
 
@@ -267,27 +361,89 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 ## ENGINEERING INFRASTRUCTURE `[P3-FEAT]`
 > 🟡 All unchecked items in this section are **[P3-FEAT]**
 
-- [ ] **Q-054 · [P3-FEAT] Comprehensive Testing Framework** — BDS `/dev-test` (10-layer). No test runner installed yet (`package.json` has no `test` script, no mocha/jest/autocannon). `tests/TC-REGISTRY.md` and `tests/BUG-REGISTRY.md` scaffolded but empty. Full implementation spec below.
+- [ ] **Q-054 · [P3-FEAT] Comprehensive Testing Framework** — No test runner installed yet (`package.json` has no `test` script). `tests/TC-REGISTRY.md` and `tests/BUG-REGISTRY.md` scaffolded but empty. Full implementation spec below.
+  > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 8. Testing Stack — Vitest + Playwright (vitest.config.ts with coverage thresholds, testClient pattern, transactional rollback, GitHub PR action)
 
-  **Framework:** Node.js + Mocha (unit/integration/API/security/data) + Playwright (E2E + visual) + autocannon (performance). All 10 BDS layers applied to GeoClear's actual modules.
+  **⚠️ Tooling decision updated 2026-04-17 (post-Hono + Xata migration):** Stack is **Vitest 3.x + Playwright** — not Mocha/supertest. Vitest is Vite-native (89% faster watch mode), shares `vite.config` with TanStack Start (Q-176), and natively supports the Hono `testClient` helper. Mocha is Express-era tooling; do not install it. **Gate: implement after Q-162 (Hono) is complete — testClient requires a Hono app export.**
+
+  **The 2026 Testing Stack:**
+
+  | Layer | Tool | Why |
+  |-------|------|-----|
+  | Unit + Integration | Vitest 3.x | Vite-native, shares build config, 89% faster watch mode than Mocha |
+  | API (type-safe) | Vitest + `hono/testing` testClient | Full autocomplete on endpoint params + response shape — no raw `supertest` strings |
+  | DB tests (Xata) | Vitest + transactional rollback pattern | Start transaction → run test → rollback — test data never hits 150GB, stays fast |
+  | Frontend components | Vitest Browser Mode | Uses Playwright internally; tests in a real browser, not JSDOM |
+  | E2E critical paths | Playwright (critical paths only) | User Login → Search 150GB Data → Export Report; Trace Viewer records video on failure |
+  | Performance | autocannon | p50/p95/p99 SLAs unchanged (see Layer 7) |
 
   **Install:**
   ```bash
-  npm install --save-dev mocha chai supertest autocannon
+  npm install --save-dev vitest @vitest/browser playwright autocannon
   npx playwright install chromium
   ```
   Add to `package.json`:
   ```json
   "scripts": {
-    "test":      "mocha 'tests/**/*.test.js' --timeout 10000",
-    "test:unit": "mocha 'tests/unit/**/*.test.js'",
-    "test:api":  "mocha 'tests/api/**/*.test.js' --timeout 15000",
-    "test:sec":  "mocha 'tests/security/**/*.test.js'",
-    "test:data": "mocha 'tests/data/**/*.test.js'",
-    "test:perf": "node tests/perf/run.js",
-    "test:e2e":  "npx playwright test"
+    "test":        "vitest run",
+    "test:watch":  "vitest",
+    "test:unit":   "vitest run tests/unit",
+    "test:api":    "vitest run tests/api",
+    "test:sec":    "vitest run tests/security",
+    "test:data":   "vitest run tests/data",
+    "test:perf":   "node tests/perf/run.js",
+    "test:e2e":    "playwright test"
   }
   ```
+
+  **Hono testClient pattern (replaces supertest for API layer):**
+  ```typescript
+  import { testClient } from 'hono/testing'
+  import app from './src/api/index'
+
+  it('returns a valid risk score', async () => {
+    const client = testClient(app)
+    const res = await client.v1['risk-score'].$get({ query: { lat: '40', lng: '-74' } })
+    expect(await res.json()).toMatchObject({ score: expect.any(Number) })
+  })
+  ```
+
+  **Transactional pattern for Xata/Postgres tests:**
+  ```typescript
+  beforeEach(async () => { await pool.query('BEGIN') })
+  afterEach(async ()  => { await pool.query('ROLLBACK') })
+  // test inserts/updates never actually commit — 150GB DB stays clean
+  ```
+
+  **Coverage reports (`@vitest/coverage-v8` + `@vitest/ui`):**
+  ```bash
+  npm install --save-dev @vitest/coverage-v8 @vitest/ui
+  ```
+  Full `vitest.config.ts` coverage block:
+  ```typescript
+  coverage: {
+    provider: 'v8',
+    reporter: ['text', 'html', 'json-summary'],
+    include: ['src/**/*.{ts,js}'],
+    thresholds: { lines: 80, branches: 75, functions: 80, statements: 80 },
+    reportOnFailure: true
+  }
+  ```
+  - `npx vitest run --coverage` — terminal summary
+  - `npx vitest --ui --coverage` — visual dashboard at `localhost:51204`, searchable by file
+  - Priority targets: `enrich.js` (external API paths), `risk-data.js` (county lookup logic), `keys.js` (quota enforcement — must stay >80%, it is the revenue gate)
+
+  **GitHub PR coverage comment (add to `.github/workflows/test.yml`):**
+  ```yaml
+  - name: Run Tests with Coverage
+    run: npx vitest run --coverage
+  - name: Report Coverage
+    if: always()
+    uses: davelosert/vitest-coverage-report-action@v2
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+  ```
+  Posts a coverage summary as a PR comment — acts as a quality gate before merging into the 150GB production branch.
 
   **Layer 1 — Unit (TC-UNIT-XXXX)** | File: `tests/unit/`
   Target modules and functions to test in isolation (no DB, no network, no filesystem):
@@ -556,8 +712,8 @@ Open:
 - [x] **Q-105 · Pricing reframe — floor to $199** ✅ 2026-04-17 — Landing page updated: $49 Starter card removed; Growth $199/150K, Professional $499/500K (compliance fields merged in), Scale $999/5M. Checkout validates `growth`/`pro`/`scale`/`metered`. COMMS #7 added: Stripe action for new price IDs + Render env vars.
 
 ### Distribution
-- [ ] **Q-106 · [P3-DIST]** Node.js SDK (`npm install geoclear`)
-- [ ] **Q-107 · [P3-DIST]** Python SDK (`pip install geoclear`)
+- [ ] ~~**Q-106 · [P3-DIST] Node.js SDK**~~ (`npm install geoclear`) — **SUPERSEDED by Q-163 (Hono RPC).** Hono `AppType` export + `@geoclear/client` npm package IS the Node.js SDK. Ships in 4 hours after Q-162, not a separate sprint.
+- [ ] ~~**Q-107 · [P3-DIST] Python SDK**~~ (`pip install geoclear`) — **PARTIALLY SUPERSEDED by Q-164 (OpenAPI).** `/openapi.json` from Hono zod-openapi → `openapi-generator` auto-generates Python, Go, Java clients. Manual SDK work no longer needed.
 - [ ] **Q-108 · [P3-DIST]** Zapier integration ("Verify US address" action)
 - [ ] **Q-109 · [P3-DIST]** Shopify App
 - [ ] **Q-110 · [P3-DIST]** WordPress / WooCommerce plugin

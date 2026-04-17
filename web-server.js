@@ -1420,7 +1420,7 @@ app.post('/v1/admin/import-tsv-gz-cached', adminAuth, (req, res) => {
   res.json({ ok: true, message: `Import started in worker thread from ${CACHE_PATH}. Check /api/stats.` });
 
   const CHECKPOINT_PATH = path.join(DATA_DIR, 'import-checkpoint.txt');
-  const worker = new Worker(path.join(__dirname, 'import-worker.js'), {
+  const worker = new Worker(path.join(__dirname, 'scripts', 'import-worker.js'), {
     workerData: { dbPath, cachePath: CACHE_PATH, checkpointPath: CHECKPOINT_PATH },
   });
   worker.on('message', msg => {
@@ -1485,7 +1485,7 @@ app.post('/v1/admin/relink-fks', adminAuth, (req, res) => {
   console.log('[relink-fks] Starting relink worker');
   res.json({ ok: true, message: 'FK relink started in background. Monitor console logs for progress. /api/states will update when complete.' });
 
-  const worker = new Worker(path.join(__dirname, 'relink-worker.js'), { workerData: { dbPath } });
+  const worker = new Worker(path.join(__dirname, 'scripts', 'relink-worker.js'), { workerData: { dbPath } });
   worker.on('message', msg => {
     if (msg.message) console.log(`[relink-fks] ${msg.message}`);
     if (msg.type === 'done') {
@@ -1510,7 +1510,7 @@ app.post('/v1/admin/refresh-counts', adminAuth, (req, res) => {
   console.log('[refresh-counts] Starting refresh worker');
   res.json({ ok: true, message: 'Count refresh started in background. Monitor console logs. /api/states will update when complete.' });
 
-  const worker = new Worker(path.join(__dirname, 'refresh-counts-worker.js'), { workerData: { dbPath } });
+  const worker = new Worker(path.join(__dirname, 'scripts', 'refresh-counts-worker.js'), { workerData: { dbPath } });
   worker.on('message', msg => {
     if (msg.msg)   console.log(`[refresh-counts] ${msg.msg}`);
     if (msg.done)  { cache.clear(); console.log('[refresh-counts] Complete. Cache cleared.'); }

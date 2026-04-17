@@ -1,0 +1,47 @@
+dataset: xata_prod/public/risk_data
+
+columns:
+  - name: id
+    data_type: BIGINT
+  - name: lat
+    data_type: DECIMAL
+  - name: lng
+    data_type: DECIMAL
+  - name: risk_score
+    data_type: INTEGER
+  - name: address_hash
+    data_type: TEXT
+
+checks:
+  - row_count > 1000000:
+      name: "Volume: At least 1M rows"
+
+  - duplicate_count(address_hash) = 0:
+      name: "Integrity: No duplicate address fingerprints"
+
+  - avg(risk_score) between 0 and 100:
+      name: "Business Logic: Risk scores are normalized"
+
+  - invalid_count(lat) = 0:
+      valid_min: -90
+      valid_max: 90
+      name: "Geospatial: Latitude within bounds"
+
+  - missing_count(lng) = 0:
+      name: "Critical: Longitude must never be null"
+
+  - freshness(updated_at) < 24h:
+      name: "SLA: Data updated within 24 hours"
+
+  - failed_rows:
+      name: "Geospatial: No 0,0 coordinates (Null Island)"
+      condition: lat = 0 AND lng = 0
+
+  - failed_rows:
+      name: "Geospatial: Coordinates within North American bounds"
+      condition: (lat < 24 OR lat > 49) OR (lng < -125 OR lng > -66)
+      warn: when > 100
+      fail: when > 1000
+
+  - row_count_diff_percentage(address_signals) < 1%:
+      name: "Join: Risk data matches Address Signals <1% orphaned rows"

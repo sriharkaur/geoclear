@@ -1,0 +1,58 @@
+services:
+  # 1. ENTERPRISE API (Hono + Node 20) — primary revenue service
+  - type: web
+    name: geoclear-api
+    runtime: node
+    plan: pro
+    buildCommand: npm install && npm run build:api
+    startCommand: node dist/api/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20.x"
+      - key: DATABASE_URL
+        fromSecret: XATA_DATABASE_URL
+      - key: XATA_API_KEY
+        fromSecret: XATA_API_KEY
+      - key: NAD_ADMIN_SECRET
+        fromSecret: NAD_ADMIN_SECRET
+      - key: STRIPE_SECRET_KEY
+        fromSecret: STRIPE_SECRET_KEY
+      - key: STRIPE_WEBHOOK_SECRET
+        fromSecret: STRIPE_WEBHOOK_SECRET
+      - key: STRIPE_PRICE_STARTER
+        fromSecret: STRIPE_PRICE_STARTER
+      - key: STRIPE_PRICE_PRO
+        fromSecret: STRIPE_PRICE_PRO
+      - key: STRIPE_PRICE_BULK_1M
+        fromSecret: STRIPE_PRICE_BULK_1M
+      - key: STRIPE_PRICE_BULK_5M
+        fromSecret: STRIPE_PRICE_BULK_5M
+
+  # 2. MARKETING WEBSITE (Astro 5.x) — Q-177
+  - type: web
+    name: geoclear-marketing
+    runtime: node
+    buildCommand: npm install && npm run build:web
+    startCommand: npm run start:web
+    envVars:
+      - key: NODE_VERSION
+        value: "20.x"
+
+  # 3. DATA PIPELINE (Background Worker) — import scripts, never inside API routes
+  - type: worker
+    name: geoclear-pipeline
+    runtime: node
+    buildCommand: npm install && npm run build:scripts
+    startCommand: node dist/scripts/import-worker.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20.x"
+      - key: DATABASE_URL
+        fromSecret: XATA_DATABASE_URL
+      - key: NAD_ADMIN_SECRET
+        fromSecret: NAD_ADMIN_SECRET
+
+# Note: do NOT use Render Pre-deploy command for migrations.
+# At 150GB, all migrations must be manual via Xata CLI to avoid stuck pipelines.
+# Always: xata branch merge → then git push (Render auto-deploy reads ready DB).

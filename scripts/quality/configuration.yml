@@ -1,0 +1,10 @@
+data_source xata_prod:
+  type: postgres
+  connection:
+    host: ${XATA_PG_HOST}
+    username: ${XATA_PG_USER}
+    password: ${XATA_PG_PASSWORD}
+    database: ${XATA_PG_DB}
+    port: 5432
+    schema: public
+    sslmode: require
