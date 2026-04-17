@@ -11,13 +11,73 @@
 
 ---
 
+## BUSINESS DELIVERY SYSTEM — Framework Routing
+
+This project runs on the Business Delivery System (BDS): the operating system for building a real, profitable, scalable company. Open [BDS.md](BDS.md) to understand the full system. Open [FRAMEWORK.md](FRAMEWORK.md) to find any skill.
+
+| You want to... | Entry point | Full guide |
+|----------------|-------------|-----------|
+| **Read the operating principles** | — | [FIRST-PRINCIPLES.md](FIRST-PRINCIPLES.md) |
+| **Full business health check** | `/bds` | [BDS.md](BDS.md) |
+| Build or fix something | `/dev` | [DEV-FRAMEWORK.md](DEV-FRAMEWORK.md) |
+| Plan business strategy, pricing, GTM | `/strategy` | [STRATEGY-FRAMEWORK.md](STRATEGY-FRAMEWORK.md) |
+| Check launch or scale readiness | `/bds launch` / `/bds scale` | [BDS.md](BDS.md) |
+| See the north star and goal status | `/business-goal` | [BUSINESS-GOAL.md](BUSINESS-GOAL.md) |
+| Full program view (delivery, risks, decisions) | `/cpm` | — |
+| Objective/unbiased view of any decision/session | `/observer` | — |
+| **Check what needs your attention** | `/comms` | [COMMS.md](COMMS.md) |
+| Set up or inspect project structure | `/project-init` | [PROJECT-GUIDE.md](PROJECT-GUIDE.md) |
+| See everything in one place | — | [FRAMEWORK.md](FRAMEWORK.md) |
+
+**BDS** — 5-layer health score (Foundations + Engineering + Operations + Business + Scale). Business stage assessment. Routes to the highest-leverage action with transparent reasoning.
+
+**Dev Framework** — 10-gate pipeline (REQ→DESIGN→PLAN→ARCH→BUILD→TEST→DOCS→COMMIT→DEPLOY→VERIFY). PRISM-10 Architecture (10 dimensions, Google/Meta-level). First Time Right task prompts.
+
+**Strategy Framework** — 10 analyses (SWOT→value-prop→personas→competitors→pricing→GTM→KPIs→90day→breakeven→pivot). Unit economics tracked.
+
+**Project Organization** — Standard Google/Meta/Anthropic directory structure. Every output dated and findable.
+
+**Recommended cadence:**
+- Every session → `/dev` or `/strategy`
+- Every 2 weeks → `/bds` (business health check)
+- Every quarter → `/bds scale` + `/strategy-90day`
+
+---
+
+## Project Structure
+
+| What you need | Where it lives |
+|--------------|----------------|
+| Source code | `src/` |
+| All tests (10 layers) | `tests/{unit,integration,api,e2e,performance,security,...}/` |
+| API docs | `docs/api/` |
+| Runbooks | `docs/runbooks/RUNBOOK-{FEATURE}.md` |
+| ADRs | `docs/adr/ADR-{NNNN}-{slug}.md` |
+| Requirements | `requirements/REQ-{YYYY}-{NNNN}-{slug}.md` |
+| Designs | `design/DESIGN-{YYYY}-{NNNN}-{slug}.md` |
+| Architecture audits | `architecture/ARCH-AUDIT-{YYYY-MM-DD}.md` |
+| DB migrations | `migrations/NNNN-{description}.sql` |
+| Test reports | `reports/tests/TR-{datetime}.md` |
+| Verification reports | `reports/verify/VR-{datetime}.md` |
+| Dev session logs | `sessions/DEV-SESSION-{datetime}.md` |
+| Strategy analyses | `strategy/STRATEGY-SESSION-{datetime}.md` |
+| Local data (not in git) | `data/` |
+
+---
+
 ## CRITICAL BEHAVIOR RULE — Session Start Protocol
 
-**Every new session MUST begin by reading these three files before writing a single line of code:**
+**Every new session MUST begin by choosing the right framework entry point (see FRAMEWORK ROUTING above). For dev/engineering work, run `/dev` — it reads all files automatically and decides what to do next.**
 
-1. **`FEATURES.md`** — everything already built. If something is in there, do not rebuild it.
-2. **`QUEUE.md`** — what is pending, in progress, and done. Pick up from where the last session left off.
-3. **`ARCHITECTURE.md`** — all existing endpoints, data sources, tiers, and the data pipeline flow.
+If not using `/dev`, read these files manually before writing any code:
+
+1. **`FIRST-PRINCIPLES.md`** — the constitution. Read it. Every session. Every agent. Non-negotiable.
+2. **`COMMS.md`** — check for open items (🆕 NEW or ⏳ IN PROGRESS). Surface them at session start before anything else.
+3. **`DECISIONS.md`** — skim recent entries to understand what was decided since the last session.
+4. **`BUSINESS-GOAL.md`** — the north star. What we're building, for whom, and what winning looks like. If stale (>30 days), flag it.
+5. **`FEATURES.md`** — everything already built. If something is in there, do not rebuild it.
+6. **`QUEUE.md`** — what is pending, in progress, and done. Pick up from where the last session left off.
+7. **`ARCHITECTURE.md`** — all existing endpoints, data sources, tiers, and the data pipeline flow.
 
 **Then, before starting work:**
 - Check if the requested feature already exists in `FEATURES.md`. If it does, say so and ask for clarification instead of duplicating.
@@ -308,6 +368,25 @@ Say **"data runbook"** → I will read `RUNBOOK-DATA.md` and walk you through th
 ---
 
 ## 9. SHORTHAND COMMANDS
+
+### Framework shortcuts
+
+| You say... | I do... |
+|-----------|---------|
+| "start session" / "what's next" | Run `/dev` — reads all state, decides next action |
+| "strategy session" | Run `/strategy` — reads strategy state, routes to right analysis |
+| "project structure" | Run `/project-init check` — show what's missing |
+| "architecture audit" | Run `/dev-arch-audit` — full PRISM-10 gap analysis |
+| "what framework?" / "help" | Read `FRAMEWORK.md` — master index |
+| "what needs my attention" / "open items" / "inbox" | Run `/comms` — show all open COMMS.md items |
+| "north star" / "what are we building" / "business goals" | Run `/business-goal` — current goals, objectives, metrics |
+| "program status" / "where are we" / "what's blocked" | Run `/cpm` — full program view |
+| "risks" / "what could go wrong" / "risk register" | Run `/cpm risks` |
+| "what should we do next" / "priorities" | Run `/cpm next` — top 3 CPM recommendations |
+| "observer" / "objective view" / "what really happened" | Run `/observer` — unbiased account |
+| "are we still on track" / "goal drift" | Run `/observer drift` — evidence-based drift check |
+
+### GeoClear-specific shortcuts
 
 | You say... | I do... |
 |-----------|---------|
