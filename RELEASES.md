@@ -10,6 +10,8 @@
 ## Unreleased
 
 - **`/bulk` landing page** — drag-drop CSV upload zone wired to `POST /api/address/csv`; 3-step how-it-works; input/output column table; pricing grid (free / $199 1M / $799 5M one-time); FAQ accordion; signup modal. Route `/bulk` added to `web-server.js`. File: `public/bulk.html`
+- **Bulk Credits Pack in Stripe** — two one-time products: 1M credits $199 (`prod_ULmPbW3DgGenEh`) and 5M credits $799 (`prod_ULmPjIOpbCdElY`). Price IDs: `STRIPE_PRICE_BULK_1M` + `STRIPE_PRICE_BULK_5M`. `POST /v1/checkout/bulk` endpoint (`{ email, pack:"1m"|"5m" }`) → Stripe payment mode checkout. `buyBulk()` in `bulk.html` wired. Success banner shown on `?success=1`.
+- **Render Health Check Path** — set to `/api/health` on prod service `srv-d7ep7bfavr4c73d46gng`. Render will auto-restart on health failure.
 - **`/sitemap.xml`** — 8-URL sitemap covering all public pages; `application/xml` content-type; explicit route added before catch-all. Google Search Console: geoclear.io Domain property verified via Cloudflare DNS TXT integration (automatic); sitemap submitted with status Success, 7 URLs discovered.
 - **Render auto-deploy fix** — documented manual trigger via `POST /v1/services/srv-d7ep7bfavr4c73d46gng/deploys`; logged in COMMS.md #4 for dashboard investigation.
 > Features merged to main but not yet cut into a version.

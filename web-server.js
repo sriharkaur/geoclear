@@ -47,6 +47,10 @@ const STRIPE_PRICES         = {
   pro_compliance: process.env.STRIPE_PRICE_PRO_COMPLIANCE  || '',
   metered:        process.env.STRIPE_PRICE_METERED         || '',
 };
+const STRIPE_PRICES_BULK    = {
+  bulk_1m:        process.env.STRIPE_PRICE_BULK_1M         || 'price_1TN4qvClBrXaJBXitL6R21rO',
+  bulk_5m:        process.env.STRIPE_PRICE_BULK_5M         || 'price_1TN4qvClBrXaJBXicSYxysfe',
+};
 const STRIPE_METER_ID    = process.env.STRIPE_METER_ID       || '';
 const BASE_URL           = process.env.NAD_BASE_URL           || `http://localhost:${PORT}`;
 const SENDGRID_API_KEY       = process.env.SENDGRID_API_KEY       || '';
@@ -1048,12 +1052,12 @@ app.post('/v1/outcomes', async (req, res) => {
   const todayCount = keys.db.prepare(`
     SELECT COUNT(*) AS n FROM address_outcomes
     WHERE key_id = ? AND reported_at >= date('now')
-  `).get(req.keyInfo.id).n;
+  `).get(req.keyInfo.key_id).n;
   if (todayCount >= 10000) {
     return res.status(429).json({ ok: false, error: 'outcome_rate_limit', message: 'Max 10,000 outcome submissions per day per key.' });
   }
 
-  keys.recordOutcome(req.keyInfo.id, nad_uuid, outcome_type,
+  keys.recordOutcome(req.keyInfo.key_id, nad_uuid, outcome_type,
     outcome_value != null ? parseFloat(outcome_value) : null,
     metadata || null);
 
@@ -1592,6 +1596,29 @@ app.post('/v1/checkout', async (req, res) => {
       cancel_url:  `${BASE_URL}/portal.html?cancelled=1`,
     });
     keys.storeStripeSession(session.id, tier, email);
+    ok(res, { session_id: session.id, url: session.url });
+  } catch (e) {
+    err(res, `Stripe error: ${e.message}`, 500);
+  }
+});
+
+// One-time bulk credits checkout (no subscription, no API key issued)
+app.post('/v1/checkout/bulk', async (req, res) => {
+  if (!stripe) return err(res, 'Stripe not configured.', 503);
+  const { email, pack } = req.body || {};
+  if (!email || !pack) return err(res, 'email and pack required.');
+  const priceId = STRIPE_PRICES_BULK[`bulk_${pack}`];
+  if (!priceId) return err(res, 'pack must be "1m" or "5m".', 400);
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode:                 'payment',
+      payment_method_types: ['card'],
+      customer_email:       email,
+      line_items:           [{ price: priceId, quantity: 1 }],
+      metadata:             { bulk_pack: pack, email },
+      success_url: `${BASE_URL}/bulk?success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${BASE_URL}/bulk?cancelled=1`,
+    });
     ok(res, { session_id: session.id, url: session.url });
   } catch (e) {
     err(res, `Stripe error: ${e.message}`, 500);
