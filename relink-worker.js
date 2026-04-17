@@ -48,11 +48,38 @@ try {
   db.pragma('synchronous = NORMAL');
 
   const results = {};
+  let changed = 1;
 
   // Phase 1: state_id  (fastest — 56 states, exact code match)
   parentPort.postMessage({ type: 'progress', phase: 'state_id', updated: 0, message: 'Starting state_id relink...' });
   results.state_id = relinkColumn(db, 'state_id', 'states', 'code', 'state', 'state');
   parentPort.postMessage({ type: 'progress', phase: 'state_id', updated: results.state_id, message: `state_id done: ${results.state_id.toLocaleString()} rows linked` });
+
+  // Phase 1b: state_id via zip_code — recovers rows where state text is NULL but zip_code is known
+  parentPort.postMessage({ type: 'progress', phase: 'state_id_via_zip', updated: 0, message: 'Starting state_id relink via zip_code (fallback for state=NULL rows)...' });
+  let stateViaZipTotal = 0;
+  const stateViaZipStmt = db.prepare(`
+    UPDATE addresses
+    SET state_id = (
+      SELECT z.state_id FROM zip_codes z
+      WHERE z.zip_code = addresses.zip_code AND z.state_id IS NOT NULL
+      LIMIT 1
+    )
+    WHERE state_id IS NULL
+      AND zip_code IS NOT NULL
+      AND rowid IN (
+        SELECT rowid FROM addresses WHERE state_id IS NULL AND zip_code IS NOT NULL LIMIT ${BATCH}
+      )
+  `);
+  changed = 1;
+  while (changed > 0) {
+    const info = stateViaZipStmt.run();
+    changed = info.changes;
+    stateViaZipTotal += changed;
+    if (changed > 0) parentPort.postMessage({ type: 'progress', phase: 'state_id_via_zip', updated: stateViaZipTotal });
+  }
+  results.state_id_via_zip = stateViaZipTotal;
+  parentPort.postMessage({ type: 'progress', phase: 'state_id_via_zip', updated: stateViaZipTotal, message: `state_id_via_zip done: ${stateViaZipTotal.toLocaleString()} rows recovered` });
 
   // Phase 2: zip_code_id (zip_codes table, zip_code column)
   parentPort.postMessage({ type: 'progress', phase: 'zip_code_id', updated: 0, message: 'Starting zip_code_id relink...' });
@@ -63,6 +90,7 @@ try {
   // Simpler: match county name + state_id (state_id already relinked above)
   parentPort.postMessage({ type: 'progress', phase: 'county_id', updated: 0, message: 'Starting county_id relink...' });
   let countyTotal = 0;
+  changed = 1;
   const countyStmt = db.prepare(`
     UPDATE addresses
     SET county_id = (
@@ -78,7 +106,6 @@ try {
         SELECT rowid FROM addresses WHERE county_id IS NULL AND county IS NOT NULL AND state_id IS NOT NULL LIMIT ${BATCH}
       )
   `);
-  let changed = 1;
   while (changed > 0) {
     const info = countyStmt.run();
     changed = info.changes;
