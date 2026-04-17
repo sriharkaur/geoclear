@@ -1021,7 +1021,7 @@
 <!-- ──────────────────────────────────────────────────────────────── NAV -->
 <nav>
   <div class="nav-inner">
-    <a href="/" class="nav-logo">
+    <a href="/landing.html" class="nav-logo">
       <svg class="logo-mark" width="22" height="28" viewBox="0 0 22 28" fill="none" aria-hidden="true">
         <path d="M11 0C4.93 0 0 4.93 0 11C0 18.7 11 28 11 28C11 28 22 18.7 22 11C22 4.93 17.07 0 11 0Z" fill="#2e936f"/>
         <circle cx="11" cy="10.5" r="4.8" fill="#ffffff"/>
@@ -2004,7 +2004,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     </div>
 
     <p style="text-align:center;font-size:0.82rem;color:var(--dim);margin-top:28px;">
-      Need unpredictable volume? <a href="javascript:void(0)" onclick="openCheckout('payg')" style="color:var(--sky);">Pay-as-you-go at $0.001/lookup</a> — no monthly commitment.
+      Need unpredictable volume? <a href="#" onclick="event.preventDefault();openCheckout('payg')" style="color:var(--sky);">Pay-as-you-go at $0.001/lookup</a> — no monthly commitment.
     </p>
 
     <div style="margin-top:16px;padding:20px 28px;background:var(--bg-alt);border:1px solid var(--border2);border-radius:var(--rxl);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
@@ -2332,11 +2332,11 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <button class="modal-close" onclick="closeModal()">✕</button>
 
     <div id="modal-form">
-      <h2>Get your free API key</h2>
+      <h2 id="modal-title">Get your free API key</h2>
       <p class="modal-sub">10,000 lookups/month, all enrichment fields included. No credit card. Instant delivery. Open to teams worldwide.</p>
       <label for="modal-email">Work email</label>
       <input type="email" id="modal-email" placeholder="you@company.com" />
-      <button class="modal-cta" onclick="submitSignup()">Get free API key →</button>
+      <button class="modal-cta" onclick="submitSignup()">Get my free key →</button>
       <p class="modal-note">By signing up you agree to our <a href="/terms" style="color:var(--sky)">Terms</a> and <a href="/privacy" style="color:var(--sky)">Privacy Policy</a>.</p>
     </div>
 
@@ -2365,12 +2365,33 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   }
 
   /* ── Modal ── */
-  function openModal() {
+  let _pendingTier = null;
+
+  function openModal(tier) {
+    _pendingTier = tier || null;
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (tier && tier !== 'free') {
+      const labels = { growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
+      if (titleEl) titleEl.textContent = 'Get started with ' + (labels[tier] || tier);
+      if (ctaEl)   ctaEl.textContent   = 'Continue to checkout →';
+    } else {
+      if (titleEl) titleEl.textContent = 'Get your free API key';
+      if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    }
     document.getElementById('modal').classList.add('open');
     document.getElementById('modal-email').focus();
   }
   function closeModal() {
+    _pendingTier = null;
     document.getElementById('modal').classList.remove('open');
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (titleEl) titleEl.textContent = 'Get your free API key';
+    if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    document.getElementById('modal-form').style.display = '';
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal-email').value = '';
   }
   function closeOnOverlay(e) {
     if (e.target === document.getElementById('modal')) closeModal();
@@ -2384,9 +2405,31 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       return;
     }
     const btn = document.querySelector('.modal-cta');
-    btn.textContent = 'Sending…';
     btn.disabled = true;
 
+    if (_pendingTier && _pendingTier !== 'free') {
+      btn.textContent = 'Redirecting to checkout…';
+      try {
+        const r = await fetch('/v1/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, tier: _pendingTier })
+        });
+        const data = await r.json();
+        if (data.ok && data.data?.url) {
+          window.location.href = data.data.url;
+        } else {
+          btn.textContent = data.error || 'Error — try again';
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = 'Error — try again';
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    btn.textContent = 'Sending…';
     try {
       const r = await fetch('/v1/signup', {
         method: 'POST',
@@ -2409,7 +2452,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   }
 
   function openCheckout(tier) {
-    openModal();
+    openModal(tier);
   }
 
   /* ── Auto-open modal on #signup hash ── */
@@ -2499,7 +2542,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </div>` : ''}
       `;
     } catch(e) {
-      results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Request failed — ${e.message}</div>`;
+      results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Demo unavailable locally — <a href="https://geoclear.io" style="color:var(--sky)">try it live at geoclear.io</a></div>`;
     }
   }
 
@@ -2590,7 +2633,6 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         const lon    = d.longitude != null ? d.longitude.toFixed(6) : '—';
         const place  = d.placement || '—';
         const atype  = d.addr_type || '—';
-        const source = (d.nad_source || '').split(' ').slice(0,3).join(' ') || '—';
         const updated = d.date_update ? d.date_update.split(' ')[0] : '—';
         return `<div class="result-item">
           <div class="result-addr">${addr}${city2 ? ', ' + city2 : ''}${st2 ? ' ' + st2 : ''}${zip2 ? ' ' + zip2 : ''}</div>
@@ -2600,14 +2642,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <div class="result-field"><div class="result-label">Longitude</div><div class="result-value">${lon}</div></div>
             <div class="result-field"><div class="result-label">Placement</div><div class="result-value">${place}</div></div>
             <div class="result-field"><div class="result-label">Address type</div><div class="result-value">${atype}</div></div>
-            <div class="result-field" style="margin-top:10px"><div class="result-label">Data source</div><div class="result-value">${source}</div></div>
-            <div class="result-field" style="margin-top:10px;grid-column:span 3"><div class="result-label">Last updated</div><div class="result-value">${updated}</div></div>
+            <div class="result-field" style="margin-top:10px;grid-column:span 4"><div class="result-label">Last updated</div><div class="result-value">${updated}</div></div>
           </div>
         </div>`;
       }).join('');
 
     } catch (e) {
-      results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Request failed — ${e.message || 'check your connection'}. <a href="" onclick="event.preventDefault();runDemo()" style="color:var(--sky);text-decoration:underline">Retry</a></div>`;
+      results.innerHTML = `<div class="demo-placeholder" style="color:var(--red)">Demo unavailable locally — <a href="https://geoclear.io" style="color:var(--sky)">try it live at geoclear.io</a></div>`;
     }
   }
 
