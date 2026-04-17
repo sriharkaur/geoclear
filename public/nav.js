@@ -68,7 +68,6 @@
   </div>
 </nav>`;
 
-  // Inject CSS into <head> and nav before <body> content
   document.head.insertAdjacentHTML('beforeend', NAV_CSS);
 
   const placeholder = document.getElementById('gc-nav-placeholder');

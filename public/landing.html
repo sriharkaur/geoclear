@@ -2069,7 +2069,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <div style="display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center;">
       <div style="min-width:0;">
         <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(46,147,111,0.07);border:1px solid rgba(46,147,111,0.2);border-radius:20px;padding:4px 12px;font-size:0.75rem;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;">
-          🏛️ Mortgage &amp; Insurance compliance
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0"><rect x="1" y="5" width="10" height="6" rx="1"/><path d="M2.5 5V3.5a3.5 3.5 0 0 1 7 0V5"/><line x1="4" y1="8" x2="8" y2="8"/></svg> Mortgage &amp; Insurance compliance
         </div>
         <h2 style="font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:14px;">
           HMDA, NFIP, and CRA fields.<br>
@@ -2140,7 +2140,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <div class="section-label">Pricing</div>
     <h2 class="sh2">Simple, usage-based pricing</h2>
     <p class="ssub" style="margin-bottom: 48px;">
-      Start free. Scale as you grow. No per-seat fees, no setup costs, no long-term contracts.
+      No per-seat fees, no setup costs, no long-term contracts. Free tier: 10K lookups/month.
       USD pricing — open to teams anywhere in the world.
     </p>
 
@@ -2423,8 +2423,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   <div class="cta-inner">
     <div class="section-label" style="justify-content:center;">Get started</div>
     <h2 class="sh2">
-      The address layer your<br>
-      <span class="grad-text">product has been missing.</span>
+      One call. Every address field<br>
+      <span class="grad-text">your backend needs.</span>
     </h2>
     <p class="ssub">
       Used by teams in insurance, logistics, fintech, and real estate — building on US location data
@@ -2502,7 +2502,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         GeoClear
       </div>
       <p class="footer-tagline">
-        The complete US address intelligence API — for any product, any team, anywhere in the world.
+        US address intelligence API. 198M+ addresses, real-time enrichment, one call.
       </p>
       <div class="footer-status">All systems operational</div>
       <!-- Data attribution hidden to avoid replication roadmap -->
@@ -2904,7 +2904,6 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       });
     }, { threshold: 0.1 });
 
-    // Programmatically mark elements outside the hero for fade-in
     const selectors = [
       '.features-section .section-label', '.features-section .sh2', '.features-section .ssub',
       '.how-section .section-label', '.how-section .sh2', '.how-section .ssub',
@@ -2920,7 +2919,6 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       observer.observe(el);
     });
 
-    // Also observe stagger groups
     document.querySelectorAll('[data-fade-group]').forEach(el => observer.observe(el));
   })();
 
