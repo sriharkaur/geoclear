@@ -1,11 +1,22 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 27 — Q-102/103/104/105 complete. Q-132 Phase 1 complete: all 4 risk tables live in prod (wildfire 3108, storm 3257, eq 3221, drought 3221). Address matching fixed (direction suffix strip). demo/enrich 502 fixed. /status redirect, Sign In nav → portal.html, nad_admin_localdev removed from portal.)_
+_Last updated: 2026-04-17 (session 27 — Q-102/103/104/105 complete. Q-132 Phase 1 complete. Stripe prices created ($199/$499/$999) and Render env vars live. All session 27 bug fixes shipped: address direction-suffix matching, demo/enrich 502 timeout, /status redirect, Sign In nav → portal.html, nad_admin_localdev removed from portal, CMO/UX hero copy + pricing reframe.)_
 
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
 > **Rule:** No new strategy sessions until Day 60. No new product features until first paying customer.
 > **Strategy files:** [STRATEGY-INDEX.md](strategy/STRATEGY-INDEX.md) — all 9 analyses with conclusions
+
+---
+
+## SESSION 27 — Bug fixes & UX shipped (2026-04-17)
+
+- [x] **Q-138 · Address direction-suffix matching** ✅ 2026-04-17 — `/api/demo/risk` and `/api/demo/enrich` now strip direction suffixes (NW/NE/SW/SE) and street types (St/Ave/Blvd…) from `stName` before NAD query. "10th Street NW" → matches `st_name=10TH`. Risk demo prepopulated with confirmed-working address (1012 10th Street NW, Washington DC).
+- [x] **Q-139 · demo/enrich 502 / FEMA timeout** ✅ 2026-04-17 — `enrichPoint()` in `/api/demo/enrich` wrapped in `Promise.race([…, hardNull(5000)])`. No more 502s from slow FEMA/Census APIs. Returns 504 with message on timeout instead of crashing.
+- [x] **Q-140 · /status redirect** ✅ 2026-04-17 — `GET /status` now 301-redirects to `/status.html` in `web-server.js`.
+- [x] **Q-141 · Sign In nav + portal security** ✅ 2026-04-17 — Sign In nav link in `landing.html` changed from `onclick="openModal()"` to `href="/portal.html"`. Hardcoded `value="nad_admin_localdev"` removed from portal admin secret input.
+- [x] **Q-142 · CMO/UX pass** ✅ 2026-04-17 — Hero badge → "Trusted by insurance, fintech, and logistics teams". Hero sub-copy → outcome-first. "Builder" → "Starter" renamed throughout. Pro Compliance card merged into Professional at $499. PAYG link fixed. Compliance nav: Pricing + Sign In added. Compliance cost calculator updated to $499 reference.
+- [x] **Q-143 · Stripe Growth/Pro/Scale prices live** ✅ 2026-04-17 — 3 new Stripe products + prices created via API. `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_PRO` (updated), `STRIPE_PRICE_SCALE` set on Render. Deploy triggered. `openCheckout('growth'/'pro'/'scale')` fully operational for new signups.
 
 ---
 
@@ -466,20 +477,20 @@ Open:
 
 ---
 
-## PRICING (updated 2026-04-16)
+## PRICING (updated 2026-04-17 — Q-105 reframe)
 
-| Tier | Display name | Price | Lookups/day | Enrichment | Notes |
-|------|-------------|-------|-------------|-----------|-------|
-| `free` | Free | $0 | 1,000 | No (nulled) | No credit card |
-| `starter` | Builder | $49/mo | 50,000 | 500 calls/mo taste | Bridges to Professional |
-| `pro` | Professional | $249/mo | 500,000 | Unlimited | Most Popular |
-| `pro_compliance` | Pro Compliance | $499/mo | 500,000 | Unlimited + SLA | Claire persona |
-| `scale` | Scale | $999/mo | 5,000,000 | Unlimited | Volume anchor |
-| `enterprise` | Enterprise | $2,000+/mo | Unlimited | Unlimited + custom | Contact us |
-| `metered` | Pay-as-you-go | per lookup | Unlimited | No | Ops Owen one-time |
-| — | Bulk Credits | $199/$799 one-time | — | No | 1M / 5M credits |
+| Tier key | Display name | Price | Lookups/mo | Stripe price ID | Notes |
+|----------|-------------|-------|------------|-----------------|-------|
+| `free` | Free | $0 | 10,000 | — | No credit card |
+| `starter` | — | $49/mo | — | `price_1TM8sFClBrXaJBXikafSD5le` | **Grandfathered only** — not shown on pricing page |
+| `growth` | Growth | $199/mo | 150,000 | `price_1TNBwaClBrXaJBXi2CtyoE7s` | New entry paid tier |
+| `pro` | Professional | $499/mo | 500,000 | `price_1TNBwbClBrXaJBXidt43zB1M` | Most Popular; compliance fields merged in |
+| `scale` | Scale | $999/mo | 5,000,000 | `price_1TNBwcClBrXaJBXiC1G0g1Kx` | Volume anchor |
+| `enterprise` | Enterprise | $2,000+/mo | Unlimited | — | Contact us |
+| `metered` | Pay-as-you-go | $0.001/lookup | Unlimited | `price_1TM8sGClBrXaJBXiSOP6VLK4` | PAYG no commitment |
+| — | Bulk Credits | $199/$799 one-time | 1M / 5M | bulk_1m / bulk_5m | One-shot CSV jobs |
 
-> **Financial facts:** Break-even = 1 Professional customer. Gross margin ~98%. LTV Professional $4,980 / Pro Compliance $16,633.
+> **Financial facts:** Break-even = 1 Professional customer ($499). Gross margin ~98%. LTV Professional (24mo avg) $11,976.
 
 **North Star:** $100K MRR in 12 months
 
