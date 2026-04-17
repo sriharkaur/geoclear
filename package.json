@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node web-server.js",
     "init-db": "node init-db.js",
-    "build": "npm rebuild better-sqlite3"
+    "build": "node-pre-gyp install --fallback-to-build -C node_modules/better-sqlite3"
   },
   "engines": {
     "node": "20.x"
