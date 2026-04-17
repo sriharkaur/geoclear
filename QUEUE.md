@@ -2,6 +2,59 @@
 **Single source of truth for all work. Check items off as done.**
 _Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions confirmed prod. DevOps Standards retro completed: 10 incident patterns → 16 queue items Q-144–Q-159 added. UptimeRobot expanded to 5 GeoClear monitors. Full retro: sessions/RETRO-2026-04-17-devops-standards.md)_
 
+---
+
+## 🤖 SESSION PROTOCOL — Read this before touching any code
+
+Every Claude session that opens this file MUST follow these four steps, in order.
+
+### Step 1 · Find the highest-priority unclaimed task
+
+Scan sections **P0 → P1 → P2 → P3** (top to bottom in this file). Within each section, scan items top to bottom. Find the first item that is:
+- marked `[ ]` (not done), AND
+- does NOT show `⏳ IN PROGRESS` or a session claim
+
+That is your task. Do not skip to a lower-priority section while a higher-priority `[ ]` item exists.
+
+**Priority legend (P0 overrides everything):**
+
+| Label | Meaning | Trigger |
+|-------|---------|---------|
+| `[P0]` | Active incident — prod down or data silently wrong right now | Drop everything. Fix before reading further. |
+| `[P1]` | Uptime & deployment standards — prevents the next outage | Must complete before any P2 or P3 work |
+| `[P2]` | Data quality — wrong data is a broken product | Must complete before any P3 work |
+| `[P3-FEAT]` | New feature or API endpoint | Work in parallel with P3-DIST |
+| `[P3-DIST]` | Distribution, GTM, SEO, outreach | Work in parallel with P3-FEAT |
+
+### Step 2 · Claim the task (before writing any code)
+
+Edit the item's status marker from `[ ]` to `⏳ IN PROGRESS` and append the session ID:
+
+```
+- [ ] **Q-NNN · ...**           ← before
+- ⏳ **Q-NNN · ...**  · SESSION-{YYYY-MM-DD-NN}    ← after claiming
+```
+
+Use `SESSION-{today's date}-{two-digit counter}` (e.g. `SESSION-2026-04-17-01`). Increment the counter if another session claimed a task today.
+
+**Commit the status change immediately** — before writing any code. This prevents two sessions from picking up the same task.
+
+### Step 3 · Work the task
+
+- Complete the task fully before declaring done. Partial work = leave as `⏳ IN PROGRESS`.
+- If you get blocked: change status to `🚫 BLOCKED · {reason}` and pick the next available task.
+- Do not take on a second task while one is `⏳ IN PROGRESS`.
+
+### Step 4 · Close the task (before ending the session)
+
+1. Change `⏳ IN PROGRESS · SESSION-...` → `✅ DONE {YYYY-MM-DD}`
+2. Update **FEATURES.md** · **ARCHITECTURE.md** · **RELEASES.md** (same commit — no exceptions)
+3. Commit format: `feat:` / `fix:` / `chore:` for the code, then `docs:` for the queue update, or combine both in one commit with the code
+
+**Never end a session leaving a task as `⏳ IN PROGRESS` without a handoff note.** If you must stop mid-task, add one line under the item: `> Handoff: {what was done, what remains, what to watch out for}`.
+
+---
+
 > **North Star:** $100K MRR in 12 months
 > **Next milestone:** $500 MRR by Day 30 → $2,500 by Day 60 → $5,000 by Day 90
 > **Rule:** No new strategy sessions until Day 60. No new product features until first paying customer.
@@ -9,9 +62,13 @@ _Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions
 
 ---
 
-## PRIORITIZATION: P1 → P2 → P3
-> Every session: fix P1 first. Then P2. Then P3.
-> **P1 = Prod up** · **P2 = Data correct** · **P3 = Features + Distribution (equal)**
+## PRIORITIZATION: P0 → P1 → P2 → P3
+> **P0 = Active incident** · **P1 = Prod up** · **P2 = Data correct** · **P3 = Features + Distribution (equal)**
+
+## 🚨 P0 — ACTIVE INCIDENT (prod down or data actively wrong)
+> Nothing else matters until P0 is clear. Check this section first, every session.
+
+_No active P0 incidents. If prod goes down or data is found actively wrong, add a `[P0]` item here immediately._
 
 ---
 
@@ -104,24 +161,25 @@ _Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions
 
 ---
 
-## PHASE 1 — Days 1–30: Ship the 7 GTM Assets
+## PHASE 1 — Days 1–30: Ship the 7 GTM Assets `[P3]`
 > Every item here is a prerequisite for the first paying customer. Do in sequence. No detours.
+> 🟡 All unchecked items in this section are **P3**. Outreach/GTM = `[P3-DIST]` · Content/pages = `[P3-FEAT]`
 
 ### Week 1 — Foundation (Days 1–7)
 
 - [x] **Q-002 · RapidAPI listing** ✅ 2026-04-17 — GeoClear live at `rapidapi.com/auduuai/api/geoclear`. OpenAPI spec imported, all endpoints (Address/Enrichment/Geography/Account/Status), base URL `https://geoclear.io`, X-Api-Key auth, Category: Data, visibility: Public.
 - [x] **Q-003 · `/compliance` landing page** ✅ 2026-04-17 — `public/compliance.html` (678 lines) + `/compliance` route in `web-server.js`. H1: "Flood zone + census tract for every US address. NFIP-ready." Body: FEMA NFHL as primary source (auditable for legal), HMDA census tract, self-serve $249/mo, no sales call. Show live JSON response with `flood_zone`, `flood_sfha`, `census_tract`. CTA: "Start free." *Destination for all compliance outreach emails — zero Claire conversions without this.*
 - [x] **Q-004 · Google Search Console setup** ✅ 2026-04-17 — geoclear.io Domain property verified via Cloudflare DNS TXT integration (automated, no manual DNS entry needed). Sitemap submitted: `https://geoclear.io/sitemap.xml` (7 URLs). `public/sitemap.xml` created and deployed. GSC will index once Render deploy propagates.
-- [ ] **Q-005 · Build compliance outreach list — 15 targets** — LinkedIn: "VP Product" OR "Head of Engineering" + "mortgage" OR "insurance" OR "proptech". Targets: Encompass, BytePro, Maxwell, Blend, Qualia, Snapdocs, Hippo Insurance, Kin Insurance, Better.com, Morty, Neptune Flood, Openly, Lemonade. Add name + direct email to `AddressAPIBusinessGTM.md`.
-- [ ] **Q-006 · Send compliance outreach batch 1 (15 emails)** — plain text, < 150 words. Subject: `"Flood zone determination API — NFIP-ready, self-serve, $249/mo"`. Body: NFIP compliance framing → live API JSON showing `flood_zone: "AE"`, `flood_sfha: true`, `census_tract` → link to `/compliance`. *Do not send until /compliance page is live.*
+- [ ] **Q-005 · [P3-DIST] Build compliance outreach list — 15 targets** — LinkedIn: "VP Product" OR "Head of Engineering" + "mortgage" OR "insurance" OR "proptech". Targets: Encompass, BytePro, Maxwell, Blend, Qualia, Snapdocs, Hippo Insurance, Kin Insurance, Better.com, Morty, Neptune Flood, Openly, Lemonade. Add name + direct email to `AddressAPIBusinessGTM.md`.
+- [ ] **Q-006 · [P3-DIST] Send compliance outreach batch 1 (15 emails)** — plain text, < 150 words. Subject: `"Flood zone determination API — NFIP-ready, self-serve, $249/mo"`. Body: NFIP compliance framing → live API JSON showing `flood_zone: "AE"`, `flood_sfha: true`, `census_tract` → link to `/compliance`. *Do not send until /compliance page is live.*
 
 ### Week 2 — Launch (Days 8–14)
 
-- [ ] **Q-007 · Post "Show HN: GeoClear"** — title: `"Show HN: GeoClear – US address API with FEMA flood zone + census tract in one call"`. Post Tuesday or Wednesday 9am PT. First comment: data pipeline (NAD + Overture + FEMA NFHL + Census Bureau), enrichment fields, free tier limits, link to /docs. *Post after RapidAPI listing is live.*
-- [ ] **Q-008 · Write `/docs/vs-smartystreets` comparison page** — capability table (flood zone ✅ vs ❌, census tract, pricing, free tier), migration guide. SEO target: "SmartyStreets alternative", "address API with flood zone". File: `public/docs/vs-smartystreets.html`.
-- [ ] **Q-009 · Write `/docs/flood-zone-api` SEO page** — "What is FEMA flood zone data?", FEMA zone codes (AE, X, VE), how to get it via API, curl example. SEO target: "FEMA flood zone API", "NFIP flood determination API". Submit both new pages to GSC.
-- [ ] **Q-010 · Follow up compliance outreach batch 1** — Day 5 after send (~Day 10–12). One sentence: "Did you get a chance to see the flood zone response? Happy to do a 15-min call." Max 2 touchpoints total.
-- [ ] **Q-011 · LinkedIn founder post — FEMA anchor** — "Manual flood zone determination costs $3–$15 per address. We built an API that returns it for free (up to 1K/day)." Screenshot of API response showing `flood_zone`. Tag PropTech + mortgage tech communities.
+- [ ] **Q-007 · [P3-DIST] Post "Show HN: GeoClear"** — title: `"Show HN: GeoClear – US address API with FEMA flood zone + census tract in one call"`. Post Tuesday or Wednesday 9am PT. First comment: data pipeline (NAD + Overture + FEMA NFHL + Census Bureau), enrichment fields, free tier limits, link to /docs. *Post after RapidAPI listing is live.*
+- [ ] **Q-008 · [P3-FEAT] Write `/docs/vs-smartystreets` comparison page** — capability table (flood zone ✅ vs ❌, census tract, pricing, free tier), migration guide. SEO target: "SmartyStreets alternative", "address API with flood zone". File: `public/docs/vs-smartystreets.html`.
+- [ ] **Q-009 · [P3-FEAT] Write `/docs/flood-zone-api` SEO page** — "What is FEMA flood zone data?", FEMA zone codes (AE, X, VE), how to get it via API, curl example. SEO target: "FEMA flood zone API", "NFIP flood determination API". Submit both new pages to GSC.
+- [ ] **Q-010 · [P3-DIST] Follow up compliance outreach batch 1** — Day 5 after send (~Day 10–12). One sentence: "Did you get a chance to see the flood zone response? Happy to do a 15-min call." Max 2 touchpoints total.
+- [ ] **Q-011 · [P3-DIST] LinkedIn founder post — FEMA anchor** — "Manual flood zone determination costs $3–$15 per address. We built an API that returns it for free (up to 1K/day)." Screenshot of API response showing `flood_zone`. Tag PropTech + mortgage tech communities.
 
 ### Week 3 — Messaging + Instrumentation (Days 15–21)
 
@@ -140,71 +198,75 @@ _Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions
 - [x] **Q-021 · Build `GET /v1/admin/analytics` endpoint** ✅ 2026-04-17 — Returns: requests_by_day, top_keys_by_volume, tier_breakdown, error_rate, new_signups_by_day, avg_latency_by_endpoint. `?days=N` param (default 30). File: `web-server.js`
 - [x] **Q-022 · Build welcome email drip (3 emails, SendGrid)** ✅ 2026-04-17 — Day 1: existing keyEmail on signup. Day 3: sent if first_call_at set (shows enrichment curl example). Day 7: upgrade prompt for free/starter, feature roundup for paid. Daily cron at 01:00 UTC. `drip_sent` column tracks state. Manual trigger: `POST /v1/admin/drip/run`.
 - [x] **Q-023 · Product Hunt listing** ✅ 2026-04-17 — Draft saved at `producthunt.com/products/geoclear-address-intelligence-api`. Name: "GeoClear — Address Intelligence API", tagline: "Address API with FEMA flood zone + census tract. Free." (54 chars). Ready to schedule launch date.
-- [ ] **Q-024 · Compliance outreach batch 2 (15 new targets)** — apply learnings from batch 1. If flood zone subject got replies: keep. If not: test `"Quick question about your flood zone workflow"` or `"HMDA census tract API — $249/mo, no sales call"`.
+- [ ] **Q-024 · [P3-DIST] Compliance outreach batch 2 (15 new targets)** — apply learnings from batch 1. If flood zone subject got replies: keep. If not: test `"Quick question about your flood zone workflow"` or `"HMDA census tract API — $249/mo, no sales call"`.
 - [x] **Q-025 · Set up KPI cadence** ✅ 2026-04-17 — `sessions/KPI-WEEKLY-LOG.md` with bookmarks (daily pulse, analytics, Stripe, SendGrid, uptime) + weekly metrics template. Stripe MRR notifications checklist included.
 - [x] **Q-026 · Set calendar reminders** ✅ 2026-04-17 — Google Calendar events created: Month 3 (2026-07-16, red), Month 5 investment trigger (2026-09-16, orange), Month 6 strategic review (2026-10-16, blue). Each with full assessment checklist.
 
 ### Day 30 Checkpoint
 
-- [ ] **Q-027 · [Day 30] $500 MRR check** — if yes: identify winning channel, double down in Phase 2. If no: email every free signup personally ("what were you trying to build?") before adding any new channels. Offer founding-customer pricing ($149/mo, locked 12 months) to first 5 customers.
+- [ ] **Q-027 · [P3-DIST] [Day 30] $500 MRR check** — if yes: identify winning channel, double down in Phase 2. If no: email every free signup personally ("what were you trying to build?") before adding any new channels. Offer founding-customer pricing ($149/mo, locked 12 months) to first 5 customers.
 
 ### War Room Triggers
 
-- [ ] **Q-028 · [Day 7] Outreach reply rate** — if 0 replies after 15 emails: check spam first; if fine, rewrite body to question-first opener.
-- [ ] **Q-029 · [HN day] < 10 upvotes** — do not repost. Immediately cross-post to dev.to + r/webdev + r/programming.
+- [ ] **Q-028 · [P3-DIST] [Day 7] Outreach reply rate** — if 0 replies after 15 emails: check spam first; if fine, rewrite body to question-first opener.
+- [ ] **Q-029 · [P3-DIST] [HN day] < 10 upvotes** — do not repost. Immediately cross-post to dev.to + r/webdev + r/programming.
 
 ---
 
-## PHASE 2 — Days 30–60: Scale What Worked
+## PHASE 2 — Days 30–60: Scale What Worked `[P3]`
 > Don't add new channels. Scale the one that produced the first customer.
+> 🟡 All unchecked items in this section are **P3**. Outreach/GTM = `[P3-DIST]` · Content/pages = `[P3-FEAT]`
 
 - [x] **Q-030 · Create Pro Compliance tier at $499 in Stripe** ✅ 2026-04-17 — `pro_compliance` in TIERS (keys.js) + STRIPE_PRICES (web-server.js), portal.html card added, SLA document at `public/geoclear-compliance-sla.html` (printable, signable), linked from /compliance page. **Pending**: create $499 price in Stripe dashboard, set `STRIPE_PRICE_PRO_COMPLIANCE` env var in Render.
 - [x] **Q-031 · Add "Why GeoClear vs SmartyStreets" section to `/docs`** ✅ 2026-04-17 — 6-row table + migration guide added to docs.html; sidebar nav link added.
 - [x] **Q-032 · Add tagline to `/docs` page header** ✅ 2026-04-17 — "198M US addresses. Census tract, FEMA flood zone, and timezone — one API call." added to docs intro section.
 - [x] **Q-033 · Add 500 enrichment calls/mo to Builder tier** ✅ 2026-04-17 — `enrichment_monthly_limit: 500` in TIERS, `checkEnrichmentQuota()` method in KeyStore, quota check wired into `/api/enrich`. Files: `keys.js`, `web-server.js`.
 - [x] **Q-034 · Fix activation funnel** ✅ 2026-04-17 — 30-second curl added to Day 1 welcome email (`keyEmail()`); 80% daily quota warning header (`X-Quota-Warning`) in auth middleware. Files: `web-server.js`.
-- [ ] **Q-035 · Scale winning channel** — if outreach: batch 3 (30 targets) + testimonial request from first customer. If RapidAPI/HN: 2 more SEO pages + submit to developer newsletters (TLDR, Bytes.dev).
-- [ ] **Q-036 · LinkedIn founder post — "one call" developer angle** — curl example returning `flood_zone` + `census_tract` + `timezone` + `residential`. "Free tier. No credit card." Cross-post to dev.to + r/webdev.
-- [ ] **Q-037 · "Why GeoClear" SEO content plan** — 10 target keywords from GSC data; map to pages/posts; schedule 1 post/week for 8 weeks.
+- [ ] **Q-035 · [P3-DIST] Scale winning channel** — if outreach: batch 3 (30 targets) + testimonial request from first customer. If RapidAPI/HN: 2 more SEO pages + submit to developer newsletters (TLDR, Bytes.dev).
+- [ ] **Q-036 · [P3-DIST] LinkedIn founder post — "one call" developer angle** — curl example returning `flood_zone` + `census_tract` + `timezone` + `residential`. "Free tier. No credit card." Cross-post to dev.to + r/webdev.
+- [ ] **Q-037 · [P3-DIST] "Why GeoClear" SEO content plan** — 10 target keywords from GSC data; map to pages/posts; schedule 1 post/week for 8 weeks.
 
 ### Day 60 Checkpoint
 
-- [ ] **Q-038 · [Day 60] $2,500 MRR check + first monthly strategic review** — MRR, NRR, ECPC (North Star), CAC by channel, activation rate, cohort retention. Schedule breakeven review. Next strategy session at this point.
+- [ ] **Q-038 · [P3-DIST] [Day 60] $2,500 MRR check + first monthly strategic review** — MRR, NRR, ECPC (North Star), CAC by channel, activation rate, cohort retention. Schedule breakeven review. Next strategy session at this point.
 
 ---
 
-## PHASE 3 — Days 60–90: Execute to PMF Signal
+## PHASE 3 — Days 60–90: Execute to PMF Signal `[P3]`
 > Target: $5,000 MRR, NRR > 100%, ECPC growing week-over-week.
+> 🟡 All unchecked items in this section are **P3**. Outreach/GTM = `[P3-DIST]` · Content/pages = `[P3-FEAT]`
 
 - [x] **Q-039 · Create Bulk Credits Pack in Stripe** ✅ 2026-04-17 — `prod_ULmPbW3DgGenEh` (1M/$199) + `prod_ULmPjIOpbCdElY` (5M/$799). `POST /v1/checkout/bulk` endpoint. `buyBulk()` wired in bulk.html. `STRIPE_PRICE_BULK_1M` + `STRIPE_PRICE_BULK_5M` env vars added to Render.
 - [x] **Q-040 · Build `/bulk` landing page** ✅ 2026-04-17 — `public/bulk.html` + `/bulk` route. Drag-drop CSV upload zone, 3-step how-it-works, input/output column table, pricing grid (free/$199 1M/$799 5M), FAQ, signup modal. Wired to `POST /api/address/csv`. Bulk credits `buyBulk()` stub ready — needs Stripe price IDs from dashboard.
-- [ ] **Q-041 · Compliance outreach batch 3 (30 targets)** — apply learnings from batches 1 + 2.
-- [ ] **Q-042 · G2 listing** — Category: "Address Verification Software". Content in `AddressAPIBusinessGTM.md`. Keywords: "bulk address validation", "CRM data quality".
-- [ ] **Q-043 · Capterra listing** — same content as G2. Category: "Address Verification".
-- [ ] **Q-044 · Begin CASS certification research** — USPS application requirements, engineering estimate, timeline. Add to T3 with start date. The 3–6 month process means starting late is costly.
-- [ ] **Q-045 · Set Crunchbase + Google alerts** — Crunchbase: "address verification" + "geocoding" + "property data" funding rounds. Google alerts: "Lob address enrichment", "Google Maps census tract", "SmartyStreets flood zone".
-- [ ] **Q-046 · Monthly check: SmartyStreets pricing page** — watch for flood zone or census tract appearing at any tier. If yes: reassess Pro tier pricing and GTM messaging immediately.
+- [ ] **Q-041 · [P3-DIST] Compliance outreach batch 3 (30 targets)** — apply learnings from batches 1 + 2.
+- [ ] **Q-042 · [P3-DIST] G2 listing** — Category: "Address Verification Software". Content in `AddressAPIBusinessGTM.md`. Keywords: "bulk address validation", "CRM data quality".
+- [ ] **Q-043 · [P3-DIST] Capterra listing** — same content as G2. Category: "Address Verification".
+- [ ] **Q-044 · [P3-FEAT] Begin CASS certification research** — USPS application requirements, engineering estimate, timeline. Add to T3 with start date. The 3–6 month process means starting late is costly.
+- [ ] **Q-045 · [P3-DIST] Set Crunchbase + Google alerts** — Crunchbase: "address verification" + "geocoding" + "property data" funding rounds. Google alerts: "Lob address enrichment", "Google Maps census tract", "SmartyStreets flood zone".
+- [ ] **Q-046 · [P3-DIST] Monthly check: SmartyStreets pricing page** — watch for flood zone or census tract appearing at any tier. If yes: reassess Pro tier pricing and GTM messaging immediately.
 
 ### Day 90 Checkpoint
 
-- [ ] **Q-047 · [Day 90] Full assessment** — (1) $5K MRR? (2) ECPC growing week-over-week? (3) Which ICP converted most reliably? (4) Anyone churn — if yes, exit interview. (5) NRR > 100%? Schedule next 90-day plan.
+- [ ] **Q-047 · [P3-DIST] [Day 90] Full assessment** — (1) $5K MRR? (2) ECPC growing week-over-week? (3) Which ICP converted most reliably? (4) Anyone churn — if yes, exit interview. (5) NRR > 100%? Schedule next 90-day plan.
 
 ---
 
-## PRODUCT BACKLOG — Revenue-Blocking (do after first paying customer)
+## PRODUCT BACKLOG — Revenue-Blocking `[P3-FEAT]` (do after first paying customer)
+> 🟡 All unchecked items in this section are **[P3-FEAT]**
 
 - [x] **Q-048 · CSV upload → enriched CSV download** ✅ 2026-04-17 — `POST /api/address/csv` (text/csv, max 5K rows, 10MB). Auto-detects columns. Returns: geo_verified, nad_uuid, confidence, residential, fips, timezone, coverage, match_type. RFC 4180 inline. **Pending**: portal drag-drop UI + pro-tier external enrichment (flood_zone, census_tract).
 - [x] **Q-049 · Add metered cost calculator to pricing slider** ✅ 2026-04-17 — Shows "Pay-as-you-go equivalent: $X/mo — saves Y%" for Builder/Professional/Scale positions. File: `public/landing.html`
 - [x] **Q-050 · Usage dashboard for customers** ✅ 2026-04-17 — `GET /v1/me` returns `usage_history` (per-day counts, 30d default). Portal renders 30-day sparkline bar chart. Files: `keys.js`, `web-server.js`, `public/portal.html`
-- [ ] **Q-051 · FCC broadband tier by address** — $42B BEAD program demand. Enrichment field addition.
-- [ ] **Q-052 · Address standardization** — normalize to USPS format.
-- [ ] **Q-053 · Bulk async + webhooks** — for 10M+ record jobs (current bulk is sync, max 1K).
+- [ ] **Q-051 · [P3-FEAT] FCC broadband tier by address** — $42B BEAD program demand. Enrichment field addition.
+- [ ] **Q-052 · [P3-FEAT] Address standardization** — normalize to USPS format.
+- [ ] **Q-053 · [P3-FEAT] Bulk async + webhooks** — for 10M+ record jobs (current bulk is sync, max 1K).
 
 ---
 
-## ENGINEERING INFRASTRUCTURE
+## ENGINEERING INFRASTRUCTURE `[P3-FEAT]`
+> 🟡 All unchecked items in this section are **[P3-FEAT]**
 
-- [ ] **Q-054 · Comprehensive Testing Framework** — BDS `/dev-test` (10-layer). No test runner installed yet (`package.json` has no `test` script, no mocha/jest/autocannon). `tests/TC-REGISTRY.md` and `tests/BUG-REGISTRY.md` scaffolded but empty. Full implementation spec below.
+- [ ] **Q-054 · [P3-FEAT] Comprehensive Testing Framework** — BDS `/dev-test` (10-layer). No test runner installed yet (`package.json` has no `test` script, no mocha/jest/autocannon). `tests/TC-REGISTRY.md` and `tests/BUG-REGISTRY.md` scaffolded but empty. Full implementation spec below.
 
   **Framework:** Node.js + Mocha (unit/integration/API/security/data) + Playwright (E2E + visual) + autocannon (performance). All 10 BDS layers applied to GeoClear's actual modules.
 
@@ -383,12 +445,13 @@ _Last updated: 2026-04-17 (session 28/29 — WHP fix live, all 4 risk dimensions
 - New endpoints: POST /v1/admin/relink-fks (idempotent), POST /v1/admin/refresh-counts
 
 Open:
-- [ ] **Q-056 · Fill remaining state gaps — AL, AK** (not in Overture — need state GIS portals)
-- [ ] **Q-057 · NAD r23 quarterly update (~June 2026)** — run on staging, merge to prod
+- [ ] **Q-056 · [P3-FEAT] Fill remaining state gaps — AL, AK** (not in Overture — need state GIS portals)
+- [ ] **Q-057 · [P3-FEAT] NAD r23 quarterly update (~June 2026)** — run on staging, merge to prod
 
 ---
 
-## DATA STRATEGY — Additional Sources & Platform Capabilities
+## DATA STRATEGY — Additional Sources & Platform Capabilities `[P3-FEAT]`
+> 🟡 All unchecked items in this section are **[P3-FEAT]** unless labeled otherwise.
 
 > **Context:** These items cover (1) additional data sources that extend GeoClear's addressable use cases and competitive moat, and (2) platform architecture decisions that determine whether GeoClear stays an enrichment API or becomes the authoritative geospatial intelligence layer for American commerce. Think at Sundar/Zuck/Elon scale: Google built Maps as a platform layer everything else runs on. That's the model here — not "more enrichment fields" but "the ground truth that every proptech, insurtech, and fintech must connect to."
 
@@ -470,7 +533,8 @@ Open:
 
 ---
 
-## T2 — DIFFERENTIATION (after $10K MRR)
+## T2 — DIFFERENTIATION `[P3-FEAT]` (after $10K MRR)
+> 🟡 All unchecked items in this section are **[P3-FEAT]** unless labeled `[P3-DIST]`
 
 ### Strategic Intelligence Layer
 > Outcome: GeoClear becomes the ground-truth layer of American commerce, not just an address lookup.
@@ -491,48 +555,50 @@ Open:
 - [x] **Q-105 · Pricing reframe — floor to $199** ✅ 2026-04-17 — Landing page updated: $49 Starter card removed; Growth $199/150K, Professional $499/500K (compliance fields merged in), Scale $999/5M. Checkout validates `growth`/`pro`/`scale`/`metered`. COMMS #7 added: Stripe action for new price IDs + Render env vars.
 
 ### Distribution
-- [ ] Q-106 · Node.js SDK (`npm install geoclear`)
-- [ ] Q-107 · Python SDK (`pip install geoclear`)
-- [ ] Q-108 · Zapier integration ("Verify US address" action)
-- [ ] Q-109 · Shopify App
-- [ ] Q-110 · WordPress / WooCommerce plugin
-- [ ] Q-111 · Salesforce AppExchange listing
+- [ ] **Q-106 · [P3-DIST]** Node.js SDK (`npm install geoclear`)
+- [ ] **Q-107 · [P3-DIST]** Python SDK (`pip install geoclear`)
+- [ ] **Q-108 · [P3-DIST]** Zapier integration ("Verify US address" action)
+- [ ] **Q-109 · [P3-DIST]** Shopify App
+- [ ] **Q-110 · [P3-DIST]** WordPress / WooCommerce plugin
+- [ ] **Q-111 · [P3-DIST]** Salesforce AppExchange listing
 
 ### Enterprise
-- [ ] Q-112 · SOC 2 Type II audit — start process (takes 6–12 months); begin at $10K MRR
-- [ ] Q-113 · NCOA integration (address change detection — 40M Americans move/year)
-- [ ] Q-114 · Mortgage compliance bundle (HMDA + CRA + census tract + FIPS + flood in 1 call)
-- [ ] Q-115 · White-label / OEM API option
-- [ ] Q-116 · Data licensing tier (flat file download, $10K–$100K/yr)
-- [ ] Q-117 · Render autoscaling / standby instance — only when first enterprise customer signs SLA
+- [ ] **Q-112 · [P3-FEAT]** SOC 2 Type II audit — start process (takes 6–12 months); begin at $10K MRR
+- [ ] **Q-113 · [P3-FEAT]** NCOA integration (address change detection — 40M Americans move/year)
+- [ ] **Q-114 · [P3-FEAT]** Mortgage compliance bundle (HMDA + CRA + census tract + FIPS + flood in 1 call)
+- [ ] **Q-115 · [P3-FEAT]** White-label / OEM API option
+- [ ] **Q-116 · [P3-FEAT]** Data licensing tier (flat file download, $10K–$100K/yr)
+- [ ] **Q-117 · [P3-FEAT]** Render autoscaling / standby instance — only when first enterprise customer signs SLA
 
 ### Address Intelligence
-- [ ] Q-118 · Address history / change log
-- [ ] Q-119 · Neighborhood character score (urban/suburban/rural)
+- [ ] **Q-118 · [P3-FEAT]** Address history / change log
+- [ ] **Q-119 · [P3-FEAT]** Neighborhood character score (urban/suburban/rural)
 
 ---
 
-## T3 — MOAT (months 3–6)
+## T3 — MOAT `[P3-FEAT]` (months 3–6)
+> 🟡 All unchecked items in this section are **[P3-FEAT]** unless labeled `[P3-DIST]`
 
-- [ ] **Q-120 · Parcel boundary polygons** — county assessor data for all 3,000+ US counties. Expensive to aggregate (commercial vendors: Regrid ~$15K/yr, PreciselyData). Unlocks high-confidence drone landing zone detection and parcel-level fraud scoring. *Required for Risk Score confidence: "high" tier. Worth it after first drone company customer.*
-- [ ] Q-121 · USPS CASS certification — required for $10B direct mail market; 3–6 month process; begin research Phase 3
-- [ ] Q-122 · DPV — Delivery Point Validation (bundled with CASS)
-- [ ] Q-123 · Automated quarterly NAD update pipeline (cron → detect → download → re-import)
-- [ ] Q-124 · Address change webhook service
-- [ ] Q-125 · International: Canada (Overture has CA data, 15M addresses)
-- [ ] Q-126 · International: UK (Ordnance Survey open data, 32M addresses)
-- [ ] Q-127 · Parcel ID / property tax linkage
-- [ ] Q-128 · Mobile SDK (iOS + Android)
+- [ ] **Q-120 · [P3-FEAT] Parcel boundary polygons** — county assessor data for all 3,000+ US counties. Expensive to aggregate (commercial vendors: Regrid ~$15K/yr, PreciselyData). Unlocks high-confidence drone landing zone detection and parcel-level fraud scoring. *Required for Risk Score confidence: "high" tier. Worth it after first drone company customer.*
+- [ ] **Q-121 · [P3-FEAT]** USPS CASS certification — required for $10B direct mail market; 3–6 month process; begin research Phase 3
+- [ ] **Q-122 · [P3-FEAT]** DPV — Delivery Point Validation (bundled with CASS)
+- [ ] **Q-123 · [P3-FEAT]** Automated quarterly NAD update pipeline (cron → detect → download → re-import)
+- [ ] **Q-124 · [P3-FEAT]** Address change webhook service
+- [ ] **Q-125 · [P3-DIST]** International: Canada (Overture has CA data, 15M addresses)
+- [ ] **Q-126 · [P3-DIST]** International: UK (Ordnance Survey open data, 32M addresses)
+- [ ] **Q-127 · [P3-FEAT]** Parcel ID / property tax linkage
+- [ ] **Q-128 · [P3-DIST]** Mobile SDK (iOS + Android)
 
 ---
 
-## T4 — BIG SWINGS (6–18 months)
+## T4 — BIG SWINGS `[P3-FEAT]` (6–18 months)
+> 🟡 All unchecked items in this section are **[P3-FEAT]** unless labeled `[P3-DIST]`
 
 - [x] **Q-129 · GeoClear Risk Score v2** ✅ 2026-04-17 — `POST /v1/outcomes` endpoint; `address_outcomes` table in `keys.db`; score_version v1→v2 auto-upgrade at ≥3 delivery or ≥2 fraud outcomes; inline key auth on `/v1/risk` and `/v1/outcomes`; `GET /v1/admin/outcomes`; drone delivery use case ground-truthing deliverability. Moat: no competitor can buy this dataset — earned from live traffic.
 - [x] **Q-130 · Compliance page — interactive demo + FEMA legend + cost calculator** ✅ 2026-04-17 — Hero-right: live input (number/street/city/state) → real `/api/demo/enrich` response shows `flood_zone`, `flood_sfha`, `census_tract`, `county_fips`. FEMA zone legend (expandable: AE/VE/A/X/D with SFHA status). Cost calculator (slider: N lookups/mo → manual $3–15/ea vs GeoClear $249/mo + % savings). Auth bypass: `req.path.startsWith('/demo')` in API gateway. File: `public/compliance.html`, `web-server.js`.
 - [x] **Q-131 · Landing page compliance callout section** ✅ 2026-04-17 — Prominent section between verticals and pricing: "HMDA, NFIP, and CRA fields. One API call. Auditable source." → links to `/compliance`. Three trust bullets + "See compliance features →" CTA. File: `public/landing.html`.
 - [x] **Q-132 · Climate Risk Score per address — Phase 1** ✅ 2026-04-17 — All 4 county-level risk tables live in prod risk.db: wildfire (3,108 counties USFS WHP), storm (3,257 counties NOAA NCEI 10yr), earthquake (3,221 counties USGS NSHM), drought (3,221 counties USDA). `/api/demo/risk` stable, <4s, no crash loops. Address direction suffix stripping fixed so directional addresses (e.g. "10th Street NW") match NAD. Demo prepopulated with working DC address.
-- [x] **Q-137 · Climate Risk Score — Phase 2** ⏳ IN PROGRESS 2026-04-17 — `nri-import.js` written and committed. FEMA NRI wired into `/api/demo/risk` (v2.2-demo): heat_wave, hurricane, coastal_flood, nri_composite, nri_rating. `getNRIRisk()` in risk-data.js. **Pending: run `node nri-import.js` on staging Render Shell, then upload risk.db chunk to prod + merge.** Until run, `nri_risk` table is empty and NRI fields return null.
+- [x] **Q-137 · [P3-FEAT] Climate Risk Score — Phase 2** ⏳ IN PROGRESS 2026-04-17 — `nri-import.js` written and committed. FEMA NRI wired into `/api/demo/risk` (v2.2-demo): heat_wave, hurricane, coastal_flood, nri_composite, nri_rating. `getNRIRisk()` in risk-data.js. **Pending: run `node nri-import.js` on staging Render Shell, then upload risk.db chunk to prod + merge.** Until run, `nri_risk` table is empty and NRI fields return null.
 
 ---
 
@@ -546,10 +612,10 @@ Open:
 
 ---
 
-- [ ] Q-133 · Physical World Graph API — address nodes connected to businesses, schools, flood zones
-- [ ] Q-134 · National 911 Address Layer — partner with NENA ($10B NG911 funding)
-- [ ] Q-135 · Autonomous Address Deduplication-as-a-Service (AI agent for CRM cleanup)
-- [ ] Q-136 · Address Intelligence for AI Training Data licensing
+- [ ] **Q-133 · [P3-FEAT]** Physical World Graph API — address nodes connected to businesses, schools, flood zones
+- [ ] **Q-134 · [P3-FEAT]** National 911 Address Layer — partner with NENA ($10B NG911 funding)
+- [ ] **Q-135 · [P3-FEAT]** Autonomous Address Deduplication-as-a-Service (AI agent for CRM cleanup)
+- [ ] **Q-136 · [P3-FEAT]** Address Intelligence for AI Training Data licensing
 
 ---
 
