@@ -116,6 +116,23 @@ try {
   results.city_id = cityTotal;
   parentPort.postMessage({ type: 'progress', phase: 'city_id', updated: cityTotal, message: `city_id done: ${cityTotal.toLocaleString()} rows linked` });
 
+  // Phase 5: refresh denormalized address_count columns on hierarchy tables
+  parentPort.postMessage({ type: 'progress', phase: 'refresh_counts', updated: 0, message: 'Refreshing address_count on states/counties/cities/zip_codes...' });
+  db.exec(`
+    UPDATE states SET
+      address_count = (SELECT COUNT(*) FROM addresses WHERE state_id = states.id),
+      county_count  = (SELECT COUNT(*) FROM counties  WHERE state_id = states.id),
+      city_count    = (SELECT COUNT(*) FROM cities    WHERE state_id = states.id),
+      zip_count     = (SELECT COUNT(*) FROM zip_codes WHERE state_id = states.id);
+    UPDATE counties SET
+      address_count = (SELECT COUNT(*) FROM addresses WHERE county_id = counties.id);
+    UPDATE cities SET
+      address_count = (SELECT COUNT(*) FROM addresses WHERE city_id = cities.id);
+    UPDATE zip_codes SET
+      address_count = (SELECT COUNT(*) FROM addresses WHERE zip_code_id = zip_codes.id);
+  `);
+  parentPort.postMessage({ type: 'progress', phase: 'refresh_counts', updated: 0, message: 'Counts refreshed.' });
+
   db.close();
   parentPort.postMessage({ type: 'done', results });
 } catch (e) {
