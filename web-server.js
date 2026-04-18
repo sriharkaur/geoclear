@@ -2555,7 +2555,10 @@ async function onListening() {
       }
     });
   }
-  const keyStats = await keys.stats();
+  const keyStats = await keys.stats().catch(e => {
+    console.warn('[startup] keys.stats failed (non-fatal):', e.message);
+    return { active: 'unknown' };
+  });
   console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);
   console.log(`  URL       : ${BASE_URL}`);
