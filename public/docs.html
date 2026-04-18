@@ -860,7 +860,7 @@ const { data } = await res.json();</pre></div>
     <div class="endpoint-title">Point enrichment</div>
     <div class="endpoint-desc">
       Returns census tract, block group, and FEMA flood zone for a lat/lon coordinate or NAD UUID.
-      Pulls live data from the US Census Bureau Geocoder API and FEMA NFHL — no separate subscriptions needed.
+      Returns census and FEMA-compliant flood data from authoritative federal sources. No separate subscriptions needed on your end.
       Results are cached in-process (~10K LRU entries).
     </div>
 
@@ -1117,7 +1117,7 @@ const { key } = await res.json();</pre></div>
         </tr>
         <tr>
           <td style="padding:11px 14px;font-weight:500;">Data sources</td>
-          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">USDOT NAD + FEMA NFHL + Census Bureau</td>
+          <td style="text-align:center;padding:11px 14px;color:var(--sky);font-weight:700;">Authoritative government &amp; public-sector datasets</td>
           <td style="text-align:center;padding:11px 14px;color:var(--muted);">USPS + proprietary</td>
         </tr>
       </tbody>

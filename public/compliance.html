@@ -597,7 +597,7 @@
           Zone AE next door.<br>Zone X at your door.
         </h2>
         <p style="font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:28px;">
-          Flood risk isn't a ZIP code problem — two houses on the same street can be in different FEMA zones. GeoClear resolves flood classification at the individual address level, the same way FEMA does it: by matching coordinates against the National Flood Hazard Layer polygon boundaries.
+          Flood risk isn't a ZIP code problem — two houses on the same street can be in different FEMA zones. GeoClear resolves NFIP flood zone classification at the individual address level, per coordinate — not by ZIP, not by census tract.
         </p>
         <div style="display:flex;flex-direction:column;gap:12px;">
           <div style="display:flex;align-items:center;gap:12px;">
@@ -754,7 +754,7 @@
 
         <!-- Caption -->
         <p style="margin-top:12px;font-size:0.75rem;color:var(--dim);text-align:center;font-style:italic;">
-          Flood risk is address-level, not ZIP-level. GeoClear resolves it per coordinate against FEMA NFHL polygons.
+          Flood risk is address-level, not ZIP-level. GeoClear resolves NFIP flood zone classification per coordinate.
         </p>
       </div>
 

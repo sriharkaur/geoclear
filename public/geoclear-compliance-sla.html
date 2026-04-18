@@ -50,7 +50,7 @@
     <tr><td>Response Latency (p95)</td><td>&lt; 200 ms for single-address lookup</td><td>30-day rolling window</td></tr>
     <tr><td>Response Latency (p99)</td><td>&lt; 500 ms for single-address lookup</td><td>30-day rolling window</td></tr>
     <tr><td>Bulk endpoint (/api/address/bulk)</td><td>&lt; 5 s per 1,000 addresses</td><td>Per request</td></tr>
-    <tr><td>Data freshness (NAD)</td><td>Updated within 90 days of USDOT quarterly release</td><td>Per release cycle</td></tr>
+    <tr><td>Data freshness (core address data)</td><td>Updated within 90 days of each quarterly source release</td><td>Per release cycle</td></tr>
   </tbody>
 </table>
 
@@ -69,14 +69,13 @@
 <p>Support is provided via email at <strong>support@geoclear.io</strong>. P1 incidents additionally trigger phone/SMS escalation to the on-call engineer.</p>
 
 <h2>4. Data Attestation</h2>
-<p>GeoClear certifies that all address records returned by the API are sourced from the following authoritative, auditable datasets:</p>
+<p>GeoClear certifies that all address records returned by the API are sourced exclusively from authoritative government and public-sector datasets. The data pipeline includes:</p>
 <ul>
-  <li><strong>USDOT National Address Database (NAD r22)</strong> — 120M+ addresses, federal government dataset</li>
-  <li><strong>Overture Maps Foundation</strong> — 78M supplemental addresses, open data consortium (Meta, Microsoft, Amazon, TomTom)</li>
-  <li><strong>US Census Bureau TIGER/Line</strong> — county and jurisdiction boundary geometry</li>
-  <li><strong>FEMA National Flood Hazard Layer (NFHL)</strong> — flood zone designations for enrichment endpoint</li>
+  <li><strong>Core address corpus</strong> — 198M+ US addresses from federal and public-sector sources, refreshed quarterly</li>
+  <li><strong>Jurisdiction geometry</strong> — county and boundary data from official government sources</li>
+  <li><strong>Flood zone determination</strong> — NFIP-compliant flood zone classifications from official federal flood mapping programs</li>
 </ul>
-<p>No third-party data brokers or re-sold data are included. All sources are publicly documented and independently verifiable.</p>
+<p>No third-party data brokers or re-sold data are included. Full data provenance documentation is available to enterprise customers under NDA upon request.</p>
 
 <h2>5. Service Credits</h2>
 <p>If Provider fails to meet the 99.9% uptime commitment in any calendar month, Customer is eligible for service credits:</p>
