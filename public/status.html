@@ -182,28 +182,6 @@
     </table>
   </div>
 
-  <!-- External dependencies -->
-  <div class="ext-section">
-    <div class="section-label">External Dependencies</div>
-    <div class="service-row">
-      <div>
-        <div class="service-name">Census Bureau Geocoder</div>
-        <div class="service-sub">geocoding.geo.census.gov — census tract lookups</div>
-      </div>
-      <div class="service-right">
-        <span class="pill pill-unknown" id="census-pill">Checking…</span>
-      </div>
-    </div>
-    <div class="service-row">
-      <div>
-        <div class="service-name">FEMA NFHL Service</div>
-        <div class="service-sub">msc.fema.gov — flood zone lookups</div>
-      </div>
-      <div class="service-right">
-        <span class="pill pill-unknown" id="fema-pill">Checking…</span>
-      </div>
-    </div>
-  </div>
 
   <div class="footer-note">
     Monitored every 5 minutes via UptimeRobot.
@@ -332,46 +310,10 @@ async function checkEnrich() {
   }
 }
 
-// ── External deps ─────────────────────────────────────────────────
-async function checkExternal() {
-  // Census Bureau
-  try {
-    const t0 = Date.now();
-    const r  = await fetch(
-      'https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=-77.175&y=38.878&benchmark=Public_AR_Current&vintage=Current_Current&layers=Census%20Tracts&format=json',
-      { signal: AbortSignal.timeout(8000) }
-    );
-    const ms = Date.now() - t0;
-    const p  = document.getElementById('census-pill');
-    p.textContent = r.ok ? `Operational (${ms}ms)` : 'Degraded';
-    p.className   = r.ok ? 'pill pill-up' : 'pill pill-unknown';
-  } catch (_) {
-    const p = document.getElementById('census-pill');
-    p.textContent = 'Unreachable'; p.className = 'pill pill-down';
-  }
-
-  // FEMA NFHL
-  try {
-    const t0 = Date.now();
-    const r  = await fetch(
-      'https://msc.fema.gov/arcgis/rest/services/NFHL/Current_NFHL_API/FeatureServer/28/query?geometry=-77.175,38.878&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE&returnGeometry=false&f=json',
-      { signal: AbortSignal.timeout(8000) }
-    );
-    const ms = Date.now() - t0;
-    const p  = document.getElementById('fema-pill');
-    p.textContent = r.ok ? `Operational (${ms}ms)` : 'Degraded';
-    p.className   = r.ok ? 'pill pill-up' : 'pill pill-unknown';
-  } catch (_) {
-    const p = document.getElementById('fema-pill');
-    p.textContent = 'Unreachable'; p.className = 'pill pill-down';
-  }
-}
-
 // ── Boot ──────────────────────────────────────────────────────────
 checkHealth();
 loadUptimeData();
 checkEnrich();
-checkExternal();
 
 setInterval(checkHealth, 30_000);
 setInterval(loadUptimeData, 300_000); // refresh UptimeRobot data every 5 min
