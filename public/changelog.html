@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GeoClear product changelog — new features, improvements, and fixes." />
+  <meta property="og:title" content="GeoClear — Changelog" />
+  <meta property="og:description" content="GeoClear product changelog — new features, improvements, and fixes." />
+  <meta name="theme-color" content="#faf9f7" />
+  <title>GeoClear — Changelog</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
+    :root {
+      --bg:       #faf9f7;
+      --bg-alt:   #f2f0ed;
+      --surface:  #ffffff;
+      --surface2: #f0ebe4;
+      --border:   rgba(46,147,111,0.12);
+      --border2:  rgba(46,147,111,0.2);
+      --border3:  rgba(46,147,111,0.32);
+      --text:     #242220;
+      --muted:    #7a6e68;
+      --dim:      #a58979;
+      --sky:      #2e936f;
+      --indigo:   #956bad;
+      --violet:   #8cb0b2;
+      --green:    #2e936f;
+      --amber:    #c6a673;
+      --red:      #eb8771;
+      --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
+      --grad-r:   linear-gradient(135deg, #8cb0b2 0%, #2e936f 100%);
+      --glow:     rgba(46, 147, 111, 0.08);
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+      --r:   8px;
+      --rlg: 14px;
+      --rxl: 20px;
+      --max: 1140px;
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
+
+    /* ─── SCROLLBAR ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    /* ─── UTILITY ───────────────────────────────────────────────────────────── */
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── HERO ───────────────────────────────────────────────────────────────── */
+    .hero {
+      padding: 120px 0 80px;
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(circle, rgba(46,147,111,0.10) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 75%, transparent 100%);
+    }
+    .hero-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(46,147,111,0.07);
+      border: 1px solid var(--border2);
+      border-radius: 30px;
+      padding: 5px 16px 5px 10px;
+      font-size: 0.78rem; font-weight: 600; color: var(--sky);
+      margin-bottom: 28px;
+    }
+    .badge-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--sky);
+      box-shadow: 0 0 8px var(--sky);
+      animation: pulse 2.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--sky); }
+      50% { opacity: 0.4; box-shadow: 0 0 3px var(--sky); }
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .hero-sub a {
+      color: var(--sky);
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-color: rgba(46,147,111,0.35);
+      text-underline-offset: 2px;
+      transition: text-decoration-color 0.15s;
+    }
+    .hero-sub a:hover { text-decoration-color: var(--sky); }
+
+    /* ─── MAIN CONTENT ───────────────────────────────────────────────────────── */
+    .content {
+      padding: 72px 0 96px;
+    }
+
+    /* ─── TIMELINE ───────────────────────────────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 140px;
+    }
+
+    /* Vertical line */
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 100px;
+      top: 8px;
+      bottom: 0;
+      width: 2px;
+      background: var(--border2);
+    }
+
+    .tl-entry {
+      position: relative;
+      margin-bottom: 52px;
+    }
+    .tl-entry:last-child { margin-bottom: 0; }
+
+    /* Date label — left of the line */
+    .tl-date {
+      position: absolute;
+      left: -140px;
+      top: 4px;
+      width: 120px;
+      text-align: right;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--dim);
+      font-family: var(--mono);
+      line-height: 1.3;
+      padding-right: 36px;
+    }
+
+    /* Circle node on the line */
+    .tl-node {
+      position: absolute;
+      left: -44px;
+      top: 7px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--sky);
+      box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px rgba(46,147,111,0.25);
+      z-index: 1;
+    }
+
+    /* Entry card */
+    .tl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--rlg);
+      padding: 24px 28px 22px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .tl-card:hover {
+      border-color: var(--border2);
+      box-shadow: 0 4px 20px rgba(46,147,111,0.06);
+    }
+    .tl-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .tl-version {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--sky);
+      background: rgba(46,147,111,0.07);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 3px 9px;
+      white-space: nowrap;
+    }
+    .tl-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.018em;
+      color: var(--text);
+    }
+    .tl-changes {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tl-changes li {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.55;
+      padding-left: 18px;
+      position: relative;
+    }
+    .tl-changes li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(46,147,111,0.4);
+    }
+    .tl-changes li strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Category tags inside entries */
+    .tl-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .tag-feat {
+      background: rgba(46,147,111,0.07);
+      color: var(--sky);
+      border: 1px solid rgba(46,147,111,0.18);
+    }
+    .tag-infra {
+      background: rgba(140,176,178,0.1);
+      color: #5a8a8c;
+      border: 1px solid rgba(140,176,178,0.28);
+    }
+    .tag-fix {
+      background: rgba(198,166,115,0.09);
+      color: #a07840;
+      border: 1px solid rgba(198,166,115,0.26);
+    }
+    .tag-launch {
+      background: rgba(149,107,173,0.08);
+      color: #7a4fa0;
+      border: 1px solid rgba(149,107,173,0.22);
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .footer-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .hero { padding: 100px 0 60px; }
+      .container { padding: 0 20px; }
+      .timeline {
+        padding-left: 28px;
+      }
+      .timeline::before {
+        left: 0;
+      }
+      .tl-date {
+        position: static;
+        width: auto;
+        text-align: left;
+        padding-right: 0;
+        margin-bottom: 8px;
+        font-size: 0.73rem;
+      }
+      .tl-node {
+        left: -23px;
+      }
+      .tl-card { padding: 18px 18px 16px; }
+      .footer-inner { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="gc-nav-placeholder"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Changelog
+    </div>
+    <h1>What's new in GeoClear</h1>
+    <p class="hero-sub">
+      Every shipped improvement, in order. Subscribe to updates at
+      <a href="#" id="changelog-email-link">hello@geoclear.io</a>.
+    </p>
+  </div>
+</section>
+
+<!-- CHANGELOG TIMELINE -->
+<main class="content">
+  <div class="container">
+    <div class="timeline">
+
+      <!-- v1.3.0 -->
+      <div class="tl-entry">
+        <div class="tl-date">Apr 17<br>2026</div>
+        <div class="tl-node"></div>
+        <div class="tl-card">
+          <div class="tl-header">
+            <span class="tl-version">v1.3.0</span>
+            <span class="tl-title">Climate risk, drone deliverability &amp; FAA airspace</span>
+            <span class="tl-tag tag-feat">Feature</span>
+          </div>
+          <ul class="tl-changes">
+            <li><strong>Climate risk composite</strong> — new <code>climate_risk</code> object in every address response. Combines five federal data sources: flood, wildfire, severe storm, seismic, and drought. Each sub-score 0–100 plus a weighted composite.</li>
+            <li><strong>Drone deliverability flag</strong> — <code>drone_deliverable</code> boolean indicates whether the address is in a zone compatible with drone delivery operations.</li>
+            <li><strong>FAA airspace class</strong> — <code>faa_airspace_class</code> field returns the FAA-classified airspace zone (A–G and Special Use) for each coordinate. Useful for autonomous delivery and UAV fleet planning.</li>
+            <li><strong>Risk demo</strong> on the landing page — interactive live widget showing climate composite scores for any US address.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- v1.2.0 -->
+      <div class="tl-entry">
+        <div class="tl-date">Mar 28<br>2026</div>
+        <div class="tl-node"></div>
+        <div class="tl-card">
+          <div class="tl-header">
+            <span class="tl-version">v1.2.0</span>
+            <span class="tl-title">Risk scores: deliverability, fraud, vacancy &amp; disaster</span>
+            <span class="tl-tag tag-feat">Feature</span>
+          </div>
+          <ul class="tl-changes">
+            <li><strong>Deliverability score</strong> — 0–100 score indicating how reliably mail and packages reach this address, based on USPS delivery indicators.</li>
+            <li><strong>Fraud risk score</strong> — signals commonly associated with synthetic identity fraud, mail forwarding abuse, and address manipulation.</li>
+            <li><strong>Vacancy indicator</strong> — probabilistic vacancy flag derived from delivery history and occupancy signals.</li>
+            <li><strong>Disaster risk score</strong> — aggregate natural disaster exposure score combining flood, wildfire, and storm recurrence data.</li>
+            <li>All risk scores available on Growth tier and above; returned in the existing <code>/v1/address</code> response under the <code>risk</code> key.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- v1.1.0 -->
+      <div class="tl-entry">
+        <div class="tl-date">Mar 10<br>2026</div>
+        <div class="tl-node"></div>
+        <div class="tl-card">
+          <div class="tl-header">
+            <span class="tl-version">v1.1.0</span>
+            <span class="tl-title">Xata PostgreSQL migration, health check &amp; compliance page</span>
+            <span class="tl-tag tag-infra">Infrastructure</span>
+          </div>
+          <ul class="tl-changes">
+            <li><strong>Xata PostgreSQL migration</strong> — API keys and usage logs migrated from SQLite to Xata (us-east-1 PostgreSQL). Zero downtime cutover. Address data (NAD) remains on the high-performance local SQLite database.</li>
+            <li><strong><code>/api/ping</code> shallow health check</strong> — new endpoint returns HTTP 200 with <code>{"ok":true}</code> without hitting any database. Used by uptime monitors to prevent false-positive deploy failures.</li>
+            <li><strong>Compliance page</strong> — new <code>/compliance</code> page documenting FEMA flood zone determination, HMDA census tract, and NFIP compliance use cases for mortgage and insurance workflows.</li>
+            <li>Improved error messages on key authentication failures — now distinguishes between invalid key, revoked key, and rate limit exceeded.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- v1.0.0 -->
+      <div class="tl-entry">
+        <div class="tl-date">Feb 24<br>2026</div>
+        <div class="tl-node"></div>
+        <div class="tl-card">
+          <div class="tl-header">
+            <span class="tl-version">v1.0.0</span>
+            <span class="tl-title">Initial launch</span>
+            <span class="tl-tag tag-launch">Launch</span>
+          </div>
+          <ul class="tl-changes">
+            <li><strong>Address lookup &amp; validation</strong> — <code>/v1/address</code> endpoint against 120M+ verified US addresses (since grown to 198M+). Returns standardized address, coordinates, county FIPS, and census tract in a single call.</li>
+            <li><strong>FEMA flood zone enrichment</strong> — <code>flood_zone</code> (e.g. AE, X, VE) and <code>flood_sfha</code> boolean for every address. Backed by NFIP flood map data.</li>
+            <li><strong>Census tract + block group</strong> — full Census TIGER geographic hierarchy: tract, block group, county FIPS, and state FIPS. HMDA-ready.</li>
+            <li><strong>Autocomplete / suggest API</strong> — <code>/v1/suggest</code> endpoint for address typeahead at &lt;30ms. Supports partial street, city, and ZIP input.</li>
+            <li><strong>Bulk address API</strong> — <code>/v1/bulk</code> accepts up to 100 addresses per request with the same enrichment pipeline as single lookups.</li>
+            <li><strong>Stripe-billed SaaS</strong> — self-serve checkout for Free (10K calls/mo), Starter ($49), Growth ($249), and Scale ($999) tiers. No sales call required for any tier.</li>
+            <li><strong>Developer portal</strong> — key issuance, usage dashboard, and tier management at <code>/portal</code>.</li>
+            <li>Production deployed to <code>geoclear.io</code> via Render + Cloudflare. Uptime monitoring active.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span>© 2026 GeoClear</span>
+    <div class="footer-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/docs">Docs</a>
+      <a href="/">Back to main site</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/nav.js"></script>
+<script>
+  // Construct email address in JS
+  (function () {
+    var el = document.getElementById('changelog-email-link');
+    if (el) {
+      var addr = 'hello' + '@' + 'geoclear.io';
+      el.href = 'mailto:' + addr + '?subject=Changelog%20subscription';
+      el.textContent = addr;
+    }
+  })();
+</script>
+</body>
+</html>

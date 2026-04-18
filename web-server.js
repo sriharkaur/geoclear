@@ -1888,6 +1888,12 @@ app.get('/fintech', (req, res) => {
 app.get('/drone', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'drone.html'));
 });
+app.get('/security', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'security.html'));
+});
+app.get('/changelog', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'changelog.html'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });

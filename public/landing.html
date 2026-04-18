@@ -473,9 +473,29 @@
       overflow: hidden;
       box-shadow: 0 24px 60px rgba(0,0,0,0.07);
     }
+    .code-split { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+    .code-left { border-right: 1px solid rgba(255,255,255,0.07); overflow: hidden; }
+    .code-right { overflow: hidden; }
+    .code-right-label {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 18px; background: #08102A;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.8rem; font-weight: 500; color: var(--sky);
+      letter-spacing: 0.02em;
+    }
+    .code-right-label::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--sky); box-shadow: 0 0 6px var(--sky);
+    }
+    .code-right pre {
+      padding: 22px 24px;
+      font-family: var(--mono); font-size: 0.78rem;
+      line-height: 1.85; overflow-x: auto; color: var(--muted);
+      height: 100%; margin: 0;
+    }
     .code-tabs {
       display: flex; background: #08102A;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
       padding: 0 6px;
     }
     .ctab {
@@ -492,6 +512,10 @@
       padding: 22px 24px;
       font-family: var(--mono); font-size: 0.78rem;
       line-height: 1.85; overflow-x: auto; color: var(--muted);
+    }
+    @media(max-width:900px) {
+      .code-split { grid-template-columns: 1fr; }
+      .code-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); }
     }
 
     /* ─── LIVE DEMO ─────────────────────────────────────────────────────────── */
@@ -1403,15 +1427,16 @@
     </div>
 
     <div class="code-block">
-      <div class="code-tabs">
-        <div class="ctab on" onclick="showTab('curl',this)">cURL</div>
-        <div class="ctab" onclick="showTab('node',this)">Node.js</div>
-        <div class="ctab" onclick="showTab('python',this)">Python</div>
-        <div class="ctab" onclick="showTab('response',this)">Response</div>
-      </div>
+      <div class="code-split">
+        <div class="code-left">
+          <div class="code-tabs">
+            <div class="ctab on" onclick="showTab('curl',this)">cURL</div>
+            <div class="ctab" onclick="showTab('node',this)">Node.js</div>
+            <div class="ctab" onclick="showTab('python',this)">Python</div>
+          </div>
 
-      <div class="cpanel on" id="tab-curl">
-        <pre><span style="color:var(--dim)"># Verify and enrich an address</span>
+          <div class="cpanel on" id="tab-curl">
+            <pre><span style="color:var(--dim)"># Verify and enrich an address</span>
 <span style="color:var(--sky)">curl</span> <span style="color:#86EFAC">"https://geoclear.io/api/address\
   ?street=350+Fifth+Ave\
   &city=New+York&state=NY"</span> \
@@ -1427,10 +1452,10 @@
   -H <span style="color:#86EFAC">"X-Api-Key: gc_live_your_key"</span> \
   -H <span style="color:#86EFAC">"Content-Type: application/json"</span> \
   -d <span style="color:#86EFAC">'{"addresses":[...]}'</span></pre>
-      </div>
+          </div>
 
-      <div class="cpanel" id="tab-node">
-        <pre><span style="color:var(--dim)">// npm install node-fetch (or use built-in fetch)</span>
+          <div class="cpanel" id="tab-node">
+            <pre><span style="color:var(--dim)">// No SDK needed — built-in fetch</span>
 <span style="color:var(--sky)">const</span> <span style="color:var(--text)">GC_KEY</span> = process.env.<span style="color:#FCD34D">GC_API_KEY</span>;
 
 <span style="color:var(--sky)">async function</span> <span style="color:#C4B5FD">verifyAddress</span>(street, city, state) {
@@ -1448,11 +1473,11 @@
 <span style="color:var(--sky)">const</span> result = <span style="color:var(--sky)">await</span> <span style="color:#C4B5FD">verifyAddress</span>(
   <span style="color:#86EFAC">'350 Fifth Ave'</span>, <span style="color:#86EFAC">'New York'</span>, <span style="color:#86EFAC">'NY'</span>
 );
-console.<span style="color:#C4B5FD">log</span>(result.county_fips); <span style="color:var(--dim)">// "36061"</span></pre>
-      </div>
+console.<span style="color:#C4B5FD">log</span>(result.risk.fraud); <span style="color:var(--dim)">// 0.04</span></pre>
+          </div>
 
-      <div class="cpanel" id="tab-python">
-        <pre><span style="color:var(--sky)">import</span> requests, os
+          <div class="cpanel" id="tab-python">
+            <pre><span style="color:var(--sky)">import</span> requests, os
 
 GC_KEY = os.environ[<span style="color:#86EFAC">"GC_API_KEY"</span>]
 
@@ -1470,28 +1495,42 @@ GC_KEY = os.environ[<span style="color:#86EFAC">"GC_API_KEY"</span>]
     <span style="color:var(--sky)">return</span> resp.<span style="color:#C4B5FD">json</span>()
 
 data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86EFAC">"350 Fifth Ave"</span>, <span style="color:#86EFAC">"New York"</span>, <span style="color:#86EFAC">"NY"</span>)
-<span style="color:var(--sky)">print</span>(data[<span style="color:#86EFAC">"census_tract"</span>])  <span style="color:var(--dim)"># "010700"</span></pre>
-      </div>
+<span style="color:var(--sky)">print</span>(data[<span style="color:#86EFAC">"climate_risk"</span>][<span style="color:#86EFAC">"composite"</span>])  <span style="color:var(--dim)"># 0.21</span></pre>
+          </div>
+        </div>
 
-      <div class="cpanel" id="tab-response">
-        <pre><span style="color:var(--dim)">{</span>
-  <span style="color:var(--sky)">"ok"</span>:           <span style="color:#F472B6">true</span>,
-  <span style="color:var(--sky)">"address"</span>:       <span style="color:#86EFAC">"350 5th Ave"</span>,
-  <span style="color:var(--sky)">"city"</span>:          <span style="color:#86EFAC">"New York"</span>,
-  <span style="color:var(--sky)">"state"</span>:         <span style="color:#86EFAC">"NY"</span>,
-  <span style="color:var(--sky)">"zip"</span>:           <span style="color:#86EFAC">"10118"</span>,
-  <span style="color:var(--sky)">"county"</span>:        <span style="color:#86EFAC">"New York"</span>,
-  <span style="color:var(--sky)">"county_fips"</span>:   <span style="color:#86EFAC">"36061"</span>,
-  <span style="color:var(--sky)">"census_tract"</span>:  <span style="color:#86EFAC">"010700"</span>,
-  <span style="color:var(--sky)">"lat"</span>:           <span style="color:#FCD34D">40.7484</span>,
-  <span style="color:var(--sky)">"lon"</span>:           <span style="color:#FCD34D">-73.9967</span>,
-  <span style="color:var(--sky)">"timezone"</span>:      <span style="color:#86EFAC">"America/New_York"</span>,
-  <span style="color:var(--sky)">"fema_zone"</span>:     <span style="color:#86EFAC">"X"</span>,
-  <span style="color:var(--sky)">"plus4"</span>:         <span style="color:#86EFAC">"1901"</span>,
-  <span style="color:var(--sky)">"rdi"</span>:           <span style="color:#86EFAC">"Commercial"</span>,
-  <span style="color:var(--sky)">"confidence"</span>:    <span style="color:#FCD34D">97</span>,
-  <span style="color:var(--sky)">"status"</span>:        <span style="color:var(--green)">"verified"</span>
+        <div class="code-right">
+          <div class="code-right-label">Response — 350 Fifth Ave, New York NY</div>
+          <pre><span style="color:var(--dim)">{</span>
+  <span style="color:#8cb0b2">"ok"</span>: <span style="color:#5ccfa3">true</span>,  <span style="color:#8cb0b2">"status"</span>: <span style="color:#5ccfa3">"verified"</span>,  <span style="color:#8cb0b2">"confidence"</span>: <span style="color:#c6a673">97</span>,
+  <span style="color:#8cb0b2">"address"</span>: <span style="color:#5ccfa3">"350 5th Ave"</span>,  <span style="color:#8cb0b2">"city"</span>: <span style="color:#5ccfa3">"New York"</span>,
+  <span style="color:#8cb0b2">"state"</span>: <span style="color:#5ccfa3">"NY"</span>,  <span style="color:#8cb0b2">"zip"</span>: <span style="color:#5ccfa3">"10118"</span>,
+  <span style="color:#8cb0b2">"lat"</span>: <span style="color:#c6a673">40.7484</span>,  <span style="color:#8cb0b2">"lon"</span>: <span style="color:#c6a673">-73.9967</span>,
+  <span style="color:#8cb0b2">"county_fips"</span>: <span style="color:#5ccfa3">"36061"</span>,
+  <span style="color:#8cb0b2">"census_tract"</span>: <span style="color:#5ccfa3">"010700"</span>,
+  <span style="color:#8cb0b2">"fema_zone"</span>: <span style="color:#5ccfa3">"X"</span>,  <span style="color:#8cb0b2">"flood_sfha"</span>: <span style="color:#ef4444">false</span>,
+  <span style="color:#8cb0b2">"timezone"</span>: <span style="color:#5ccfa3">"America/New_York"</span>,
+  <span style="color:#8cb0b2">"rdi"</span>: <span style="color:#5ccfa3">"Commercial"</span>,
+  <span style="color:var(--dim)">"risk"</span>: <span style="color:var(--dim)">{</span>
+    <span style="color:#8cb0b2">"deliverability"</span>: <span style="color:#c6a673">0.91</span>,
+    <span style="color:#8cb0b2">"fraud"</span>: <span style="color:#c6a673">0.04</span>,
+    <span style="color:#8cb0b2">"disaster"</span>: <span style="color:#c6a673">0.18</span>,
+    <span style="color:#8cb0b2">"vacancy"</span>: <span style="color:#c6a673">0.07</span>
+  <span style="color:var(--dim)">}</span>,
+  <span style="color:var(--dim)">"climate_risk"</span>: <span style="color:var(--dim)">{</span>
+    <span style="color:#8cb0b2">"composite"</span>: <span style="color:#c6a673">0.21</span>,
+    <span style="color:#8cb0b2">"flood"</span>: <span style="color:#c6a673">0.12</span>,  <span style="color:#8cb0b2">"wildfire"</span>: <span style="color:#c6a673">0.03</span>,
+    <span style="color:#8cb0b2">"storm"</span>: <span style="color:#c6a673">0.31</span>,
+    <span style="color:#8cb0b2">"earthquake"</span>: <span style="color:var(--dim)">{</span><span style="color:#8cb0b2">"sdc"</span>: <span style="color:#5ccfa3">"A"</span>, <span style="color:#8cb0b2">"score"</span>: <span style="color:#c6a673">0.06</span><span style="color:var(--dim)">}</span>
+  <span style="color:var(--dim)">}</span>,
+  <span style="color:var(--dim)">"drone"</span>: <span style="color:var(--dim)">{</span>
+    <span style="color:#8cb0b2">"deliverable"</span>: <span style="color:#5ccfa3">true</span>,
+    <span style="color:#8cb0b2">"airspace_class"</span>: <span style="color:#5ccfa3">"G"</span>,
+    <span style="color:#8cb0b2">"authorized_altitude_ft"</span>: <span style="color:#c6a673">400</span>,
+    <span style="color:#8cb0b2">"confidence"</span>: <span style="color:#5ccfa3">"high"</span>
+  <span style="color:var(--dim)">}</span>
 <span style="color:var(--dim)">}</span></pre>
+        </div>
       </div>
     </div>
   </div>
@@ -1520,7 +1559,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       </div>
 
       <div class="demo-results-area" id="demo-results">
-        <div class="demo-placeholder">Enter an address above and press Search ↑</div>
+        <div class="demo-placeholder">Loading…</div>
       </div>
     </div>
   </div>
@@ -2251,7 +2290,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <div style="font-size:1.1rem;font-weight:700;color:var(--text);">Starting at $2,000 / month</div>
         <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Unlimited lookups · SLA · Dedicated support · Custom enrichment · White-label option</div>
       </div>
-      <a href="mailto:hello@geoclear.io" style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--text);color:#fff;border-radius:var(--r);font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">Contact us →</a>
+      <a id="contact-us-btn" href="#" style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--text);color:#fff;border-radius:var(--r);font-size:0.85rem;font-weight:600;text-decoration:none;white-space:nowrap;">Contact us →</a>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-top:32px;padding-top:28px;border-top:1px solid var(--border);flex-wrap:wrap;">
@@ -2438,7 +2477,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
       <button class="btn-primary" style="font-size:1rem;padding:15px 32px;" onclick="openModal()">
         Start for free — 10K lookups/mo
       </button>
-      <a class="btn-ghost" style="font-size:1rem;padding:15px 28px;" href="mailto:hello@geoclear.io">
+      <a class="btn-ghost" id="talk-to-us-btn" style="font-size:1rem;padding:15px 28px;" href="#">
         Talk to us
       </a>
     </div>
@@ -2546,7 +2585,9 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <div class="footer-col">
       <h4>Company</h4>
       <ul>
-        <li><a href="mailto:hello@geoclear.io">Contact</a></li>
+        <li><a id="footer-contact-link" href="#">Contact</a></li>
+        <li><a href="/security">Security</a></li>
+        <li><a href="/changelog">Changelog</a></li>
         <li><a href="/privacy">Privacy</a></li>
         <li><a href="/terms">Terms</a></li>
         <li><a href="/status">Status</a></li>
@@ -3042,6 +3083,18 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     slider.addEventListener('input', updateCalc);
     updateCalc();
   }
+
+  // Auto-run the address demo on load so visitors see a live result immediately
+  if (document.getElementById('demo-results')) runDemo();
+
+  // Build contact links in JS to avoid Cloudflare email obfuscation rewriting
+  (function() {
+    const e = 'mailto:hello' + '@' + 'geoclear.io';
+    ['footer-contact-link','contact-us-btn','talk-to-us-btn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.href = e;
+    });
+  })();
 </script>
 
 </body>
