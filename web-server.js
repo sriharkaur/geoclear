@@ -2142,31 +2142,34 @@ async function mcpAuth(req, res, next) {
     } catch { return res.status(500).json({ error: 'Key validation error.' }); }
   }
 
-  // ③ x402 path
-  if (!_x402Facilitator) return res.status(401).json({ error: 'X-Api-Key header required for MCP endpoint.' });
-
-  const paymentSig = req.headers['payment-signature'] || req.headers['x-payment'];
-  if (!paymentSig) return _sendMcpPaymentRequired(req, res);
-
-  try {
-    const paymentPayload  = _decodeb64(paymentSig);
-    const requirements    = _buildMcpPaymentRequirements();
-
-    const verifyResult = await _x402Facilitator.verify(paymentPayload, requirements);
-    if (!verifyResult.isValid) {
-      return res.status(402)
-        .setHeader('Content-Type', 'application/json')
-        .json({ x402Version: 2, error: 'Payment invalid', reason: verifyResult.invalidReason });
+  // ③ x402 path (only if wallet configured)
+  if (_x402Facilitator) {
+    const paymentSig = req.headers['payment-signature'] || req.headers['x-payment'];
+    if (paymentSig) {
+      try {
+        const paymentPayload  = _decodeb64(paymentSig);
+        const requirements    = _buildMcpPaymentRequirements();
+        const verifyResult = await _x402Facilitator.verify(paymentPayload, requirements);
+        if (!verifyResult.isValid) {
+          return res.status(402)
+            .setHeader('Content-Type', 'application/json')
+            .json({ x402Version: 2, error: 'Payment invalid', reason: verifyResult.invalidReason });
+        }
+        const settleResult = await _x402Facilitator.settle(paymentPayload, requirements);
+        req._mcpAuthMethod    = 'x402';
+        req._mcpX402Settle    = settleResult;
+        return next();
+      } catch (e) {
+        console.error('[mcp-x402] verify/settle error:', e.message);
+        return res.status(402).json({ x402Version: 2, error: 'Payment verification failed', detail: e.message });
+      }
     }
-
-    const settleResult = await _x402Facilitator.settle(paymentPayload, requirements);
-    req._mcpAuthMethod    = 'x402';
-    req._mcpX402Settle    = settleResult;
-    next();
-  } catch (e) {
-    console.error('[mcp-x402] verify/settle error:', e.message);
-    res.status(402).json({ x402Version: 2, error: 'Payment verification failed', detail: e.message });
   }
+
+  // ④ Free tier — unauthenticated (ChatGPT store / open access)
+  req._mcpAuthMethod = 'free';
+  req._mcpKeyInfo    = null;
+  next();
 }
 
 // POST /mcp — initialize or continue an MCP session
