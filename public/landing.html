@@ -1268,8 +1268,12 @@
           </svg>
         </div>
         <div class="feat-title">Address Verification</div>
-        <div class="feat-desc">Validate and standardize against 198M+ records. Fuzzy matching handles typos and partial inputs. Returns standardized form + confidence score.</div>
-        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.06);border:1px solid rgba(46,147,111,0.15);border-radius:5px;padding:5px 9px;display:inline-block;">status: "verified", confidence: 97</div>
+        <div class="feat-desc">Validate and standardize against 198M+ records. Fuzzy matching corrects typos, handles abbreviations, and catches transpositions — without a round-trip to a geocoder.</div>
+        <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--dim);background:rgba(46,147,111,0.04);border:1px solid rgba(46,147,111,0.12);border-radius:5px;padding:7px 10px;line-height:1.8;">
+          <span style="color:var(--dim)">input:</span> <span style="color:#ef4444">"1600 Pensilvania Av, Washingtn DC"</span><br>
+          <span style="color:var(--dim)">→</span> <span style="color:#5ccfa3">"1600 Pennsylvania Ave NW, Washington DC 20500"</span><br>
+          <span style="color:var(--dim)">confidence: <span style="color:#c6a673">97</span>  status: <span style="color:#5ccfa3">"verified"</span></span>
+        </div>
       </div>
 
       <!-- Card 2: Geocoding -->
@@ -1280,8 +1284,8 @@
             <path d="M9 1v2M9 13.5V16M1 8h2M14.5 8H16M3.5 3.5l1.5 1.5M13 11l1.5 1.5M14.5 3.5L13 5M5 11l-1.5 1.5"/>
           </svg>
         </div>
-        <div class="feat-title">Geocoding + Timezone</div>
-        <div class="feat-desc">Precise lat/lon coordinates and IANA timezone string on every address. No separate geocoder. No timezone lookup step.</div>
+        <div class="feat-title">Geocoding + Reverse Geocoding</div>
+        <div class="feat-desc">Precise lat/lon + IANA timezone on every address lookup. Or go the other direction: pass coordinates to <span style="font-family:var(--mono);font-size:0.85em">/api/near</span> and get the nearest verified addresses back. Both directions, one API.</div>
         <div style="margin-top:14px;font-size:0.72rem;font-family:var(--mono);color:var(--sky);background:rgba(46,147,111,0.06);border:1px solid rgba(46,147,111,0.15);border-radius:5px;padding:5px 9px;display:inline-block;">lat: 39.80, lon: -89.64, tz: "America/Chicago"</div>
       </div>
 
@@ -1387,7 +1391,7 @@
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-title">Make a request</div>
-        <div class="step-desc">Pass a street address as query parameters. GeoClear matches it against 198M verified records and returns a fully enriched response. Server-side compute: &lt;5ms p95.</div>
+        <div class="step-desc">Pass a street address as query parameters. GeoClear matches it against 198M verified records and returns a fully enriched response in a single JSON object.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -1415,9 +1419,9 @@
       <div class="uc-copy">
         <h2 class="sh2" id="uc-h2">One request.<br>Eight fields back.</h2>
         <p class="ssub" id="uc-desc">
-          Pure REST + JSON. No SDK, no configuration, no query language to learn.
-          Send a street address, get back county code, census tract, coordinates,
-          flood zone, timezone, and confidence score — every time, from any stack.
+          Pure REST + JSON. An HTTPS GET with a street address. Returns county code,
+          census tract, coordinates, flood zone, risk scores, and timezone —
+          every time, from any stack, in any language.
         </p>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1571,8 +1575,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     <div class="section-label">Enrichment data</div>
     <h2 class="sh2">One address. Eight data points.</h2>
     <p class="ssub" style="margin-bottom: 48px;">
-      Every lookup returns a complete intelligence package — not just whether an address exists,
-      but everything your product needs to act on it. No extra calls, no joins, no lookups.
+      Every lookup returns a complete intelligence package — address validation, geocoordinates,
+      flood zone, census data, and risk scores. No extra calls, no joins, no lookups.
     </p>
     <div class="enrich-grid" data-fade-group>
       <div class="enrich-item">
@@ -1840,7 +1844,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         </svg>
         <div class="vertical-verdict">Land or don't →</div>
         <div class="vertical-title">Drone &amp; Autonomous Delivery</div>
-        <div class="vertical-desc">Airspace class, open landing area, no-fly status — the landing decision in one call. Every autonomous vehicle needs this primitive. No one else has it.</div>
+        <div class="vertical-desc">FAA airspace class + 130M building footprints + landing zone confidence — the pre-flight check for any delivery address, in one API call.</div>
         <div class="vertical-signal">drone_deliverable: true, airspace_class: "G"</div>
         <a href="/drone" style="display:inline-block;margin-top:12px;font-size:0.78rem;font-weight:600;color:var(--sky);text-decoration:none;">How drone operators use this →</a>
       </div>
@@ -1953,7 +1957,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           The landing decision<br>in one API call.
         </h2>
         <p style="font-size:1.05rem;color:rgba(245,243,238,0.65);line-height:1.75;margin-bottom:28px;">
-          Every autonomous vehicle — drone, robot, or sidewalk courier — needs to know three things before a delivery attempt: is the airspace clear, is there a safe landing zone, and is the address reachable? GeoClear answers all three in one call. The only API built for the robot delivery era.
+          Every drone and autonomous vehicle needs to answer three questions before a delivery attempt: is the airspace clear, is there a safe landing zone, is the address reachable? GeoClear returns FAA airspace class, landing zone confidence, and 130M building footprints — all three in one call.
         </p>
 
         <!-- Drone stat row -->
@@ -1967,8 +1971,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <div style="font-size:0.68rem;color:rgba(245,243,238,0.5);margin-top:3px;">UASFM real-time</div>
           </div>
           <div style="padding:16px;background:rgba(46,147,111,0.1);border:1px solid rgba(46,147,111,0.2);border-radius:10px;text-align:center;">
-            <div style="font-size:1.4rem;font-weight:800;color:#5ccfa3;letter-spacing:-0.04em;">&lt;5ms</div>
-            <div style="font-size:0.68rem;color:rgba(245,243,238,0.5);margin-top:3px;">per decision</div>
+            <div style="font-size:1.4rem;font-weight:800;color:#5ccfa3;letter-spacing:-0.04em;">400ft</div>
+            <div style="font-size:0.68rem;color:rgba(245,243,238,0.5);margin-top:3px;">FAA Part 107 ceiling</div>
           </div>
         </div>
 
@@ -2362,7 +2366,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
   <div class="container" style="max-width:var(--max);margin:0 auto;padding:0 32px;">
     <div class="section-label" style="justify-content:center;">Everything in one call</div>
     <h2 class="sh2" style="text-align:center;">The complete GeoClear API</h2>
-    <p class="ssub" style="text-align:center;margin-bottom:48px;">Every field available on every address lookup — no add-ons, no separate vendor calls, no stitching.</p>
+    <p class="ssub" style="text-align:center;margin-bottom:48px;">Every field available on every address lookup — flood zone, census tract, risk scores, drone clearance. No separate vendor calls.</p>
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
         <thead>
