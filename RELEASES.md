@@ -9,6 +9,10 @@
 
 ## Unreleased
 
+- **Starter tier restored** — $49/mo (50K lookups, 100 req/min) added back to landing.html pricing grid, feature comparison table (6-column), volume calculator, and portal.html. Canonical tier table now: Free / Starter $49 / Growth $199 / Professional $499 / Scale $999.
+- **Pricing consistency pass** — Fixed all `$249/mo` references site-wide (docs.html rate-limits table, compliance.html cost calculator, portal.html plan cards, bulk.html FAQ, changelog.html). Renamed portal plans: Builder→Starter, Professional ($249)→Growth ($199), Pro Compliance→Professional ($499). Updated web-server.js Stripe tier comment + error messages.
+- **Compliance page credibility fix** — `<5ms median latency` → `<5ms server-side p95` in trust strip (P2).
+
 - **Q-185 Migration window skeleton** — monorepo structure (`src/api/v1/`, `src/api/v2/`, `src/db/`, `src/dashboard/`, `src/web/`, `scripts/`); pipeline scripts moved from root with updated Worker paths in web-server.js; `render.yaml` three-service skeleton; `src/db/client.ts` pg.Pool singleton + `src/db/schema.ts` placeholder + `drizzle.config.ts`; drizzle-orm + drizzle-kit installed; `.github/workflows/db-backup.yml` (weekly Xata schema backup) + `data-quality.yml` (Soda Core scan) + Soda Core contracts in `scripts/quality/` and `drizzle/quality/`; `docs/roadmap.md` three-phase migration plan.
 - **RUNBOOK-ENV-VARS.md** — full env var audit checklist per service (prod + staging): required vars, Node version pin verification, cache-clear deploy procedure, failure mode table. Covers Q-144 + Q-145.
 - **risk.db startup logging** — `onListening()` now logs `[startup] risk.db: ✓ ready / ✗ not-found` alongside nad.db.

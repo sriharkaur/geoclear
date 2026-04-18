@@ -72,13 +72,15 @@ All APIs are US federal — no key, no cost. Results cached in-process (LRU, ~10
 
 ### Pricing Tiers
 
-| Tier | Price | req/day | req/min | Enrichment |
-|------|-------|---------|---------|-----------|
-| `free` | $0 | 1,000 | 10 | No |
-| `starter` | $49/mo | 50,000 | 100 | No |
-| `pro` | $249/mo | 500,000 | 1,000 | Yes |
-| `metered` | pay-per-lookup | unlimited | 500 | No |
-| `enterprise` | custom | unlimited | 9,999 | Yes |
+| Tier | Price | Lookups/mo | req/min | Enrichment |
+|------|-------|-----------|---------|-----------|
+| `free` | $0 | 10,000 | 10 | All fields |
+| `starter` | $49/mo | 50,000 | 100 | All fields |
+| `growth` | $199/mo | 150,000 | 500 | All fields |
+| `pro` | $499/mo | 500,000 | 1,000 | All fields + fraud/vacancy/drone |
+| `scale` | $999/mo | 5,000,000 | 9,999 | All fields |
+| `metered` | $0.001/lookup | unlimited | 500 | All fields |
+| `enterprise` | custom | unlimited | custom | All fields |
 
 ### Stripe Integration (LIVE mode)
 

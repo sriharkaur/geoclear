@@ -2230,6 +2230,23 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <button class="plan-cta plan-cta-secondary" onclick="openModal()">Get free key</button>
       </div>
 
+      <div class="price-card" data-plan="starter">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price-row">
+          <span class="plan-price"><sup>$</sup>49</span>
+        </div>
+        <div class="plan-price-note">per month</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feature">50,000 lookups / month</div>
+          <div class="plan-feature">All enrichment fields</div>
+          <div class="plan-feature">Autocomplete + bulk API</div>
+          <div class="plan-feature">100 req/min rate limit</div>
+          <div class="plan-feature">Email support</div>
+        </div>
+        <button class="plan-cta plan-cta-primary" onclick="openCheckout('starter')">Get started →</button>
+      </div>
+
       <div class="price-card" data-plan="growth">
         <div class="plan-name">Growth</div>
         <div class="plan-price-row">
@@ -2244,7 +2261,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           <div class="plan-feature">500 req/min rate limit</div>
           <div class="plan-feature">Email support</div>
         </div>
-        <button class="plan-cta plan-cta-primary" onclick="openCheckout('growth')">Get started →</button>
+        <button class="plan-cta plan-cta-secondary" onclick="openCheckout('growth')">Get started →</button>
       </div>
 
       <div class="price-card featured" data-plan="pro">
@@ -2373,6 +2390,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           <tr style="border-bottom:2px solid var(--border2);">
             <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;min-width:220px;">Feature</th>
             <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Free<br><span style="font-size:0.72rem;font-weight:500">$0</span></th>
+            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Starter<br><span style="font-size:0.72rem;font-weight:500">$49/mo</span></th>
             <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Growth<br><span style="font-size:0.72rem;font-weight:500">$199/mo</span></th>
             <th style="text-align:center;padding:12px 16px;color:var(--sky);font-weight:700;background:rgba(46,147,111,0.04);min-width:100px;">Professional<br><span style="font-size:0.72rem;font-weight:500">$499/mo</span></th>
             <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Scale<br><span style="font-size:0.72rem;font-weight:500">$999/mo</span></th>
@@ -2380,6 +2398,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           <tr style="border-bottom:1px solid var(--border);background:var(--bg-alt);">
             <td style="padding:8px 16px;font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Lookups / month</td>
             <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">10K</td>
+            <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">50K</td>
             <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">150K</td>
             <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--sky);font-weight:600;background:rgba(46,147,111,0.04);">500K</td>
             <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">5M</td>
@@ -2388,10 +2407,11 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
         <tbody>
           <!-- GROUP: Core address data -->
           <tr style="background:var(--bg-alt);">
-            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Core address data</td>
+            <td colspan="6" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Core address data</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Address validation &amp; standardization</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2401,11 +2421,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Geocoordinates (lat/lon)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">ZIP+4 code</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2415,6 +2437,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Residential / commercial (RDI)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
@@ -2422,15 +2445,17 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Timezone (IANA)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <!-- GROUP: Compliance data -->
           <tr style="background:var(--bg-alt);">
-            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Compliance &amp; regulatory</td>
+            <td colspan="6" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Compliance &amp; regulatory</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">County FIPS code</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2440,6 +2465,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Census tract + block group (HMDA / CRA)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
@@ -2447,15 +2473,17 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Flood zone determination (NFIP / FEMA)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <!-- GROUP: Risk signals -->
           <tr style="background:var(--bg-alt);">
-            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Risk signals</td>
+            <td colspan="6" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Risk signals</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Deliverability score (0–1)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2465,11 +2493,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Disaster risk score (flood · wildfire · storm)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Climate risk composite (5 federal sources)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2479,11 +2509,13 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Elevation (ft above sea level)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Fraud score <span style="font-size:0.72rem;color:var(--dim)">(velocity + chargeback history)</span></td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2493,15 +2525,17 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Vacancy score <span style="font-size:0.72rem;color:var(--dim)">(occupancy signal)</span></td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <!-- GROUP: Drone & autonomous -->
           <tr style="background:var(--bg-alt);">
-            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Drone &amp; autonomous delivery</td>
+            <td colspan="6" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Drone &amp; autonomous delivery</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">FAA airspace class (UASFM)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2511,15 +2545,17 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Drone deliverability + landing zone confidence</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <!-- GROUP: Platform -->
           <tr style="background:var(--bg-alt);">
-            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Platform</td>
+            <td colspan="6" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Platform</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Autocomplete / suggest API</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2529,18 +2565,21 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Bulk address API (up to 1,000/call)</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Rate limit</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">10 req/min</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">100 req/min</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">500 req/min</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--sky);font-weight:600;background:rgba(46,147,111,0.04);">1,000 req/min</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Custom</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:11px 16px;color:var(--text);">Compliance SLA</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
             <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
@@ -2550,6 +2589,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:11px 16px;color:var(--text);">Support</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Community</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Email</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Email</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--sky);font-weight:600;background:rgba(46,147,111,0.04);">Priority</td>
             <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Dedicated</td>
           </tr>
@@ -2558,6 +2598,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           <tr style="border-top:2px solid var(--border2);background:var(--bg-alt);">
             <td style="padding:16px;"></td>
             <td style="text-align:center;padding:16px;"><button onclick="openModal()" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Start free</button></td>
+            <td style="text-align:center;padding:16px;"><button onclick="openCheckout('starter')" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Starter →</button></td>
             <td style="text-align:center;padding:16px;"><button onclick="openCheckout('growth')" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Growth →</button></td>
             <td style="text-align:center;padding:16px;background:rgba(46,147,111,0.04);"><button onclick="openCheckout('pro')" style="background:var(--sky);color:#fff;border:none;font-size:0.78rem;font-weight:700;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Professional →</button></td>
             <td style="text-align:center;padding:16px;"><button onclick="openCheckout('scale')" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Scale →</button></td>
@@ -2765,7 +2806,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     const titleEl = document.getElementById('modal-title');
     const ctaEl   = document.querySelector('.modal-cta');
     if (tier && tier !== 'free') {
-      const labels = { growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
+      const labels = { starter: 'Starter — $49/mo', growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
       if (titleEl) titleEl.textContent = 'Get started with ' + (labels[tier] || tier);
       if (ctaEl)   ctaEl.textContent   = 'Continue to checkout →';
     } else {
@@ -3155,8 +3196,8 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     { label:'1K',    n:1000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
     { label:'5K',    n:5000,    plan:'Free',         price:'Free',      note:'up to 10,000 lookups/mo',   key:'free'       },
     { label:'10K',   n:10000,   plan:'Free',         price:'Free',      note:'10,000 lookups/mo cap',     key:'free'       },
-    { label:'25K',   n:25000,   plan:'Growth',        price:'$199 / mo', note:'150,000 lookups included',  key:'growth'     },
-    { label:'50K',   n:50000,   plan:'Growth',        price:'$199 / mo', note:'150,000 lookups included',  key:'growth'     },
+    { label:'25K',   n:25000,   plan:'Starter',       price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
+    { label:'50K',   n:50000,   plan:'Starter',       price:'$49 / mo',  note:'50,000 lookups included',   key:'starter'    },
     { label:'100K',  n:100000,  plan:'Growth',        price:'$199 / mo', note:'150,000 lookups included',  key:'growth'     },
     { label:'250K',  n:250000,  plan:'Professional',  price:'$499 / mo', note:'500,000 lookups included',  key:'pro'        },
     { label:'500K',  n:500000,  plan:'Scale',         price:'$999 / mo', note:'5,000,000 lookups included',key:'scale'      },

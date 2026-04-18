@@ -42,7 +42,7 @@ const ADMIN_SECRET          = process.env.NAD_ADMIN_SECRET    || 'nad_admin_loca
 const STRIPE_SECRET         = process.env.STRIPE_SECRET_KEY   || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const STRIPE_PRICES         = {
-  starter:        process.env.STRIPE_PRICE_STARTER         || '',  // $49 — grandfathered, not shown on pricing page
+  starter:        process.env.STRIPE_PRICE_STARTER         || '',  // $49/mo — Starter tier (50K lookups)
   growth:         process.env.STRIPE_PRICE_GROWTH          || '',  // $199 — current entry tier
   pro:            process.env.STRIPE_PRICE_PRO             || '',  // $499 — Professional
   scale:          process.env.STRIPE_PRICE_SCALE           || '',  // $999 — Scale
@@ -724,7 +724,7 @@ app.get('/api/enrich', async (req, res) => {
       upgrade_url: 'https://geoclear.io/portal.html',
     });
   }
-  // Builder tier: metered monthly enrichment quota
+  // Starter tier: metered monthly enrichment quota
   const monthlyLimit = req.keyInfo.limits.enrichment_monthly_limit;
   if (monthlyLimit !== null && monthlyLimit > 0) {
     const quota = await keys.checkEnrichmentQuota(req.keyInfo.key_id, monthlyLimit);
@@ -732,7 +732,7 @@ app.get('/api/enrich', async (req, res) => {
       return res.status(402).json({
         ok: false,
         error: 'enrichment_monthly_limit_reached',
-        message: `Builder tier includes ${monthlyLimit} enrichment calls/month. Used: ${quota.used}/${quota.limit}. Upgrade to Professional for unlimited enrichment.`,
+        message: `Starter tier includes ${monthlyLimit} enrichment calls/month. Used: ${quota.used}/${quota.limit}. Upgrade to Growth or Professional for higher limits.`,
         upgrade_url: 'https://geoclear.io/portal.html',
       });
     }
@@ -1223,7 +1223,7 @@ function dripDay3Email(callCount) {
         &nbsp;&nbsp;"timezone": "America/New_York"<br>
         }
       </div>
-      <p style="color:#8b949e;margin:20px 0 8px;font-size:13px;">Enrichment is included on Professional ($249/mo) — <a href="https://geoclear.io/portal.html" style="color:#388bfd;">upgrade here</a> if you need it on every call.</p>
+      <p style="color:#8b949e;margin:20px 0 8px;font-size:13px;">All enrichment fields are included on every paid plan starting at $49/mo — <a href="https://geoclear.io/portal.html" style="color:#388bfd;">upgrade here</a>.</p>
       <hr style="border:none;border-top:1px solid #30363d;margin:20px 0"/>
       <p style="color:#8b949e;font-size:12px;">Questions? Just reply to this email.</p>
     </div>`;
@@ -1235,7 +1235,7 @@ function dripDay7Email(tier) {
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0d1117;color:#e6edf3;border-radius:8px;">
       <h2 style="color:#2ea043;margin:0 0 8px">One week with GeoClear</h2>
       <p style="color:#8b949e;margin:0 0 16px">${onFree
-        ? 'You\'re on the free tier (10K lookups/mo). Teams that need FEMA flood zone + census tract for compliance, insurance, or logistics are on Professional.'
+        ? 'You\'re on the free tier (10K lookups/mo). Upgrade to Starter ($49/mo) for 50K lookups, all enrichment fields, and higher rate limits.'
         : 'Thanks for being a GeoClear customer. A few things you might not know about:'
       }</p>
       <ul style="color:#8b949e;font-size:14px;line-height:1.8;padding-left:20px;margin:0 0 20px;">
@@ -1244,7 +1244,7 @@ function dripDay7Email(tier) {
         <li><strong style="color:#e6edf3">Bulk verify</strong> — up to 1,000 addresses in a single POST /api/address/bulk</li>
         <li><strong style="color:#e6edf3">Proximity search</strong> — GET /api/near?lat=&amp;lon=&amp;radius_km=</li>
       </ul>
-      ${onFree ? `<a href="https://geoclear.io/portal.html" style="display:inline-block;padding:12px 24px;background:#2ea043;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Upgrade to Professional — $249/mo →</a>` : ''}
+      ${onFree ? `<a href="https://geoclear.io/portal.html" style="display:inline-block;padding:12px 24px;background:#2ea043;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Upgrade to Starter — $49/mo →</a>` : ''}
       <hr style="border:none;border-top:1px solid #30363d;margin:24px 0"/>
       <p style="color:#8b949e;font-size:12px;">Questions? Just reply to this email. We read everything.</p>
     </div>`;

@@ -288,62 +288,59 @@
     <div class="card-title">Get an API Key</div>
 
     <div class="pricing-grid">
-      <!-- Builder -->
+      <!-- Starter -->
       <div class="plan-card">
-        <div class="plan-name">Builder</div>
+        <div class="plan-name">Starter</div>
         <div class="plan-price">$49<span>/mo</span></div>
-        <div class="plan-tagline">50K req/day · 100 req/min</div>
+        <div class="plan-tagline">50K lookups/mo · 100 req/min</div>
         <div class="plan-enrich-box">
-          Address verification, coordinates, FIPS, timezone, and residential flag on every response.
-          <strong>Census tract + FEMA flood zone: Professional only.</strong>
+          All enrichment fields included: address verification, coordinates, FIPS, timezone, census tract, flood zone, and risk scores on every response.
         </div>
         <ul class="plan-features">
           <li><span class="feat-yes">✓</span> Address search + autocomplete</li>
+          <li><span class="feat-yes">✓</span> Census tract + FEMA flood zone</li>
+          <li><span class="feat-yes">✓</span> Flood, wildfire &amp; climate risk</li>
           <li><span class="feat-yes">✓</span> Bulk verify (up to 100)</li>
-          <li><span class="feat-yes">✓</span> Proximity search</li>
-          <li><span class="feat-yes">✓</span> County FIPS, timezone, coordinates</li>
-          <li><span class="feat-no">—</span> <span>Census tract / block group</span></li>
-          <li><span class="feat-no">—</span> <span>FEMA flood zone</span></li>
+          <li><span class="feat-yes">✓</span> Email support</li>
         </ul>
         <button class="btn-plan btn-plan-outline" onclick="startCheckout('starter')">Subscribe — $49/mo</button>
       </div>
 
-      <!-- Professional -->
+      <!-- Growth -->
       <div class="plan-card featured">
         <div class="plan-badge">Most Popular</div>
-        <div class="plan-name">Professional</div>
-        <div class="plan-price">$249<span>/mo</span></div>
-        <div class="plan-tagline">500K req/day · 1K req/min</div>
+        <div class="plan-name">Growth</div>
+        <div class="plan-price">$199<span>/mo</span></div>
+        <div class="plan-tagline">150K lookups/mo · 500 req/min</div>
         <div class="plan-enrich-box">
-          <strong>Full enrichment unlocked:</strong> census tract, block group, FEMA flood zone, and SFHA flag on every call to <code style="font-size:0.75rem">/api/enrich</code>.
+          <strong>Higher volume + faster rate limits.</strong> All enrichment fields, bulk verify up to 1,000 per call, and email support included.
         </div>
         <ul class="plan-features">
-          <li><span class="feat-yes">✓</span> Everything in Builder</li>
+          <li><span class="feat-yes">✓</span> Everything in Starter</li>
           <li><span class="feat-yes">✓</span> Bulk verify (up to 1,000)</li>
-          <li><span class="feat-star">★</span> <strong style="color:var(--text)">Census tract + block group</strong></li>
-          <li><span class="feat-star">★</span> <strong style="color:var(--text)">FEMA flood zone (AE, X, VE…)</strong></li>
-          <li><span class="feat-star">★</span> <strong style="color:var(--text)">SFHA flag for mortgage compliance</strong></li>
-          <li><span class="feat-yes">✓</span> Priority support</li>
+          <li><span class="feat-star">★</span> <strong style="color:var(--text)">150K lookups / month</strong></li>
+          <li><span class="feat-star">★</span> <strong style="color:var(--text)">500 req/min rate limit</strong></li>
+          <li><span class="feat-yes">✓</span> Email support</li>
         </ul>
-        <button class="btn-plan btn-plan-primary" onclick="startCheckout('pro')">Subscribe — $249/mo</button>
+        <button class="btn-plan btn-plan-primary" onclick="startCheckout('growth')">Subscribe — $199/mo</button>
       </div>
 
-      <!-- Pro Compliance -->
+      <!-- Professional -->
       <div class="plan-card">
-        <div class="plan-name">Pro Compliance</div>
+        <div class="plan-name">Professional</div>
         <div class="plan-price">$499<span>/mo</span></div>
-        <div class="plan-tagline">500K req/day · SLA included</div>
+        <div class="plan-tagline">500K lookups/mo · 1K req/min · SLA</div>
         <div class="plan-enrich-box">
-          <strong>Everything in Professional</strong> plus a written SLA: 99.9% uptime, &lt;4hr email support, and auditable data source attestation for NFIP and HMDA.
+          <strong>Everything in Growth</strong> plus fraud + vacancy risk scores, drone deliverability, FAA airspace, written SLA, and compliance attestation.
         </div>
         <ul class="plan-features">
-          <li><span class="feat-yes">✓</span> Everything in Professional</li>
+          <li><span class="feat-yes">✓</span> Everything in Growth</li>
+          <li><span class="feat-star">★</span> <strong style="color:var(--text)">Fraud + vacancy risk scores</strong></li>
+          <li><span class="feat-star">★</span> <strong style="color:var(--text)">Drone deliverability + FAA airspace</strong></li>
           <li><span class="feat-star">★</span> <strong style="color:var(--text)">Written SLA — 99.9% uptime</strong></li>
-          <li><span class="feat-star">★</span> <strong style="color:var(--text)">&lt;4hr email support</strong></li>
-          <li><span class="feat-star">★</span> <strong style="color:var(--text)">Data source attestation (FEMA NFHL)</strong></li>
-          <li><span class="feat-yes">✓</span> HMDA census tract included</li>
+          <li><span class="feat-yes">✓</span> Priority support</li>
         </ul>
-        <button class="btn-plan btn-plan-outline" onclick="startCheckout('pro_compliance')">Subscribe — $499/mo</button>
+        <button class="btn-plan btn-plan-outline" onclick="startCheckout('pro')">Subscribe — $499/mo</button>
       </div>
     </div>
 
@@ -454,7 +451,8 @@
         <label>Tier</label>
         <select id="new-tier">
           <option value="free">Free</option>
-          <option value="starter">Builder</option>
+          <option value="starter">Starter</option>
+          <option value="growth">Growth</option>
           <option value="pro" selected>Professional</option>
           <option value="enterprise">Enterprise</option>
         </select>
@@ -556,7 +554,7 @@ async function lookupMyKey() {
     cta.style.display = 'flex';
     ctaT.textContent  = d.tier === 'free' ? 'You\'re on the free plan' : 'Upgrade for full enrichment';
     ctaB.textContent  = d.tier === 'free'
-      ? 'Get census tract, FEMA flood zone, and 50× more daily lookups on Builder.'
+      ? 'Get 5× more lookups, higher rate limits, and fraud + vacancy risk scores on Starter.'
       : 'Unlock census tract and FEMA flood zone data on every address with Pro.';
   } else {
     cta.style.display = 'none';
@@ -690,7 +688,7 @@ let _checkoutTier = null;
 
 function startCheckout(tier) {
   _checkoutTier = tier;
-  const labels = { starter: 'Builder — $49/mo', pro: 'Professional — $249/mo', pro_compliance: 'Pro Compliance — $499/mo' };
+  const labels = { starter: 'Starter — $49/mo', growth: 'Growth — $199/mo', pro: 'Professional — $499/mo' };
   document.getElementById('checkout-tier-label').textContent = labels[tier] || tier;
   document.getElementById('checkout-form').style.display = 'block';
   document.getElementById('checkout-email').value = '';
