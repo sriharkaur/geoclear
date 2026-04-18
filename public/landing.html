@@ -1074,6 +1074,21 @@
   </div>
 </nav>
 
+<!-- ──────────────────────────────────────────────────────────────── LAUNCH BANNER -->
+<div id="mcp-launch-banner" style="background:#1a1917;color:#e8e4de;font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-size:0.84rem;font-weight:500;padding:10px 20px;display:flex;align-items:center;justify-content:center;gap:12px;text-align:center;position:relative;">
+  <span style="color:#f0c060;font-weight:700">✦ Now live:</span>
+  MCP server + x402 stablecoin payments for agents.
+  The first address API your agent can call, sign, and pay — without a signup.
+  <a href="/mcp" style="color:#7ec8a4;font-weight:700;text-decoration:none;white-space:nowrap">See how it works →</a>
+  <button onclick="document.getElementById('mcp-launch-banner').style.display='none';localStorage.setItem('gcBannerDismissed',Date.now())" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:#7a7066;font-size:1.1rem;cursor:pointer;padding:4px 8px;line-height:1;" aria-label="Dismiss">×</button>
+</div>
+<script>
+(function(){
+  var d = parseInt(localStorage.getItem('gcBannerDismissed')||'0');
+  if(d && Date.now()-d < 7*86400*1000) document.getElementById('mcp-launch-banner').style.display='none';
+})();
+</script>
+
 <!-- ──────────────────────────────────────────────────────────────── HERO -->
 <section class="hero">
   <div class="hero-bg"></div>

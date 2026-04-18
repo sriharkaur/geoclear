@@ -2469,8 +2469,13 @@ app.post('/mcp', express.json(), mcpAuth, async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 });
 
-// GET /mcp — SSE event stream for server-sent notifications
-app.get('/mcp', mcpAuth, async (req, res) => {
+// GET /mcp — browser: serve marketing page; agent: SSE event stream
+app.get('/mcp', async (req, res, next) => {
+  if (!req.headers['mcp-session-id'] && req.accepts('html')) {
+    return res.sendFile(path.join(__dirname, 'public', 'mcp.html'));
+  }
+  next();
+}, mcpAuth, async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
   if (!sessionId || !_mcpSessions.has(sessionId)) {
     return res.status(400).json({ error: 'Missing or unknown Mcp-Session-Id. POST /mcp first.' });

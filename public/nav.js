@@ -21,6 +21,7 @@
   .gc-nav-links{display:flex;align-items:center;gap:4px;}
   .gc-nav-links a{color:var(--gc-muted);font-size:0.88rem;font-weight:500;padding:7px 12px;border-radius:7px;transition:color .15s,background .15s;}
   .gc-nav-links a:hover,.gc-nav-links a.gc-active{color:var(--gc-text);background:rgba(46,147,111,0.07);}
+  .gc-nav-new{font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--gc-sky);color:#fff;padding:2px 5px;border-radius:4px;vertical-align:middle;margin-left:3px;}
   .gc-nav-right{display:flex;align-items:center;gap:10px;}
   .gc-nav-status{display:inline-flex;align-items:center;gap:6px;font-size:0.74rem;font-weight:600;color:var(--gc-sky);background:rgba(46,147,111,0.07);border:1px solid rgba(46,147,111,0.2);padding:5px 11px;border-radius:20px;white-space:nowrap;}
   .gc-nav-status:hover{background:rgba(46,147,111,0.12);border-color:rgba(46,147,111,0.3);}
@@ -37,7 +38,7 @@
 
   // Active class helper
   function cls(check) {
-    return (path === check || (check === '/compliance' && path.startsWith('/compliance')) || (check === '/docs' && path.startsWith('/docs'))) ? ' class="gc-active"' : '';
+    return (path === check || (check === '/compliance' && path.startsWith('/compliance')) || (check === '/docs' && path.startsWith('/docs')) || (check === '/mcp' && path.startsWith('/mcp'))) ? ' class="gc-active"' : '';
   }
 
   // CTA: on landing open modal, elsewhere go to /#signup
@@ -57,7 +58,7 @@
       <a href="/compliance"${cls('/compliance')}>Compliance</a>
       <a href="/coverage"${cls('/coverage')}>Coverage</a>
       <a href="/docs"${cls('/docs')}>Docs</a>
-      <a href="/mcp-docs"${cls('/mcp-docs')}>MCP</a>
+      <a href="/mcp"${cls('/mcp')}>MCP<span class="gc-nav-new">NEW</span></a>
     </div>
     <div class="gc-nav-right">
       <a href="/status" class="gc-nav-status" title="Live system status" target="_blank">
