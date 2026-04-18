@@ -55,6 +55,7 @@
       <a href="${href('#drone')}">Drone</a>
       <a href="${href('#pricing')}">Pricing</a>
       <a href="/compliance"${cls('/compliance')}>Compliance</a>
+      <a href="/coverage"${cls('/coverage')}>Coverage</a>
       <a href="/docs"${cls('/docs')}>Docs</a>
     </div>
     <div class="gc-nav-right">

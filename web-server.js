@@ -416,10 +416,18 @@ function enrichAddress(a) {
     date_update:  e.date_update,
     nad_source:   e.nad_source,
     nad_uuid:     e.nad_uuid,
-    coverage:     _OVERTURE_STATES.has(e.state) ? 'gap-fill'
-                : _THIN_STATES.has(e.state)     ? 'partial'
-                : e.state                       ? 'full'
-                :                                 null,
+    coverage: {
+      state:         _OVERTURE_STATES.has(e.state) ? 'gap-fill'
+                   : _THIN_STATES.has(e.state)     ? 'partial'
+                   : e.state                       ? 'full'
+                   :                                 null,
+      address_match: a.match_type === 'exact'          ? 'rooftop'
+                   : a.match_type === 'number+street'  ? 'parcel'
+                   :                                     'interpolated',
+      staleness_days: e.date_update
+        ? Math.floor((Date.now() - new Date(e.date_update).getTime()) / 86400000)
+        : null,
+    },
   };
 }
 
@@ -429,6 +437,16 @@ function enrichAddress(a) {
 app.get('/api/stats', (req, res) => {
   const data = cached('stats', () => nad.stats());
   ok(res, data);
+});
+
+// State-level coverage data (public, no auth)
+app.get('/api/coverage', (req, res) => {
+  try {
+    const data = cached('coverage:states', () => nad.listStatesCoverage(), 1000 * 60 * 60 * 6);
+    ok(res, data, { count: data.length });
+  } catch (e) {
+    err(res, 'Coverage data unavailable.', 503);
+  }
 });
 
 // Address search  (?fuzzy=true enables typo-tolerant matching)
@@ -1893,6 +1911,9 @@ app.get('/security', (req, res) => {
 });
 app.get('/changelog', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'changelog.html'));
+});
+app.get('/coverage', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'coverage.html'));
 });
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));

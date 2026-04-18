@@ -14,11 +14,13 @@ const pool = new Pool({
 });
 
 const TIERS = {
-  free:           { req_per_day: 1_000,       req_per_min: 10,   bulk_max: 0,    enrichment: false, enrichment_monthly_limit: 0,    sla: false, price_usd: 0,    metered: false },
-  starter:        { req_per_day: 50_000,      req_per_min: 100,  bulk_max: 100,  enrichment: true,  enrichment_monthly_limit: 500,  sla: false, price_usd: 49,   metered: false },
-  pro:            { req_per_day: 500_000,     req_per_min: 1000, bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: false, price_usd: 249,  metered: false },
+  free:           { req_per_day: 10_000,      req_per_min: 10,   bulk_max: 100,  enrichment: true,  enrichment_monthly_limit: 0,    sla: false, price_usd: 0,    metered: false },
+  starter:        { req_per_day: 50_000,      req_per_min: 100,  bulk_max: 100,  enrichment: true,  enrichment_monthly_limit: null, sla: false, price_usd: 49,   metered: false },
+  growth:         { req_per_day: 150_000,     req_per_min: 500,  bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: false, price_usd: 199,  metered: false },
+  pro:            { req_per_day: 500_000,     req_per_min: 1000, bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: true,  price_usd: 499,  metered: false },
   pro_compliance: { req_per_day: 500_000,     req_per_min: 1000, bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: true,  price_usd: 499,  metered: false },
-  metered:        { req_per_day: 999_999_999, req_per_min: 500,  bulk_max: 1000, enrichment: false, enrichment_monthly_limit: 0,    sla: false, price_usd: null, metered: true  },
+  scale:          { req_per_day: 5_000_000,   req_per_min: 9999, bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: true,  price_usd: 999,  metered: false },
+  metered:        { req_per_day: 999_999_999, req_per_min: 500,  bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: false, price_usd: null, metered: true  },
   enterprise:     { req_per_day: 999_999_999, req_per_min: 9999, bulk_max: 1000, enrichment: true,  enrichment_monthly_limit: null, sla: true,  price_usd: null, metered: false },
 };
 

@@ -101,6 +101,28 @@ class NADQuery {
     return row;
   }
 
+  listStatesCoverage() {
+    this._require();
+    const rows = this.db.prepare(`
+      SELECT s.name, s.code, COUNT(a.id) AS address_count
+      FROM states s
+      JOIN countries c ON c.id = s.country_id
+      LEFT JOIN addresses a ON a.state_id = s.id
+      WHERE c.code = 'US'
+      GROUP BY s.id, s.name, s.code
+      ORDER BY s.name
+    `).all();
+    return rows.map(r => ({
+      name: r.name,
+      code: r.code,
+      address_count: r.address_count,
+      coverage: OVERTURE_STATES.has(r.code) ? 'gap-fill'
+              : THIN_STATES.has(r.code)     ? 'partial'
+              : r.address_count === 0       ? 'none'
+              :                               'full',
+    }));
+  }
+
   // ---- Level 4: County ----
   listCounties(stateCode) {
     const q = stateCode

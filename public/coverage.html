@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>US Address Coverage — GeoClear</title>
+  <meta name="description" content="GeoClear covers 120M+ US addresses across all 50 states. See per-state address counts, coverage quality, and data freshness." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #faf9f7; --surface: #ffffff; --surface2: #f0ebe4; --border: rgba(46,147,111,0.15); --border2: #e0d8cf;
+      --sky: #2e936f; --blue: #956bad; --red: #eb8771; --yellow: #c6a673;
+      --text: #242220; --muted: #7a6e68; --dim: #a09890;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --r: 8px; --rxl: 12px; --max: 900px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+
+    main { max-width: var(--max); margin: 0 auto; padding: 56px 24px 80px; }
+
+    .page-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sky); margin-bottom: 10px; }
+    h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 14px; }
+    .page-sub { font-size: 1rem; color: var(--muted); max-width: 580px; line-height: 1.65; margin-bottom: 40px; }
+
+    /* Summary cards */
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 40px; }
+    @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rxl); padding: 18px; }
+    .summary-num { font-size: 1.65rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+    .summary-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; margin-bottom: 32px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th {
+      text-align: left; padding: 10px 14px; font-size: 0.72rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 2px solid var(--border2); white-space: nowrap;
+    }
+    thead th.right { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 11px 14px; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+    tbody td.right { text-align: right; }
+    .state-code { font-weight: 700; color: var(--sky); font-size: 0.78rem; }
+    .state-name { font-weight: 500; }
+
+    /* Coverage badge */
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+    .badge-full     { background: rgba(46,147,111,0.12); color: #1d7a57; }
+    .badge-gap-fill { background: rgba(198,166,115,0.15); color: #9b7930; }
+    .badge-partial  { background: rgba(139,148,158,0.15); color: var(--muted); }
+    .badge-none     { background: rgba(235,135,113,0.15); color: #c0503a; }
+
+    /* Coverage bar */
+    .bar-wrap { width: 80px; height: 8px; background: var(--border2); border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--sky); }
+    .bar-fill.warn { background: var(--yellow); }
+
+    /* Legend */
+    .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 28px; font-size: 0.8rem; color: var(--muted); }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+
+    /* Note box */
+    .note-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rxl); padding: 20px 24px; margin-bottom: 32px; font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+    .note-box strong { color: var(--text); }
+
+    /* Loading / error states */
+    .state-msg { text-align: center; padding: 48px 24px; color: var(--muted); font-size: 0.9rem; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--sky); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* CTA */
+    .cta-bar { text-align: center; margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--border); }
+    .cta-bar p { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; background: var(--sky); color: #fff; border-radius: var(--r); font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+  </style>
+  <script src="/nav.js" defer></script>
+</head>
+<body>
+<div id="gc-nav-placeholder"></div>
+
+<main>
+  <div class="page-label">Data Coverage</div>
+  <h1>US Address Coverage by State</h1>
+  <p class="page-sub">120M+ verified addresses across all 50 states. Live counts from the address database. Updated with each NAD quarterly release.</p>
+
+  <div class="summary-grid" id="summary-grid">
+    <div class="summary-card"><div class="summary-num" id="s-total">—</div><div class="summary-label">Total addresses</div></div>
+    <div class="summary-card"><div class="summary-num" id="s-full">—</div><div class="summary-label">Full-coverage states</div></div>
+    <div class="summary-card"><div class="summary-num" id="s-gap">—</div><div class="summary-label">Gap-fill states</div></div>
+    <div class="summary-card"><div class="summary-num" id="s-refresh">NAD r22</div><div class="summary-label">Data release</div></div>
+  </div>
+
+  <div class="legend">
+    <span class="legend-item"><span class="badge badge-full">Full</span> NAD r22 rooftop-level address points</span>
+    <span class="legend-item"><span class="badge badge-gap-fill">Gap-fill</span> NAD r22 + supplemental gap-fill data</span>
+    <span class="legend-item"><span class="badge badge-partial">Partial</span> Sparse or territory coverage</span>
+  </div>
+
+  <div class="note-box">
+    <strong>Coverage = % of Census 2020 housing units matched.</strong>
+    A "full" state has a NAD point for ≥90% of housing units. "Gap-fill" states had
+    sparse NAD coverage in specific counties; additional address points were merged from
+    a supplemental dataset to close those gaps. All enrichment fields — flood zone, census
+    tract, coordinates, risk scores — are available on every matched address regardless of
+    coverage tier.
+  </div>
+
+  <div class="table-wrap">
+    <table id="cov-table">
+      <thead>
+        <tr>
+          <th>State</th>
+          <th class="right">Addresses in DB</th>
+          <th class="right">Census housing units</th>
+          <th class="right">Coverage</th>
+          <th></th>
+          <th>Level</th>
+        </tr>
+      </thead>
+      <tbody id="cov-tbody">
+        <tr><td colspan="6" class="state-msg"><span class="spinner"></span>Loading state counts…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cta-bar">
+    <p>Every address returns flood zone, census tract, climate risk, and 15+ enrichment fields — on all plans.</p>
+    <a href="/portal" class="btn-primary">Get a free API key →</a>
+  </div>
+</main>
+
+<script>
+// 2020 Census housing unit counts (ACS 5-year estimate)
+const CENSUS_HU = {
+  AL:1373765,AK:314572,AZ:3095710,AR:1388264,CA:14366356,CO:2439782,CT:1530069,
+  DC:345141,DE:458696,FL:9867673,GA:4395756,HI:554169,ID:762582,IL:5437501,
+  IN:2895437,IA:1451889,KS:1263419,KY:2079093,LA:2108753,ME:748516,MD:2605376,
+  MA:2985336,MI:4612090,MN:2468325,MS:1310226,MO:2793099,MT:527296,NE:872844,
+  NV:1312591,NH:641748,NJ:3791765,NM:940829,NY:8336817,NC:4715219,ND:360239,
+  OH:5301025,OK:1832098,OR:1877754,PA:5742006,RI:470350,SC:2358695,SD:399212,
+  TN:3084027,TX:11556519,UT:1089475,VT:337694,VA:3613682,WA:3166695,WV:884888,
+  WI:2703415,WY:305783,
+  // Territories
+  PR:1559929,VI:51634,GU:51647,AS:9500,MP:18436,
+};
+
+function fmt(n) {
+  if (n == null) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(0) + 'K';
+  return n.toLocaleString();
+}
+function fmtFull(n) {
+  if (n == null) return '—';
+  return n.toLocaleString();
+}
+function pct(a, b) {
+  if (!b) return null;
+  return Math.min(Math.round(a / b * 100), 100);
+}
+function badgeHtml(level) {
+  const map = { full: 'badge-full', 'gap-fill': 'badge-gap-fill', partial: 'badge-partial', none: 'badge-none' };
+  const label = level === 'gap-fill' ? 'Gap-fill' : level ? level.charAt(0).toUpperCase() + level.slice(1) : '—';
+  return `<span class="badge ${map[level] || ''}">${label}</span>`;
+}
+function barHtml(pctVal) {
+  if (pctVal == null) return '';
+  const cls = pctVal >= 80 ? '' : ' warn';
+  return `<div class="bar-wrap"><div class="bar-fill${cls}" style="width:${pctVal}%"></div></div>`;
+}
+
+async function loadCoverage() {
+  try {
+    const r = await fetch('/api/coverage');
+    const { data } = await r.json();
+    if (!data?.length) throw new Error('empty');
+
+    let total = 0, fullCount = 0, gapCount = 0;
+
+    const rows = data.map(state => {
+      const census = CENSUS_HU[state.code] || null;
+      const p = pct(state.address_count, census);
+      total += state.address_count || 0;
+      if (state.coverage === 'full') fullCount++;
+      if (state.coverage === 'gap-fill') gapCount++;
+      return { ...state, census_hu: census, coverage_pct: p };
+    });
+
+    // Summary
+    document.getElementById('s-total').textContent = fmt(total);
+    document.getElementById('s-full').textContent  = fullCount;
+    document.getElementById('s-gap').textContent   = gapCount;
+
+    // Table rows
+    document.getElementById('cov-tbody').innerHTML = rows.map(s => `
+      <tr>
+        <td>
+          <span class="state-code">${s.code}</span>
+          <span class="state-name" style="margin-left:8px;">${s.name}</span>
+        </td>
+        <td class="right">${fmtFull(s.address_count)}</td>
+        <td class="right">${s.census_hu ? s.census_hu.toLocaleString() : '—'}</td>
+        <td class="right">${s.coverage_pct != null ? s.coverage_pct + '%' : '—'}</td>
+        <td style="padding-left:4px;">${barHtml(s.coverage_pct)}</td>
+        <td>${badgeHtml(s.coverage)}</td>
+      </tr>
+    `).join('');
+
+  } catch (_) {
+    document.getElementById('cov-tbody').innerHTML =
+      '<tr><td colspan="6" class="state-msg">Unable to load coverage data — please try again.</td></tr>';
+  }
+}
+
+loadCoverage();
+</script>
+</body>
+</html>
