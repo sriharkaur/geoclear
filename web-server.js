@@ -27,6 +27,9 @@ const { RiskData }    = require('./risk-data.js');
 const { McpServer }   = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const { z }           = require('zod');
+const { HTTPFacilitatorClient } = require('@x402/core/server');
+const { x402ResourceServer }    = require('@x402/express');
+const { ExactEvmScheme }        = require('@x402/evm/exact/server');
 
 // ── Config ────────────────────────────────────────────────────────
 const argv  = process.argv.slice(2);
@@ -62,6 +65,7 @@ const SENDGRID_API_KEY       = process.env.SENDGRID_API_KEY       || '';
 const FROM_EMAIL             = process.env.GEOCLEAR_FROM_EMAIL    || 'noreply@geoclear.io';
 const UPTIMEROBOT_API_KEY    = process.env.UPTIMEROBOT_API_KEY    || '';
 const UPTIMEROBOT_MONITOR_IDS = '802836799-802836800'; // GeoClear API Health + Landing Page
+const GEOCLEAR_USDC_WALLET   = process.env.GEOCLEAR_USDC_WALLET   || ''; // Base mainnet USDC receiving address for x402
 const stripe             = STRIPE_SECRET ? require('stripe')(STRIPE_SECRET) : null;
 
 // ── SendGrid email helper ─────────────────────────────────────────
@@ -2005,17 +2009,123 @@ function _createMcpServer(keyInfo) {
   return server;
 }
 
-// MCP auth middleware — validates X-Api-Key, attaches keyInfo
-async function mcpAuth(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.key;
-  if (!apiKey) return res.status(401).json({ error: 'X-Api-Key header required for MCP endpoint.' });
+// ── x402 payment infrastructure ──────────────────────────────────
+// USDC on Base mainnet (6 decimals). $0.004 = 4000 raw units.
+const X402_USDC_ASSET   = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const X402_NETWORK      = 'eip155:8453'; // Base mainnet
+const X402_AMOUNT       = '4000';        // $0.004 USDC
+const X402_TIMEOUT_SECS = 60;
+
+let _x402Facilitator = null;
+let _x402Server      = null;
+
+if (GEOCLEAR_USDC_WALLET) {
   try {
-    const keyInfo = await keys.validate(apiKey);
-    if (!keyInfo || !keyInfo.valid) return res.status(403).json({ error: 'Invalid or revoked API key.' });
-    req._mcpKeyInfo = keyInfo;
+    _x402Facilitator = new HTTPFacilitatorClient({ url: 'https://x402.org/facilitator' });
+    _x402Server      = new x402ResourceServer(_x402Facilitator);
+    _x402Server.register(X402_NETWORK, new ExactEvmScheme());
+    console.log('[mcp] x402 enabled — receiving wallet:', GEOCLEAR_USDC_WALLET.slice(0, 8) + '…');
+  } catch (e) {
+    console.warn('[mcp] x402 setup failed (key auth only):', e.message);
+    _x402Facilitator = null;
+  }
+}
+
+function _buildMcpPaymentRequirements() {
+  return {
+    scheme:             'exact',
+    network:            X402_NETWORK,
+    maxTimeoutSeconds:  X402_TIMEOUT_SECS,
+    asset:              X402_USDC_ASSET,
+    payTo:              GEOCLEAR_USDC_WALLET,
+    amount:             X402_AMOUNT,
+    extra:              { name: 'USDC', version: '2' },
+  };
+}
+
+function _encodeb64(obj) {
+  return Buffer.from(JSON.stringify(obj)).toString('base64');
+}
+function _decodeb64(str) {
+  return JSON.parse(Buffer.from(str, 'base64').toString('utf8'));
+}
+
+function _sendMcpPaymentRequired(req, res) {
+  if (!GEOCLEAR_USDC_WALLET) {
+    return res.status(401).json({ error: 'X-Api-Key header required for MCP endpoint.' });
+  }
+  const paymentRequired = {
+    x402Version: 2,
+    error:       'Payment required',
+    resource: {
+      url:         `${BASE_URL}/mcp`,
+      description: 'GeoClear MCP — verify_address, suggest_address, reverse_geocode, get_coverage',
+      mimeType:    'application/json',
+    },
+    accepts: [_buildMcpPaymentRequirements()],
+  };
+  res.status(402)
+    .setHeader('PAYMENT-REQUIRED', _encodeb64(paymentRequired))
+    .setHeader('Content-Type', 'application/json')
+    .json({ x402Version: 2, error: 'Payment required', accepts: [_buildMcpPaymentRequirements()] });
+}
+
+// MCP auth middleware — X-Api-Key key auth OR x402 micropayment
+async function mcpAuth(req, res, next) {
+  // ① Existing session bypass: x402-authed sessions don't re-pay per request;
+  //    key-authed sessions re-validate so revoked keys are caught promptly.
+  const sessionId = req.headers['mcp-session-id'];
+  if (sessionId && _mcpSessions.has(sessionId)) {
+    const t = _mcpSessions.get(sessionId);
+    if (t._gcAuthMethod === 'x402') return next(); // already paid
+    // For key sessions, fall through to re-validate below
+    if (t._gcAuthMethod === 'apikey') {
+      try {
+        const keyInfo = await keys.validate(t._gcApiKey);
+        if (!keyInfo?.valid) { _mcpSessions.delete(sessionId); return res.status(403).json({ error: 'API key revoked.' }); }
+        req._mcpKeyInfo = keyInfo;
+        return next();
+      } catch { return res.status(500).json({ error: 'Key validation error.' }); }
+    }
+  }
+
+  // ② API key path
+  const apiKey = req.headers['x-api-key'] || req.query.key;
+  if (apiKey) {
+    try {
+      const keyInfo = await keys.validate(apiKey);
+      if (!keyInfo?.valid) return res.status(403).json({ error: 'Invalid or revoked API key.' });
+      req._mcpKeyInfo     = keyInfo;
+      req._mcpAuthMethod  = 'apikey';
+      req._mcpApiKey      = apiKey;
+      return next();
+    } catch { return res.status(500).json({ error: 'Key validation error.' }); }
+  }
+
+  // ③ x402 path
+  if (!_x402Facilitator) return res.status(401).json({ error: 'X-Api-Key header required for MCP endpoint.' });
+
+  const paymentSig = req.headers['payment-signature'] || req.headers['x-payment'];
+  if (!paymentSig) return _sendMcpPaymentRequired(req, res);
+
+  try {
+    const paymentPayload  = _decodeb64(paymentSig);
+    const requirements    = _buildMcpPaymentRequirements();
+
+    const verifyResult = await _x402Facilitator.verify(paymentPayload, requirements);
+    if (!verifyResult.isValid) {
+      return res.status(402)
+        .setHeader('Content-Type', 'application/json')
+        .json({ x402Version: 2, error: 'Payment invalid', reason: verifyResult.invalidReason });
+    }
+
+    const settleResult = await _x402Facilitator.settle(paymentPayload, requirements);
+    req._mcpAuthMethod    = 'x402';
+    req._mcpX402Settle    = settleResult;
     next();
   } catch (e) {
-    res.status(500).json({ error: 'Key validation error.' });
+    console.error('[mcp-x402] verify/settle error:', e.message);
+    res.status(402).json({ x402Version: 2, error: 'Payment verification failed', detail: e.message });
   }
 }
 
@@ -2031,11 +2141,18 @@ app.post('/mcp', express.json(), mcpAuth, async (req, res) => {
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: (id) => { _mcpSessions.set(id, transport); },
     });
+    // Stamp auth method on transport so subsequent requests in this session don't re-auth
+    transport._gcAuthMethod = req._mcpAuthMethod || 'apikey';
+    transport._gcApiKey     = req._mcpApiKey     || null;
     transport.onclose = () => {
       if (transport.sessionId) _mcpSessions.delete(transport.sessionId);
     };
     const server = _createMcpServer(req._mcpKeyInfo);
     await server.connect(transport);
+  }
+  // Set PAYMENT-RESPONSE header for x402 clients so they can confirm settlement
+  if (req._mcpX402Settle) {
+    res.setHeader('PAYMENT-RESPONSE', _encodeb64(req._mcpX402Settle));
   }
   await transport.handleRequest(req, res, req.body);
 });

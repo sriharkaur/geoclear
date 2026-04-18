@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-18 (session 33 — Q-186 done (MCP HTTP server Phase 1 + coverage pre-warm + /mcp-docs page).)_
+_Last updated: 2026-04-18 (session 33 — Q-186 + Q-187 done (MCP Phase 1 + x402 Phase 2).)_
 
 ---
 
@@ -157,6 +157,8 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 
 - [ ] **Q-184 · [P2-DATA] Data freshness SLA test in Vitest + GitHub Actions summary** — Add `src/db/health.ts` with `getDataFreshness()`: queries `MAX(updated_at)` from `risk_data`, returns `{ lastUpdate, hoursOld }`. Add Vitest SLA test (`src/api/v2/data-health.test.ts`): `expect(hoursOld).toBeLessThan(24)` — fails CI build if the 150GB data is stale. Add GitHub Actions step that appends a "GeoClear Data Health Report" block to `$GITHUB_STEP_SUMMARY` (status, threshold, last update). **Why:** code tests pass even when the Sunday import fails silently. This test catches the data staleness before customers see wrong scores on Monday. *Effort: 1 hr. Gate: Q-054 (Vitest setup) + Q-161 (Xata migration — needs real `updated_at` column).*
   > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 12. Data Freshness SLA Test
+
+- ✅ **Q-187 · [P3-FEAT] MCP x402 micropayment auth (Phase 2)** — DONE 2026-04-18 — Dual-auth on `/mcp`: API key OR x402 USDC payment ($0.004/session, Base mainnet). `GEOCLEAR_USDC_WALLET` env var gates feature. EIP-3009 gasless settlement via Coinbase x402.org facilitator. Session auth method stamped on transport; x402 sessions don't re-pay per tool call. `PAYMENT-RESPONSE` header returned after settlement. `/mcp-docs` updated with x402 flow + pricing rationale.
 
 - ✅ **Q-186 · [P3-FEAT] MCP HTTP server Phase 1** — DONE 2026-04-18 — `POST /mcp`, `GET /mcp`, `DELETE /mcp` using `StreamableHTTPServerTransport`. 4 tools: `verify_address`, `suggest_address`, `reverse_geocode`, `get_coverage`. Auth via `X-Api-Key` (same key as REST API). Per-session McpServer instances in `_mcpSessions` Map. `/mcp-docs` marketing page with Claude Desktop + Cursor setup snippets. Coverage cache pre-warm on startup via `setImmediate()`.
 

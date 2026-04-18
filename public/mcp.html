@@ -164,6 +164,32 @@ Mcp-Session-Id:  <span class="c-green">&lt;id returned in first response&gt;</sp
     <p class="note">Supports MCP protocol version 2025-03-26 (Streamable HTTP). Session lifecycle: POST to initialize, GET for SSE notifications, DELETE to terminate.</p>
   </div>
 
+  <h2>Walletless payment — x402</h2>
+  <p style="font-size:0.9rem;color:var(--muted);margin-bottom:20px;max-width:600px;line-height:1.6;">AI agents with a USDC wallet on Base can call the MCP endpoint without an API key. The server returns HTTP 402 with a payment requirement; the agent pays <strong style="color:var(--text);">$0.004 USDC per session</strong> and proceeds. No signup, no rate limits beyond the per-call price.</p>
+
+  <div class="code-block" id="code-x402">
+<button class="copy-btn" onclick="copyCode('code-x402')">Copy</button><span class="c-muted"># x402 flow — agent with USDC wallet on Base mainnet
+
+# 1. First request (no key, no payment) → server responds 402
+POST https://geoclear.io/mcp
+Content-Type: application/json
+
+<span class="c-yellow">← HTTP 402</span>
+<span class="c-yellow">PAYMENT-REQUIRED: &lt;base64 JSON with USDC amount + recipient&gt;</span>
+
+# 2. Agent signs EIP-3009 transfer authorization and retries
+POST https://geoclear.io/mcp
+Content-Type:       application/json
+<span class="c-green">payment-signature:  &lt;base64 JSON signed by wallet&gt;</span>
+
+<span class="c-yellow">← HTTP 200</span>
+<span class="c-yellow">PAYMENT-RESPONSE:   &lt;settlement tx hash&gt;</span>
+<span class="c-yellow">Mcp-Session-Id:     &lt;session — no further payment needed&gt;</span></span></div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rxl);padding:18px 22px;margin-bottom:36px;font-size:0.85rem;color:var(--muted);line-height:1.65;">
+    <strong style="color:var(--text);">Pricing logic:</strong> Free tier subscribers pay ~$0.0002/call effective. x402 callers pay $0.004/session — a 20× premium for zero-commitment, zero-signup access. Settlement via Coinbase's x402 facilitator (gasless EIP-3009 USDC transfer, Base mainnet).
+  </div>
+
   <h2>Example interactions</h2>
   <div class="code-block">
 <span class="c-muted"># In Claude / Cursor — just ask naturally:</span>

@@ -9,6 +9,7 @@
 
 ## Unreleased
 
+- **MCP x402 micropayment auth (Phase 2)** — Dual-auth on `/mcp`: `X-Api-Key` header uses existing key auth; no key → HTTP 402 with USDC payment requirements (Base mainnet, $0.004/session via Coinbase x402.org facilitator). EIP-3009 gasless settlement. `PAYMENT-RESPONSE` header returned on successful payment. Session stamped with auth method so x402 sessions don't re-pay per request. `GEOCLEAR_USDC_WALLET` env var gates feature (degrades to key-only when unset). `/mcp-docs` updated with x402 flow documentation.
 - **MCP HTTP server (Phase 1)** — `POST /mcp`, `GET /mcp`, `DELETE /mcp` using `StreamableHTTPServerTransport`. 4 tools: `verify_address`, `suggest_address`, `reverse_geocode`, `get_coverage`. Auth via `X-Api-Key` header (same keys as REST API). Per-session `McpServer` factory. Connects Claude Desktop, Cursor, and any MCP-compatible agent.
 - **`/mcp-docs` marketing page** — explains MCP setup with copy-ready config snippets for Claude Desktop + Cursor. Tab switcher for different clients. Lists all 4 tools. Added to nav + sitemap.
 - **Coverage cache pre-warm** — `onListening()` now calls `listStatesCoverage()` via `setImmediate()` on startup when nad.db is ready, so first `/api/coverage` request is instant.
