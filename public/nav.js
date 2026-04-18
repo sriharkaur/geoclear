@@ -60,7 +60,7 @@
     <div class="gc-nav-right">
       <a href="/status" class="gc-nav-status" title="Live system status" target="_blank">
         <span class="gc-nav-dot"></span>
-        <span>99.9% uptime</span>
+        <span>99.9% uptime target</span>
       </a>
       <a href="/portal.html" class="gc-nav-portal">Portal →</a>
       ${ctaHTML}

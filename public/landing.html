@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="120 million verified US addresses enriched with flood zone, census tract, risk scores, and location intelligence. The definitive address API. Start free." />
   <meta property="og:title" content="GeoClear — Address Intelligence API" />
-  <meta property="og:description" content="The address intelligence layer. 120M+ records. <5ms. Start free." />
+  <meta property="og:description" content="The address intelligence layer. 198M+ records. <5ms server-side. Start free." />
   <meta name="theme-color" content="#faf9f7" />
   <title>GeoClear — Address Intelligence API</title>
 
@@ -1072,7 +1072,7 @@
       <p class="hero-sub">
         One API call returns 15+ enrichment fields: validated address, FEMA flood zone,
         census tract, risk scores, climate hazard, and drone reachability — everything
-        your product needs to act on a US address. Free tier. No credit card. Under 5ms.
+        your product needs to act on a US address. Free tier. No credit card. Under 5ms server-side.
       </p>
 
       <div class="hero-btns">
@@ -1093,12 +1093,12 @@
         </div>
         <div class="trust-item">
           <span class="trust-val">&lt;5ms</span>
-          <span class="trust-lbl">avg latency</span>
+          <span class="trust-lbl">server-side p95</span>
         </div>
         <div class="trust-item">
           <a href="/status" style="text-decoration:none;color:inherit;">
             <span class="trust-val">99.9%</span>
-            <span class="trust-lbl">uptime → live status</span>
+            <span class="trust-lbl">uptime target · live history →</span>
           </a>
         </div>
         <div class="trust-item">
@@ -1166,7 +1166,7 @@
     </div>
     <div class="metric">
       <div class="metric-val" data-count="5" data-suffix="ms" data-prefix="&lt;">&lt;5ms</div>
-      <div class="metric-lbl">Average response time</div>
+      <div class="metric-lbl">Server-side p95 compute</div>
     </div>
     <div class="metric">
       <div class="metric-val" data-count="130" data-suffix="M" data-prefix="">130M</div>
@@ -1363,7 +1363,7 @@
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-title">Make a request</div>
-        <div class="step-desc">Pass a street address as query parameters. GeoClear matches it against 198M verified records and returns a fully enriched response in under 5ms.</div>
+        <div class="step-desc">Pass a street address as query parameters. GeoClear matches it against 198M verified records and returns a fully enriched response. Server-side compute: &lt;5ms p95.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -1910,7 +1910,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
           The landing decision<br>in one API call.
         </h2>
         <p style="font-size:1.05rem;color:rgba(245,243,238,0.65);line-height:1.75;margin-bottom:28px;">
-          Every autonomous vehicle — drone, robot, or sidewalk courier — needs to know three things before a delivery attempt: is the airspace clear, is there a safe landing zone, and is the address reachable? GeoClear answers all three in one call, under 5ms. The only API built for the robot delivery era.
+          Every autonomous vehicle — drone, robot, or sidewalk courier — needs to know three things before a delivery attempt: is the airspace clear, is there a safe landing zone, and is the address reachable? GeoClear answers all three in one call. The only API built for the robot delivery era.
         </p>
 
         <!-- Drone stat row -->
@@ -2087,7 +2087,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <span style="color:var(--sky);">✓</span> Census tract — HMDA LAR reporting
           </div>
           <div style="display:flex;align-items:center;gap:8px;color:var(--muted);">
-            <span style="color:var(--sky);">✓</span> $249/mo flat — no per-address fee
+            <span style="color:var(--sky);">✓</span> Included in Free — no per-determination fee
           </div>
         </div>
       </div>
@@ -2162,7 +2162,7 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
     </div>
 
     <p style="text-align:center;font-size:0.88rem;color:var(--muted);margin-bottom:28px;padding:14px 20px;background:var(--bg-alt);border-radius:var(--r);border:1px solid var(--border);">
-      Manual flood zone determination costs <strong>$3–$15 per address</strong>. GeoClear Professional includes unlimited flood zone lookups for <strong>$499/mo</strong>.
+      Manual flood zone determination costs <strong>$3–$15 per address</strong>. GeoClear includes flood zone lookups on every plan — including Free.
     </p>
 
     <div class="pricing-grid" data-fade-group>
@@ -2401,9 +2401,9 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
             <td style="padding:13px 16px;color:var(--muted);">FAA airspace clearance, open landing zone estimate, confidence score — autonomous delivery go/no-go in one call</td>
           </tr>
           <tr>
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Pro Compliance (flood · census · CRA)</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Add-on</td>
-            <td style="padding:13px 16px;color:var(--muted);">Audit-ready flood zone + census tract for HMDA, NFIP, and CRA — flat monthly fee, no per-lookup charge</td>
+            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Flood zone · census tract · county FIPS</td>
+            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
+            <td style="padding:13px 16px;color:var(--muted);">Audit-ready flood zone + census tract for HMDA, NFIP, and CRA — included on all plans, no per-lookup charge</td>
           </tr>
         </tbody>
       </table>
