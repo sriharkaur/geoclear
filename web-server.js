@@ -1947,7 +1947,43 @@ function _createMcpServer(keyInfo) {
         const results = nad.searchAddress({ street, city, state, zip, limit: 1 });
         if (!results.length) return { content: [{ type: 'text', text: JSON.stringify({ verified: false, input: { street, city, state, zip } }) }] };
         const enriched = enrichAddress(results[0]);
-        return { content: [{ type: 'text', text: JSON.stringify(enriched) }] };
+
+        // Normalise coverage.state → spec enum: full | partial | sparse
+        const rawCovState = enriched.coverage?.state;
+        const stateCoverage = rawCovState === 'full'     ? 'full'
+                            : rawCovState === 'gap-fill' ? 'partial'
+                            : rawCovState === 'partial'  ? 'sparse'
+                            :                              'sparse';
+
+        // Guidance block — decision signal for downstream agents
+        const conf   = enriched.confidence || 0;
+        const cov    = enriched.coverage?.address_match || 'interpolated';
+        let recommended_action, reasoning;
+
+        if (!enriched.verified || conf < 30) {
+          recommended_action = 'deny';
+          reasoning = `Address could not be verified (confidence ${conf}/100). Do not proceed without manual review.`;
+        } else if (conf < 60 || cov === 'interpolated') {
+          recommended_action = 'hold';
+          reasoning = `Low-confidence match (${conf}/100, match type: ${cov}). Flag for human review before fulfillment or underwriting.`;
+        } else if (enriched.coverage?.state === 'gap-fill') {
+          recommended_action = 'refer';
+          reasoning = `Address verified (confidence ${conf}/100) but sourced from gap-fill data. Suitable for most uses; refer for high-stakes decisions.`;
+        } else {
+          recommended_action = 'approved';
+          reasoning = `Address verified with high confidence (${conf}/100, match type: ${cov}). No risk flags. Safe to proceed.`;
+        }
+
+        const output = {
+          ...enriched,
+          coverage: {
+            ...enriched.coverage,
+            state_coverage: stateCoverage,
+          },
+          guidance: { recommended_action, reasoning },
+        };
+
+        return { content: [{ type: 'text', text: JSON.stringify(output) }] };
       } catch (e) {
         return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
       }
