@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FAA airspace classification, drone deliverability flag, and landing zone confidence for any US address. The pre-flight check your dispatch system needs." />
+  <meta property="og:title" content="GeoClear — Drone Delivery &amp; Airspace Intelligence API" />
+  <meta property="og:description" content="Go/no-go for every delivery address. FAA-sourced airspace class, drone deliverability, and landing zone confidence in a single API call." />
+  <meta name="theme-color" content="#faf9f7" />
+  <title>GeoClear — Drone Delivery &amp; Airspace Intelligence</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
+    :root {
+      --bg:       #faf9f7;
+      --bg-alt:   #f2f0ed;
+      --surface:  #ffffff;
+      --surface2: #f0ebe4;
+      --glass:    rgba(250,249,247,0.85);
+
+      --border:   rgba(46,147,111,0.12);
+      --border2:  rgba(46,147,111,0.2);
+      --border3:  rgba(46,147,111,0.32);
+
+      --text:     #242220;
+      --muted:    #7a6e68;
+      --dim:      #a58979;
+
+      --sky:      #2e936f;
+      --indigo:   #956bad;
+      --violet:   #8cb0b2;
+      --green:    #2e936f;
+      --amber:    #c6a673;
+      --red:      #eb8771;
+
+      --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
+      --grad-r:   linear-gradient(135deg, #8cb0b2 0%, #2e936f 100%);
+      --glow:     rgba(46, 147, 111, 0.08);
+
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+
+      --r:   8px;
+      --rlg: 14px;
+      --rxl: 20px;
+      --max: 1140px;
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
+
+    /* ─── SCROLLBAR ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    /* ─── UTILITY ───────────────────────────────────────────────────────────── */
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── HERO ──────────────────────────────────────────────────────────────── */
+    .hero-section {
+      padding-top: 120px;
+      padding-bottom: 96px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 600px;
+      background: radial-gradient(ellipse at center, rgba(140,176,178,0.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(140,176,178,0.12);
+      border: 1px solid rgba(140,176,178,0.28);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--violet);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--violet);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .hero-h1 {
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 500px;
+      margin-bottom: 36px;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--grad);
+      color: #fff;
+      border: none;
+      padding: 13px 26px;
+      border-radius: var(--r);
+      font-size: 0.92rem;
+      font-weight: 700;
+      transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(46,147,111,0.25);
+      letter-spacing: -0.01em;
+    }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 6px 28px rgba(46,147,111,0.35); }
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border2);
+      padding: 12px 22px;
+      border-radius: var(--r);
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--border3); color: var(--text); }
+
+    /* ─── API RESPONSE CARD ─────────────────────────────────────────────────── */
+    .api-card {
+      background: #1a1a18;
+      border-radius: var(--rlg);
+      padding: 28px 28px 24px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .api-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(140,176,178,0.3), transparent);
+    }
+    .api-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .api-card-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+    }
+    .api-card-dot.red   { background: #ff5f57; }
+    .api-card-dot.amber { background: #febc2e; }
+    .api-card-dot.green { background: #28c840; }
+    .api-card-label {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.04em;
+    }
+    .api-code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      line-height: 1.8;
+      white-space: pre;
+    }
+    /* JSON syntax colors */
+    .jk  { color: #8cb0b2; }   /* keys — violet */
+    .js  { color: #5ccfa3; }   /* strings */
+    .jt  { color: #5ccfa3; }   /* true */
+    .jf  { color: #ef4444; }   /* false */
+    .jn  { color: #c6a673; }   /* numbers */
+    .jp  { color: rgba(255,255,255,0.35); } /* punctuation */
+    .jb  { color: rgba(255,255,255,0.15); } /* braces */
+    .jc  { color: rgba(255,255,255,0.22); } /* comment */
+    /* special highlight for safe_for_autonomous */
+    .j-safe { color: #5ccfa3; font-weight: 600; }
+
+    /* ─── SECTION COMMONS ───────────────────────────────────────────────────── */
+    .section-label {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--violet);
+      margin-bottom: 14px;
+    }
+    .sh2 {
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .ssub {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    /* ─── SIGNAL CARDS ──────────────────────────────────────────────────────── */
+    .signals-section {
+      padding: 88px 0;
+      background: var(--bg-alt);
+    }
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .signal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--rlg);
+      padding: 32px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .signal-card:hover {
+      border-color: var(--border2);
+      box-shadow: 0 8px 32px rgba(46,147,111,0.08);
+    }
+    .signal-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 20px;
+    }
+    .signal-icon.sky   { background: rgba(46,147,111,0.12); }
+    .signal-icon.violet { background: rgba(140,176,178,0.15); }
+    .signal-icon.amber { background: rgba(198,166,115,0.15); }
+    .signal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .signal-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 4px;
+      margin-bottom: 14px;
+    }
+    .signal-tag.sky    { background: rgba(46,147,111,0.10); color: var(--sky); }
+    .signal-tag.violet { background: rgba(140,176,178,0.14); color: var(--violet); }
+    .signal-tag.amber  { background: rgba(198,166,115,0.14); color: var(--amber); }
+    .signal-body {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ─── INTEGRATION SECTION ───────────────────────────────────────────────── */
+    .integration-section {
+      padding: 88px 0;
+    }
+    .integration-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    .integration-card {
+      border-radius: var(--rlg);
+      padding: 36px;
+      border: 1px solid var(--border);
+    }
+    .integration-card.before {
+      background: var(--surface);
+    }
+    .integration-card.after {
+      background: rgba(46,147,111,0.04);
+      border-color: rgba(46,147,111,0.22);
+    }
+    .integration-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .integration-label.before-label { color: var(--dim); }
+    .integration-label.after-label  { color: var(--sky); }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .flow-step:last-child { margin-bottom: 0; }
+    .flow-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .flow-num.before-num {
+      background: var(--bg-alt);
+      color: var(--dim);
+    }
+    .flow-num.after-num {
+      background: rgba(46,147,111,0.14);
+      color: var(--sky);
+    }
+    .flow-text {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .flow-text strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .flow-highlight {
+      background: rgba(46,147,111,0.08);
+      border: 1px solid rgba(46,147,111,0.18);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      margin-top: 20px;
+      font-size: 0.82rem;
+      color: var(--sky);
+      font-weight: 600;
+    }
+
+    /* ─── OPERATORS SECTION ─────────────────────────────────────────────────── */
+    .operators-section {
+      padding: 88px 0;
+      background: var(--bg-alt);
+    }
+    .operators-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .operator-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--rlg);
+      padding: 32px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .operator-card:hover {
+      border-color: rgba(140,176,178,0.35);
+      box-shadow: 0 8px 32px rgba(140,176,178,0.10);
+    }
+    .operator-icon {
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .operator-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .operator-example {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--violet);
+      margin-bottom: 12px;
+    }
+    .operator-body {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ─── CODE SECTION ──────────────────────────────────────────────────────── */
+    .code-section {
+      padding: 88px 0;
+    }
+    .code-block {
+      background: #1a1a18;
+      border-radius: var(--rlg);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    }
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .cb-dot { width: 11px; height: 11px; border-radius: 50%; }
+    .cb-dot.red   { background: #ff5f57; }
+    .cb-dot.amber { background: #febc2e; }
+    .cb-dot.green { background: #28c840; }
+    .cb-lang {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.06em;
+    }
+    .code-body {
+      padding: 24px 28px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.85;
+      overflow-x: auto;
+    }
+    .code-comment { color: rgba(255,255,255,0.28); }
+    .code-key     { color: #8cb0b2; }
+    .code-val     { color: #5ccfa3; }
+    .code-num     { color: #c6a673; }
+    .code-cmd     { color: rgba(255,255,255,0.75); }
+    .code-url     { color: #c6a673; }
+    .code-flag    { color: #956bad; }
+
+    /* ─── TIER NOTE ─────────────────────────────────────────────────────────── */
+    .tier-note-section {
+      padding: 40px 0;
+      background: var(--bg-alt);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .tier-note-inner {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .tier-note-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .tier-note-text {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .tier-note-text strong {
+      color: var(--text);
+    }
+    .tier-note-text a {
+      color: var(--sky);
+      font-weight: 600;
+    }
+    .tier-note-text a:hover {
+      text-decoration: underline;
+    }
+
+    /* ─── CTA SECTION ───────────────────────────────────────────────────────── */
+    .cta-section {
+      padding: 100px 0;
+      text-align: center;
+    }
+    .cta-section .sh2 {
+      margin-bottom: 16px;
+    }
+    .cta-section .ssub {
+      margin: 0 auto 36px;
+    }
+    .cta-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ─── FOOTER ────────────────────────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-copy {
+      font-size: 0.82rem;
+      color: var(--dim);
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--dim);
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--muted); }
+
+    /* ─── SIGNUP MODAL ──────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(3,7,26,0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      padding: 40px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.10);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      color: var(--dim); font-size: 1.2rem;
+      padding: 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal h2 {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .modal-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 28px; }
+    .modal label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .modal input[type=email] {
+      width: 100%;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text);
+      padding: 12px 16px; font-size: 0.95rem;
+      font-family: var(--font); outline: none; margin-bottom: 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .modal input[type=email]:focus {
+      border-color: var(--sky); box-shadow: 0 0 0 3px rgba(46,147,111,0.12);
+    }
+    .modal-cta {
+      width: 100%; background: var(--grad); color: #fff; border: none;
+      padding: 13px; border-radius: var(--r); font-size: 0.92rem;
+      font-weight: 700; transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(46,147,111,0.2);
+    }
+    .modal-cta:hover { opacity: 0.9; }
+    .modal-note {
+      text-align: center; font-size: 0.75rem; color: var(--dim);
+      margin-top: 14px;
+    }
+    .modal-success { text-align: center; padding: 16px 0; }
+    .modal-success .success-icon {
+      font-size: 2.5rem; margin-bottom: 16px;
+    }
+    .modal-success h3 {
+      font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .modal-success p { font-size: 0.87rem; color: var(--muted); }
+
+    /* ─── SCROLL ANIMATIONS ─────────────────────────────────────────────────── */
+    [data-fade] {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    [data-fade].visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    [data-fade-group] > * {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    [data-fade-group].visible > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    [data-fade-group].visible > *:nth-child(2) { transition-delay: 75ms; }
+    [data-fade-group].visible > *:nth-child(3) { transition-delay: 150ms; }
+    [data-fade-group].visible > *:nth-child(4) { transition-delay: 225ms; }
+
+    /* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .signals-grid { grid-template-columns: 1fr; }
+      .integration-grid { grid-template-columns: 1fr; }
+      .operators-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .container { padding: 0 20px; }
+      .hero-section { padding-top: 100px; padding-bottom: 64px; }
+      .hero-h1 { font-size: 2rem; }
+      .hero-ctas { flex-direction: column; align-items: flex-start; }
+      .api-card { padding: 20px 18px 16px; }
+      .api-code { font-size: 0.7rem; }
+      .signals-section, .integration-section, .operators-section,
+      .code-section, .cta-section { padding: 64px 0; }
+      .sh2 { font-size: 1.7rem; }
+      .signal-card, .operator-card, .integration-card { padding: 24px; }
+      .cta-btns { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ──────────────────────────────────────────────────────────────── -->
+<div id="gc-nav-placeholder"></div>
+
+<!-- ─── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="container">
+    <div class="hero-inner">
+      <!-- Left: copy -->
+      <div class="hero-left">
+        <div class="hero-badge">Drone Delivery &middot; Autonomous Vehicles &middot; FAA Airspace</div>
+        <h1 class="hero-h1">
+          Go/no-go for every<br>delivery address.<br>
+          <span class="grad-text">One call. FAA-sourced.</span>
+        </h1>
+        <p class="hero-sub">
+          GeoClear returns FAA airspace classification, drone deliverability flag, and estimated landing zone confidence for any US address &mdash; the pre-flight check your dispatch system needs before a drone leaves the ground.
+        </p>
+        <div class="hero-ctas">
+          <button class="btn-primary" onclick="openModal()">Get free API key &rarr;</button>
+          <a href="/docs" class="btn-ghost">See full API docs &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Right: API response card -->
+      <div class="hero-right">
+        <div class="api-card">
+          <div class="api-card-header">
+            <span class="api-card-dot red"></span>
+            <span class="api-card-dot amber"></span>
+            <span class="api-card-dot green"></span>
+            <span class="api-card-label">GET /v1/address · 200 OK · 4ms</span>
+          </div>
+          <div class="api-code"><span class="jb">{</span>
+  <span class="jk">"drone_deliverable"</span><span class="jp">:</span> <span class="jt">true</span><span class="jp">,</span>
+  <span class="jk">"airspace_class"</span><span class="jp">:</span> <span class="js">"G"</span><span class="jp">,</span>
+  <span class="jk">"faa_uasfm_class"</span><span class="jp">:</span> <span class="js">"G"</span><span class="jp">,</span>
+  <span class="jk">"airspace_ceiling_ft"</span><span class="jp">:</span> <span class="jn">400</span><span class="jp">,</span>
+  <span class="jk">"landing_zone_confidence"</span><span class="jp">:</span> <span class="jn">0.87</span><span class="jp">,</span>
+  <span class="jk">"address_type"</span><span class="jp">:</span> <span class="js">"residential"</span><span class="jp">,</span>
+  <span class="jk">"latitude"</span><span class="jp">:</span> <span class="jn">33.4484</span><span class="jp">,</span>
+  <span class="jk">"longitude"</span><span class="jp">:</span> <span class="jn">-112.074</span><span class="jp">,</span>
+  <span class="jk">"address_confidence"</span><span class="jp">:</span> <span class="jn">0.96</span><span class="jp">,</span>
+  <span class="jk">"_flags"</span><span class="jp">:</span> <span class="jb">{</span>
+    <span class="jk">"controlled_airspace"</span><span class="jp">:</span> <span class="jf">false</span><span class="jp">,</span>
+    <span class="jk">"no_fly_zone"</span><span class="jp">:</span> <span class="jf">false</span><span class="jp">,</span>
+    <span class="jk">"safe_for_autonomous"</span><span class="jp">:</span> <span class="j-safe">true</span>
+  <span class="jb">}</span>
+<span class="jb">}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SIGNAL CARDS ──────────────────────────────────────────────────────── -->
+<section class="signals-section">
+  <div class="container">
+    <div class="section-label" data-fade>Three airspace signals</div>
+    <h2 class="sh2" data-fade>Everything your dispatch system needs to decide.</h2>
+    <p class="ssub" data-fade>No chart parsing. No UASFM tile lookups. No manual cross-referencing. GeoClear returns all three signals in a single JSON response, ready to wire into pre-flight logic.</p>
+
+    <div class="signals-grid" data-fade-group>
+      <!-- Card 1 -->
+      <div class="signal-card">
+        <div class="signal-icon sky">&#9992;</div>
+        <div class="signal-tag sky">FAA Airspace Class</div>
+        <div class="signal-title">UASFM-sourced classification</div>
+        <p class="signal-body">
+          Returns Class A&ndash;G and UAS Facility Map classification for the address location. Class G below 400&thinsp;ft is clear for Part 107 autonomous operations without a waiver. Updated from FAA quarterly releases &mdash; always current, never stale.
+        </p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="signal-card">
+        <div class="signal-icon violet">&#9679;</div>
+        <div class="signal-tag violet">Drone Deliverability Flag</div>
+        <div class="signal-title">Binary go/no-go for dispatch</div>
+        <p class="signal-body">
+          A single <code style="font-family:var(--mono);font-size:0.82rem;color:var(--sky);background:rgba(46,147,111,0.08);padding:1px 6px;border-radius:4px;">drone_deliverable: true/false</code> derived from airspace class, address type, and landing zone confidence. Integrate directly into dispatch logic &mdash; no airspace chart parsing required.
+        </p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="signal-card">
+        <div class="signal-icon amber">&#9632;</div>
+        <div class="signal-tag amber">Landing Zone Confidence</div>
+        <div class="signal-title">Scored 0&ndash;1 per address</div>
+        <p class="signal-body">
+          Estimated probability of a safe, clear landing area at the delivery address. Based on address type (residential/commercial), parcel geometry, and address placement precision. Use as a routing signal for edge cases where a go/no-go alone isn&rsquo;t enough.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INTEGRATION SECTION ───────────────────────────────────────────────── -->
+<section class="integration-section">
+  <div class="container">
+    <div class="section-label" data-fade>Integration</div>
+    <h2 class="sh2" data-fade>From 30&thinsp;sec per address to &lt;5ms.</h2>
+    <p class="ssub" data-fade>Manual airspace verification doesn&rsquo;t scale. GeoClear plugs into your dispatch pipeline as a single API call and returns everything your routing layer needs to make a go/no-go decision automatically.</p>
+
+    <div class="integration-grid">
+      <!-- Before -->
+      <div class="integration-card before">
+        <div class="integration-label before-label">Pre-GeoClear dispatch flow</div>
+        <div class="flow-step">
+          <div class="flow-num before-num">1</div>
+          <div class="flow-text">Pull FAA SUA map manually from FAA.gov for each delivery region</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num before-num">2</div>
+          <div class="flow-text">Cross-reference address coordinates against UASFM tile grid</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num before-num">3</div>
+          <div class="flow-text">Estimate landing zone from street view or satellite imagery review</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num before-num">4</div>
+          <div class="flow-text"><strong>30+ seconds per address</strong> &mdash; unworkable for batch manifests</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num before-num">5</div>
+          <div class="flow-text">No API. No automation. Requires a trained operator for every decision</div>
+        </div>
+      </div>
+
+      <!-- After -->
+      <div class="integration-card after">
+        <div class="integration-label after-label">With GeoClear</div>
+        <div class="flow-step">
+          <div class="flow-num after-num">1</div>
+          <div class="flow-text"><strong>One API call per address</strong> &mdash; airspace class + drone flag + coordinates in a single response</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num after-num">2</div>
+          <div class="flow-text"><strong>&lt;5ms server-side</strong> latency. Batch your full delivery manifest in seconds before the dispatch window opens</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num after-num">3</div>
+          <div class="flow-text">FAA-sourced data, updated quarterly. No stale tile caches. No manual refresh required</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num after-num">4</div>
+          <div class="flow-text">Dispatch-system ready JSON &mdash; wire <code style="font-family:var(--mono);font-size:0.8rem;color:var(--sky)">drone_deliverable</code> directly into your routing logic</div>
+        </div>
+        <div class="flow-highlight">
+          Every address in your manifest checked before a single drone is dispatched. Automatically.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── OPERATORS SECTION ─────────────────────────────────────────────────── -->
+<section class="operators-section">
+  <div class="container">
+    <div class="section-label" data-fade>Supported operators</div>
+    <h2 class="sh2" data-fade>Built for the teams that move goods autonomously.</h2>
+    <p class="ssub" data-fade>From last-mile drone fleets to sidewalk robots, GeoClear serves any operator that needs address-level airspace data at scale.</p>
+
+    <div class="operators-grid" data-fade-group>
+      <!-- Card 1 -->
+      <div class="operator-card">
+        <span class="operator-icon">&#128640;</span>
+        <div class="operator-title">Last-mile drone delivery</div>
+        <div class="operator-example">e.g. Wing, Amazon Prime Air, Zipline</div>
+        <p class="operator-body">
+          Batch pre-flight checks for entire delivery manifests before the dispatch window opens. GeoClear processes hundreds of addresses per second, returning a deliverability flag for each. Your dispatch system makes go/no-go decisions automatically &mdash; no operator review required for standard Class G addresses.
+        </p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="operator-card">
+        <span class="operator-icon">&#129302;</span>
+        <div class="operator-title">Autonomous ground vehicles</div>
+        <div class="operator-example">e.g. Starship, Serve Robotics, Nuro</div>
+        <p class="operator-body">
+          Sidewalk robots and self-driving delivery vehicles use <code style="font-family:var(--mono);font-size:0.8rem;color:var(--sky)">address_confidence</code> and <code style="font-family:var(--mono);font-size:0.8rem;color:var(--sky)">landing_zone_confidence</code> to route to a safe handoff zone when the primary delivery point is ambiguous. Precise geocoordinates from 120M+ verified addresses mean your vehicle arrives at the correct location, not the nearest intersection.
+        </p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="operator-card">
+        <span class="operator-icon">&#128247;</span>
+        <div class="operator-title">Drone survey &amp; inspection</div>
+        <div class="operator-example">e.g. utility, construction, insurance</div>
+        <p class="operator-body">
+          Airspace class determines whether FAA authorization is required before flight. GeoClear tells you upfront whether a site inspection address sits in controlled airspace &mdash; so your field teams know to file a LAANC waiver before mobilizing, not after arriving on site.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CODE SECTION ──────────────────────────────────────────────────────── -->
+<section class="code-section">
+  <div class="container">
+    <div class="section-label" data-fade>Integration</div>
+    <h2 class="sh2" data-fade>One request. Drone-ready fields in the response.</h2>
+    <p class="ssub" data-fade>Pass your delivery address. Get back everything you need for pre-flight go/no-go in a single JSON response. No post-processing. No external lookups.</p>
+
+    <div class="code-block" data-fade>
+      <div class="code-block-header">
+        <span class="cb-dot red"></span>
+        <span class="cb-dot amber"></span>
+        <span class="cb-dot green"></span>
+        <span class="cb-lang">bash</span>
+      </div>
+      <div class="code-body"><span class="code-comment"># Pre-flight check — single delivery address</span>
+<span class="code-cmd">curl</span> <span class="code-url">"https://geoclear.io/v1/address?street=456+Maple+Ave&amp;city=Phoenix&amp;state=AZ&amp;key=YOUR_KEY"</span>
+
+<span class="code-comment"># Response (drone-relevant fields)</span>
+<span class="jp">{</span>
+  <span class="code-key">"drone_deliverable"</span><span class="jp">:</span>        <span class="jt">true</span><span class="jp">,</span>          <span class="code-comment"># go/no-go for dispatch</span>
+  <span class="code-key">"airspace_class"</span><span class="jp">:</span>            <span class="js">"G"</span><span class="jp">,</span>           <span class="code-comment"># FAA Class A–G</span>
+  <span class="code-key">"faa_uasfm_class"</span><span class="jp">:</span>           <span class="js">"G"</span><span class="jp">,</span>           <span class="code-comment"># UAS Facility Map class</span>
+  <span class="code-key">"airspace_ceiling_ft"</span><span class="jp">:</span>       <span class="jn">400</span><span class="jp">,</span>          <span class="code-comment"># max altitude without waiver</span>
+  <span class="code-key">"landing_zone_confidence"</span><span class="jp">:</span>   <span class="jn">0.87</span><span class="jp">,</span>         <span class="code-comment"># 0–1 probability of clear landing</span>
+  <span class="code-key">"address_confidence"</span><span class="jp">:</span>        <span class="jn">0.96</span><span class="jp">,</span>         <span class="code-comment"># geocoding precision</span>
+  <span class="code-key">"latitude"</span><span class="jp">:</span>                  <span class="jn">33.4484</span><span class="jp">,</span>      <span class="code-comment"># exact delivery coordinates</span>
+  <span class="code-key">"longitude"</span><span class="jp">:</span>                 <span class="jn">-112.074</span><span class="jp">,</span>
+  <span class="code-key">"_flags"</span><span class="jp">:</span> <span class="jp">{</span>
+    <span class="code-key">"controlled_airspace"</span><span class="jp">:</span>     <span class="jf">false</span><span class="jp">,</span>
+    <span class="code-key">"no_fly_zone"</span><span class="jp">:</span>             <span class="jf">false</span><span class="jp">,</span>
+    <span class="code-key">"safe_for_autonomous"</span><span class="jp">:</span>     <span class="j-safe">true</span>
+  <span class="jp">}</span>
+<span class="jp">}</span>
+
+<span class="code-comment"># Batch check — full manifest (Professional tier)</span>
+<span class="code-cmd">curl</span> <span class="code-flag">-X POST</span> <span class="code-url">"https://geoclear.io/v1/batch"</span> <span class="code-flag">\</span>
+  <span class="code-flag">-H</span> <span class="js">"Authorization: Bearer YOUR_KEY"</span> <span class="code-flag">\</span>
+  <span class="code-flag">-H</span> <span class="js">"Content-Type: application/json"</span> <span class="code-flag">\</span>
+  <span class="code-flag">-d</span> <span class="js">'{"addresses":[{"street":"456 Maple Ave","city":"Phoenix","state":"AZ"}]}'</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TIER NOTE ─────────────────────────────────────────────────────────── -->
+<section class="tier-note-section">
+  <div class="container">
+    <div class="tier-note-inner">
+      <div class="tier-note-icon">&#128274;</div>
+      <div class="tier-note-text">
+        <strong>Drone deliverability and airspace classification require the Professional plan ($499/mo).</strong>
+        All enrichment fields, batch processing, and priority support included.
+        Free plan includes address lookup and geocoordinates &mdash;
+        <a href="/#pricing">see full tier comparison &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA SECTION ───────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="section-label" data-fade>Get started</div>
+    <h2 class="sh2" data-fade>Pre-check your next delivery manifest.</h2>
+    <p class="ssub" data-fade>
+      Start with 10,000 free lookups. No credit card required. Upgrade to Professional for drone deliverability, airspace classification, and batch manifest checks.
+    </p>
+    <div class="cta-btns" data-fade>
+      <button class="btn-primary" style="font-size:1rem;padding:15px 32px;" onclick="openModal()">
+        Get free API key &rarr;
+      </button>
+      <a href="/docs" class="btn-ghost" style="font-size:1rem;padding:14px 28px;">
+        Read the docs
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <p class="footer-copy">&copy; GeoClear</p>
+      <nav class="footer-links">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/docs">Docs</a>
+        <a href="/">Back to main site</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── MODAL ─────────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&#10005;</button>
+
+    <div id="modal-form">
+      <h2 id="modal-title">Get your free API key</h2>
+      <p class="modal-sub">10,000 lookups/month, all enrichment fields included. No credit card. Instant delivery. Open to teams worldwide.</p>
+      <label for="modal-email">Work email</label>
+      <input type="email" id="modal-email" placeholder="you@company.com" />
+      <button class="modal-cta" onclick="submitSignup()">Get my free key &rarr;</button>
+      <p class="modal-note">By signing up you agree to our <a href="/terms" style="color:var(--sky)">Terms</a> and <a href="/privacy" style="color:var(--sky)">Privacy Policy</a>.</p>
+    </div>
+
+    <div id="modal-success" class="modal-success" style="display:none">
+      <div class="success-icon">&#10003;</div>
+      <h3>Check your inbox</h3>
+      <p>Your API key has been sent to<br><strong id="modal-sent-email" style="color:var(--sky)"></strong></p>
+      <p style="margin-top:12px;font-size:0.8rem;color:var(--dim)">
+        Start with:<br>
+        <span style="font-family:var(--mono);font-size:0.75rem;color:var(--sky)">
+          GET /v1/address?street=...&amp;city=...&amp;state=...
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── JS ────────────────────────────────────────────────────────────────── -->
+<script>
+  /* ── Modal ── */
+  let _pendingTier = null;
+
+  function openModal(tier) {
+    _pendingTier = tier || null;
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (tier && tier !== 'free') {
+      const labels = { growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
+      if (titleEl) titleEl.textContent = 'Get started with ' + (labels[tier] || tier);
+      if (ctaEl)   ctaEl.textContent   = 'Continue to checkout →';
+    } else {
+      if (titleEl) titleEl.textContent = 'Get your free API key';
+      if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    }
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('modal-email').focus();
+  }
+
+  function closeModal() {
+    _pendingTier = null;
+    document.getElementById('modal').classList.remove('open');
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (titleEl) titleEl.textContent = 'Get your free API key';
+    if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    document.getElementById('modal-form').style.display = '';
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal-email').value = '';
+  }
+
+  function closeOnOverlay(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  async function submitSignup() {
+    const email = document.getElementById('modal-email').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('modal-email').style.borderColor = 'var(--red)';
+      return;
+    }
+    const btn = document.querySelector('.modal-cta');
+    btn.disabled = true;
+
+    if (_pendingTier && _pendingTier !== 'free') {
+      btn.textContent = 'Redirecting to checkout…';
+      try {
+        const r = await fetch('/v1/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, tier: _pendingTier })
+        });
+        const data = await r.json();
+        if (data.ok && data.data?.url) {
+          window.location.href = data.data.url;
+        } else {
+          btn.textContent = data.error || 'Error — try again';
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = 'Error — try again';
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    btn.textContent = 'Sending…';
+    try {
+      const r = await fetch('/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, tier: 'free', name: email.split('@')[0] })
+      });
+      const data = await r.json();
+      if (data.ok || data.key) {
+        document.getElementById('modal-sent-email').textContent = email;
+        document.getElementById('modal-form').style.display = 'none';
+        document.getElementById('modal-success').style.display = 'block';
+      } else {
+        btn.textContent = data.error || 'Error — try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+    }
+  }
+
+  function openCheckout(tier) {
+    openModal(tier);
+  }
+
+  /* ── Auto-open modal on #signup hash ── */
+  if (window.location.hash === '#signup') openModal();
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#signup') openModal();
+  });
+
+  /* ── Scroll fade-up animations ── */
+  (function initScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('[data-fade]').forEach(el => observer.observe(el));
+    document.querySelectorAll('[data-fade-group]').forEach(el => observer.observe(el));
+  })();
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>

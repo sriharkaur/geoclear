@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GeoClear scores every US address for deliverability, fraud risk, and vacancy. One API call — no model to train. Built for fintech fraud teams, KYC/AML, and e-commerce risk." />
+  <meta property="og:title" content="GeoClear — Address Risk Intelligence for Fintech & E-commerce" />
+  <meta property="og:description" content="Flag the address before the chargeback hits. Deliverability, fraud score, and vacancy signal in one call." />
+  <meta name="theme-color" content="#faf9f7" />
+  <title>GeoClear — Address Risk for Fintech, Fraud & KYC</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
+    :root {
+      /* Backgrounds */
+      --bg:       #faf9f7;
+      --bg-alt:   #f2f0ed;
+      --surface:  #ffffff;
+      --surface2: #f0ebe4;
+      --glass:    rgba(250,249,247,0.85);
+
+      /* Borders */
+      --border:   rgba(46,147,111,0.12);
+      --border2:  rgba(46,147,111,0.2);
+      --border3:  rgba(46,147,111,0.32);
+
+      /* Text */
+      --text:     #242220;
+      --muted:    #7a6e68;
+      --dim:      #a58979;
+
+      /* Brand */
+      --sky:      #2e936f;
+      --indigo:   #956bad;
+      --violet:   #8cb0b2;
+      --green:    #2e936f;
+      --amber:    #c6a673;
+      --red:      #eb8771;
+
+      /* Gradients */
+      --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
+      --grad-r:   linear-gradient(135deg, #8cb0b2 0%, #2e936f 100%);
+      --grad-red: linear-gradient(135deg, #eb8771 0%, #c6a673 100%);
+      --glow:     rgba(46, 147, 111, 0.08);
+
+      /* Type */
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+
+      /* Shape */
+      --r:   8px;
+      --rlg: 14px;
+      --rxl: 20px;
+      --max: 1140px;
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
+
+    /* ─── SCROLLBAR ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    /* ─── UTILITY ───────────────────────────────────────────────────────────── */
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .grad-text {
+      background: var(--grad-red);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── SECTION LABELS ────────────────────────────────────────────────────── */
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.76rem; font-weight: 700;
+      color: var(--sky); letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-label::before {
+      content: '';
+      display: block; width: 18px; height: 1.5px;
+      background: var(--sky); opacity: 0.7;
+    }
+    .sh2 {
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+      margin-bottom: 18px;
+    }
+    .ssub {
+      font-size: 1.1rem; color: var(--muted); line-height: 1.75;
+      max-width: 540px; margin-bottom: 56px;
+    }
+
+    /* ─── BUTTONS ───────────────────────────────────────────────────────────── */
+    .btn-primary {
+      background: var(--grad);
+      color: #fff; border: none;
+      padding: 14px 28px; border-radius: var(--r);
+      font-size: 0.975rem; font-weight: 700;
+      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 24px rgba(46,147,111,0.2);
+    }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 32px rgba(46,147,111,0.35); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      padding: 13px 24px; border-radius: var(--r);
+      border: 1px solid var(--border2); font-size: 0.975rem; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--border3); background: var(--surface); }
+    .btn-red {
+      background: var(--grad-red);
+      color: #fff; border: none;
+      padding: 14px 28px; border-radius: var(--r);
+      font-size: 0.975rem; font-weight: 700;
+      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 24px rgba(235,135,113,0.25);
+    }
+    .btn-red:hover { opacity: 0.9; box-shadow: 0 4px 32px rgba(235,135,113,0.38); }
+
+    /* ─── HERO ──────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative; overflow: hidden;
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 120px 0 80px;
+      background: #efefed;
+      border-bottom: 1px solid rgba(46,147,111,0.12);
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(circle, rgba(235,135,113,0.10) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 80%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 80%, transparent 100%);
+    }
+    .hero-orb {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 100% at 0% 50%, rgba(235,135,113,0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 100% at 100% 50%, rgba(198,166,115,0.04) 0%, transparent 70%);
+    }
+    .hero-orb2 {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(to bottom, rgba(250,249,247,0.35) 0%, transparent 18%),
+        linear-gradient(to top,    rgba(250,249,247,0.35) 0%, transparent 18%);
+    }
+    .hero-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: grid; grid-template-columns: 1.05fr 0.95fr;
+      gap: 80px; align-items: center;
+      position: relative; z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(235,135,113,0.07);
+      border: 1px solid rgba(235,135,113,0.22);
+      border-radius: 30px;
+      padding: 5px 14px 5px 8px;
+      font-size: 0.78rem; font-weight: 600; color: var(--red);
+      margin-bottom: 28px; width: fit-content;
+      letter-spacing: 0.01em;
+    }
+    .badge-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+      box-shadow: 0 0 10px var(--red);
+      animation: badge-pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 10px currentColor; }
+      50% { opacity: 0.4; box-shadow: 0 0 4px currentColor; }
+    }
+    .hero h1 {
+      font-size: clamp(3rem, 5.5vw, 5rem);
+      font-weight: 800;
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+      margin-bottom: 26px;
+    }
+    .hero-sub {
+      font-size: 1.2rem; color: var(--muted);
+      line-height: 1.75; max-width: 500px;
+      margin-bottom: 40px;
+      font-weight: 400;
+    }
+    .hero-btns {
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+
+    /* ─── HERO TERMINAL ─────────────────────────────────────────────────────── */
+    .terminal-wrap { position: relative; }
+    .terminal-halo {
+      position: absolute; inset: -30px;
+      background: radial-gradient(ellipse at 50% 50%, rgba(235,135,113,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .terminal {
+      background: #1a1a18;
+      border: 1px solid rgba(235,135,113,0.18);
+      border-radius: var(--rxl);
+      overflow: hidden;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.14),
+        0 0 0 1px rgba(235,135,113,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      position: relative; z-index: 1;
+    }
+    .term-titlebar {
+      background: #141412;
+      padding: 13px 18px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid rgba(235,135,113,0.10);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #FF5F57; } .dot-y { background: #FEBC2E; } .dot-g { background: #28C840; }
+    .term-title {
+      margin-left: auto; font-size: 0.7rem; color: var(--dim);
+      font-family: var(--mono); letter-spacing: 0.05em;
+    }
+    .term-body {
+      padding: 22px 24px;
+      font-family: var(--mono); font-size: 0.78rem; line-height: 1.9;
+      color: #c9c5be;
+    }
+    /* Token colors — fraud-focused palette */
+    .tj  { color: #8cb0b2; }            /* key */
+    .ts  { color: #5ccfa3; }            /* string value */
+    .tn  { color: #c6a673; }            /* number */
+    .tb-t { color: #5ccfa3; }           /* boolean true */
+    .tb-f { color: #ef4444; }           /* boolean false */
+    .tp  { color: #6b7280; }            /* punctuation */
+    .td  { color: #6b7280; }            /* dim */
+
+    /* High-fraud badge in the JSON */
+    .fraud-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.28);
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.7rem; font-weight: 700; color: #ef4444;
+      font-family: var(--mono);
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+
+    /* ─── SIGNAL CARDS ──────────────────────────────────────────────────────── */
+    .signals-section { padding: 96px 0; background: var(--bg); }
+    .signals-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      overflow: hidden;
+      margin-top: 48px;
+    }
+    .signal-card {
+      background: var(--bg-alt);
+      padding: 36px 32px;
+      position: relative;
+      transition: background 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .signal-card:hover { background: var(--surface); }
+    .signal-card.accent-red  { border-left-color: var(--red); }
+    .signal-card.accent-sky  { border-left-color: var(--sky); }
+    .signal-card.accent-amber { border-left-color: var(--amber); }
+    .signal-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 20px;
+    }
+    .signal-icon.red-icon  { background: rgba(235,135,113,0.10); border: 1px solid rgba(235,135,113,0.2); }
+    .signal-icon.sky-icon  { background: rgba(46,147,111,0.08); border: 1px solid rgba(46,147,111,0.15); }
+    .signal-icon.amber-icon { background: rgba(198,166,115,0.10); border: 1px solid rgba(198,166,115,0.2); }
+    .signal-name {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .signal-name.red   { color: var(--red); }
+    .signal-name.sky   { color: var(--sky); }
+    .signal-name.amber { color: var(--amber); }
+    .signal-title {
+      font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .signal-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.72; }
+    .signal-range {
+      display: inline-flex; align-items: center; gap: 7px;
+      margin-top: 20px;
+      font-size: 0.78rem; font-family: var(--mono);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 12px; color: var(--muted);
+    }
+    .range-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .range-dot.red   { background: var(--red); }
+    .range-dot.sky   { background: var(--sky); }
+    .range-dot.amber { background: var(--amber); }
+
+    /* ─── USE CASE SECTION ──────────────────────────────────────────────────── */
+    .usecase-section { padding: 96px 0; background: var(--bg-alt); }
+    .usecase-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px; margin-top: 48px;
+    }
+    .uc-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 32px 28px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .uc-card:hover {
+      box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+      border-color: var(--border3);
+    }
+    .uc-eyebrow {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--red);
+      margin-bottom: 12px;
+    }
+    .uc-title {
+      font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .uc-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.72; }
+    .uc-signal {
+      margin-top: 20px; padding: 10px 14px;
+      background: var(--bg-alt); border-radius: 6px;
+      border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 0.76rem;
+      color: var(--muted);
+    }
+    .uc-signal span { color: var(--red); font-weight: 600; }
+
+    /* ─── CODE SECTION ──────────────────────────────────────────────────────── */
+    .code-section { padding: 96px 0; background: var(--bg); }
+    .code-section .code-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center;
+    }
+    .code-block {
+      background: #1a1a18;
+      border: 1px solid rgba(235,135,113,0.14);
+      border-radius: var(--rxl);
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.09);
+    }
+    .code-header {
+      background: #141412;
+      padding: 13px 18px;
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid rgba(235,135,113,0.08);
+    }
+    .code-header .dot { }
+    .code-file {
+      margin-left: auto; font-size: 0.7rem; color: var(--dim);
+      font-family: var(--mono); letter-spacing: 0.04em;
+    }
+    .code-body {
+      padding: 22px 24px;
+      font-family: var(--mono); font-size: 0.77rem;
+      line-height: 1.85; overflow-x: auto;
+      color: #c9c5be;
+    }
+    .code-body .cmd  { color: #c6a673; }
+    .code-body .url  { color: #5ccfa3; }
+    .code-body .flag { color: #8cb0b2; }
+    .code-body .cmt  { color: #4b5563; }
+    .code-copy {
+      font-size: 0.82rem; color: var(--muted);
+    }
+    .code-copy h3 {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 14px;
+    }
+    .code-copy p { color: var(--muted); line-height: 1.72; margin-bottom: 12px; }
+    .code-copy .field-list {
+      list-style: none; margin: 20px 0 0;
+    }
+    .code-copy .field-list li {
+      display: flex; align-items: baseline; gap: 10px;
+      font-size: 0.88rem; padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .code-copy .field-list li:last-child { border-bottom: none; }
+    .field-key {
+      font-family: var(--mono); font-size: 0.8rem;
+      color: var(--sky); font-weight: 500; flex-shrink: 0;
+    }
+    .field-desc { color: var(--muted); font-size: 0.85rem; }
+
+    /* ─── TIER NOTE ─────────────────────────────────────────────────────────── */
+    .tier-section { padding: 48px 0; background: var(--bg-alt); }
+    .tier-banner {
+      max-width: 760px; margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rlg);
+      padding: 28px 36px;
+      display: flex; align-items: flex-start; gap: 20px;
+    }
+    .tier-icon {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(46,147,111,0.08); border: 1px solid rgba(46,147,111,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .tier-text { }
+    .tier-text strong { font-weight: 700; color: var(--text); }
+    .tier-text p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; margin-top: 4px; }
+    .tier-badge {
+      display: inline-flex; align-items: center;
+      background: rgba(235,135,113,0.08); border: 1px solid rgba(235,135,113,0.2);
+      border-radius: 5px; padding: 2px 8px;
+      font-size: 0.75rem; font-weight: 600; color: var(--red);
+      font-family: var(--mono); margin-left: 6px;
+    }
+
+    /* ─── CTA SECTION ───────────────────────────────────────────────────────── */
+    .cta-section {
+      position: relative; overflow: hidden;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .cta-orb {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(235,135,113,0.06) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cta-inner {
+      max-width: var(--max); margin: 0 auto; padding: 96px 32px;
+      text-align: center; position: relative; z-index: 1;
+    }
+    .cta-inner .sh2 { font-size: clamp(2.4rem, 4.5vw, 3.8rem); }
+    .cta-inner .ssub { margin: 0 auto 40px; text-align: center; }
+    .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ─── FOOTER ────────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .footer-inner {
+      max-width: var(--max); margin: 0 auto; padding: 48px 32px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 20px;
+    }
+    .footer-logo {
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 800; font-size: 1rem; letter-spacing: -0.02em;
+    }
+    .footer-nav {
+      display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    }
+    .footer-nav a {
+      font-size: 0.87rem; color: var(--dim);
+      transition: color 0.15s;
+    }
+    .footer-nav a:hover { color: var(--text); }
+    .footer-bottom {
+      max-width: var(--max); margin: 0 auto;
+      padding: 16px 32px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-bottom p { font-size: 0.82rem; color: var(--dim); }
+    .footer-bottom-links { display: flex; gap: 20px; }
+    .footer-bottom-links a { font-size: 0.82rem; color: var(--dim); transition: color 0.15s; }
+    .footer-bottom-links a:hover { color: var(--muted); }
+
+    /* ─── SIGNUP MODAL ──────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(3,7,26,0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      padding: 40px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.10);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      color: var(--dim); font-size: 1.2rem;
+      padding: 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal h2 {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .modal-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 28px; }
+    .modal label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .modal input[type=email] {
+      width: 100%;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text);
+      padding: 12px 16px; font-size: 0.95rem;
+      font-family: var(--font); outline: none; margin-bottom: 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .modal input[type=email]:focus {
+      border-color: var(--sky); box-shadow: 0 0 0 3px rgba(46,147,111,0.12);
+    }
+    .modal-cta {
+      width: 100%; background: var(--grad); color: #fff; border: none;
+      padding: 13px; border-radius: var(--r); font-size: 0.92rem;
+      font-weight: 700; transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(46,147,111,0.2);
+    }
+    .modal-cta:hover { opacity: 0.9; }
+    .modal-note {
+      text-align: center; font-size: 0.75rem; color: var(--dim);
+      margin-top: 14px;
+    }
+    .modal-success { text-align: center; padding: 16px 0; }
+    .modal-success .success-icon {
+      font-size: 2.5rem; margin-bottom: 16px;
+    }
+    .modal-success h3 {
+      font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .modal-success p { font-size: 0.87rem; color: var(--muted); }
+    .modal-key-box {
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); padding: 12px 16px;
+      font-family: var(--mono); font-size: 0.8rem;
+      color: var(--sky); word-break: break-all;
+      margin: 16px 0; text-align: left;
+    }
+
+    /* ─── SCROLL ANIMATIONS ─────────────────────────────────────────────────── */
+    [data-fade] {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    [data-fade].visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    [data-fade-group] > * {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    [data-fade-group].visible > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    [data-fade-group].visible > *:nth-child(2) { transition-delay: 75ms; }
+    [data-fade-group].visible > *:nth-child(3) { transition-delay: 150ms; }
+    [data-fade-group].visible > *:nth-child(4) { transition-delay: 225ms; }
+
+    /* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .signals-grid { grid-template-columns: 1fr; }
+      .usecase-grid { grid-template-columns: 1fr; }
+      .code-section .code-inner { grid-template-columns: 1fr; gap: 40px; }
+    }
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2.8rem; }
+      .hero-btns { flex-direction: column; }
+      .tier-banner { flex-direction: column; padding: 24px 20px; }
+      .footer-inner { flex-direction: column; gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ──────────────────────────────────────────────────────────────── NAV -->
+<div id="gc-nav-placeholder"></div>
+
+<!-- ──────────────────────────────────────────────────────────────── HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-orb2"></div>
+
+  <div class="hero-inner">
+    <!-- Left: copy -->
+    <div class="hero-copy">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Fintech · Fraud · KYC · E-commerce
+      </div>
+
+      <h1>
+        Flag the address before<br>
+        <span class="grad-text">the chargeback hits.</span>
+      </h1>
+
+      <p class="hero-sub">
+        GeoClear scores every US address for deliverability, fraud risk, and vacancy — before you ship, before you disburse, before you onboard. One call. No model to train.
+      </p>
+
+      <div class="hero-btns">
+        <button class="btn-red" onclick="openModal()">
+          Get free API key →
+        </button>
+        <a href="/docs" class="btn-ghost">
+          See risk docs →
+        </a>
+      </div>
+    </div>
+
+    <!-- Right: API response card -->
+    <div class="terminal-wrap">
+      <div class="terminal-halo"></div>
+      <div class="terminal">
+        <div class="term-titlebar">
+          <span class="dot dot-r"></span>
+          <span class="dot dot-y"></span>
+          <span class="dot dot-g"></span>
+          <span class="term-title">geoclear — address risk response</span>
+        </div>
+        <div class="term-body">
+<span class="tp">{</span><br>
+&nbsp;&nbsp;<span class="tj">"deliverability"</span><span class="tp">:</span> <span class="tn">0.94</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"fraud_score"</span><span class="tp">:</span> <span class="tn">0.81</span><span class="tp">,</span> <span class="fraud-badge">⚠ HIGH</span><br>
+&nbsp;&nbsp;<span class="tj">"vacancy_score"</span><span class="tp">:</span> <span class="tn">0.67</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"address_confidence"</span><span class="tp">:</span> <span class="tn">0.96</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"unit_count"</span><span class="tp">:</span> <span class="tn">1</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"address_type"</span><span class="tp">:</span> <span class="ts">"residential"</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"zip_type"</span><span class="tp">:</span> <span class="ts">"Standard"</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"rdi"</span><span class="tp">:</span> <span class="ts">"Residential"</span><span class="tp">,</span><br>
+&nbsp;&nbsp;<span class="tj">"_flags"</span><span class="tp">:</span> <span class="tp">{</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tj">"high_fraud_risk"</span><span class="tp">:</span> <span class="tb-f">true</span><span class="tp">,</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tj">"likely_vacant"</span><span class="tp">:</span> <span class="tb-f">true</span><span class="tp">,</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="tj">"address_verified"</span><span class="tp">:</span> <span class="tb-t">true</span><br>
+&nbsp;&nbsp;<span class="tp">}</span><br>
+<span class="tp">}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── SIGNAL CARDS -->
+<section class="signals-section">
+  <div class="container">
+    <div class="section-label" data-fade>Risk signals</div>
+    <h2 class="sh2" data-fade>Three scores. One call.</h2>
+    <p class="ssub" data-fade>No training pipeline. No data labeling. No model deployment. GeoClear returns pre-computed risk signals on every US address in under 5ms.</p>
+
+    <div class="signals-grid" data-fade-group>
+      <!-- Fraud score -->
+      <div class="signal-card accent-red">
+        <div class="signal-icon red-icon">🚨</div>
+        <div class="signal-name red">Fraud Score</div>
+        <div class="signal-title">Before shipment</div>
+        <p class="signal-desc">
+          Velocity, unit anomaly, and confirmed chargeback history. Returns 0–1. Above 0.6: hold for review. Above 0.8: decline. No training data needed.
+        </p>
+        <div class="signal-range">
+          <span class="range-dot red"></span>
+          <span>0.0 – 0.59 normal · 0.6–0.79 review · 0.8+ decline</span>
+        </div>
+      </div>
+
+      <!-- Deliverability -->
+      <div class="signal-card accent-sky">
+        <div class="signal-icon sky-icon">📦</div>
+        <div class="signal-name sky">Deliverability Score</div>
+        <div class="signal-title">Address confidence</div>
+        <p class="signal-desc">
+          Will this address receive a package? Based on address quality, placement precision, and query history. Below 0.4: route to pickup or flag for address verification.
+        </p>
+        <div class="signal-range">
+          <span class="range-dot sky"></span>
+          <span>0.0 – 0.39 undeliverable · 0.4–0.79 uncertain · 0.8+ confirmed</span>
+        </div>
+      </div>
+
+      <!-- Vacancy -->
+      <div class="signal-card accent-amber">
+        <div class="signal-icon amber-icon">🏚</div>
+        <div class="signal-name amber">Vacancy Signal</div>
+        <div class="signal-title">Skip tracing</div>
+        <p class="signal-desc">
+          Is the address currently occupied? Low query activity plus address class heuristics. Used for skip tracing, insurance lapse detection, and disbursement risk.
+        </p>
+        <div class="signal-range">
+          <span class="range-dot amber"></span>
+          <span>0.0 – 0.39 occupied · 0.4–0.69 uncertain · 0.7+ likely vacant</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── USE CASES -->
+<section class="usecase-section">
+  <div class="container">
+    <div class="section-label" data-fade>Use cases</div>
+    <h2 class="sh2" data-fade>Where teams deploy it</h2>
+    <p class="ssub" data-fade>GeoClear plugs into checkout flows, origination pipelines, and KYC stacks. Here's what fraud and compliance teams build first.</p>
+
+    <div class="usecase-grid" data-fade-group>
+      <!-- E-commerce -->
+      <div class="uc-card">
+        <div class="uc-eyebrow">E-commerce</div>
+        <div class="uc-title">Block ring farms at checkout</div>
+        <p class="uc-desc">
+          High <code style="font-size:0.82rem;font-family:var(--mono);color:var(--red)">fraud_score</code> combined with high <code style="font-size:0.82rem;font-family:var(--mono);color:var(--amber)">vacancy_score</code> is the signature of reshipping fraud. Flag the address before the label prints — not after the chargeback.
+        </p>
+        <div class="uc-signal">
+          if <span>fraud_score &gt; 0.8</span> &amp;&amp; <span>vacancy_score &gt; 0.65</span> → hold
+        </div>
+      </div>
+
+      <!-- Lending / BNPL -->
+      <div class="uc-card">
+        <div class="uc-eyebrow">Lending / BNPL</div>
+        <div class="uc-title">Address verification at origination</div>
+        <p class="uc-desc">
+          Deliverability below threshold signals a likely synthetic or forwarded address — a leading indicator of address fraud. Catch it before disbursement, not during collections.
+        </p>
+        <div class="uc-signal">
+          if <span>deliverability &lt; 0.4</span> → require secondary ID verification
+        </div>
+      </div>
+
+      <!-- KYC / AML -->
+      <div class="uc-card">
+        <div class="uc-eyebrow">KYC / AML</div>
+        <div class="uc-title">Confirm the address exists and is occupied</div>
+        <p class="uc-desc">
+          <code style="font-size:0.82rem;font-family:var(--mono);color:var(--sky)">address_confidence</code> plus <code style="font-size:0.82rem;font-family:var(--mono);color:var(--amber)">vacancy_score</code> together prove the customer has a real, active address — a signal required for enhanced due diligence programs.
+        </p>
+        <div class="uc-signal">
+          if <span>address_confidence &lt; 0.7</span> || <span>vacancy_score &gt; 0.7</span> → EDD
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── CODE EXAMPLE -->
+<section class="code-section">
+  <div class="code-inner">
+    <!-- Code block left -->
+    <div class="code-block" data-fade>
+      <div class="code-header">
+        <span class="dot dot-r"></span>
+        <span class="dot dot-y"></span>
+        <span class="dot dot-g"></span>
+        <span class="code-file">risk-check.sh</span>
+      </div>
+      <div class="code-body">
+<span class="cmt"># Single address risk check</span><br>
+<span class="cmd">curl</span> <span class="flag">-s</span> <span class="url">"https://geoclear.io/v1/address?<br>
+&nbsp;&nbsp;street=142+Elm+St<br>
+&nbsp;&nbsp;&amp;city=Chicago<br>
+&nbsp;&nbsp;&amp;state=IL<br>
+&nbsp;&nbsp;&amp;key=YOUR_KEY"</span><br>
+<br>
+<span class="cmt"># Fraud-relevant response fields</span><br>
+<span class="cmt"># ──────────────────────────────</span><br>
+<span class="flag">"fraud_score"</span><span style="color:#6b7280">:</span>        <span style="color:#c6a673">0.81</span><br>
+<span class="flag">"deliverability"</span><span style="color:#6b7280">:</span>    <span style="color:#c6a673">0.94</span><br>
+<span class="flag">"vacancy_score"</span><span style="color:#6b7280">:</span>     <span style="color:#c6a673">0.67</span><br>
+<span class="flag">"address_confidence"</span><span style="color:#6b7280">:</span><span style="color:#c6a673">0.96</span><br>
+<span class="flag">"address_type"</span><span style="color:#6b7280">:</span>     <span style="color:#5ccfa3">"residential"</span><br>
+<span class="flag">"rdi"</span><span style="color:#6b7280">:</span>              <span style="color:#5ccfa3">"Residential"</span><br>
+<span class="flag">"_flags"</span><span style="color:#6b7280">.</span><span class="flag">high_fraud_risk</span><span style="color:#6b7280">:</span> <span style="color:#ef4444">true</span>
+      </div>
+    </div>
+
+    <!-- Copy right -->
+    <div class="code-copy" data-fade>
+      <h3>One endpoint.<br>Instant risk signal.</h3>
+      <p>REST + JSON. No SDK, no configuration, no query language. Send a street address — get back fraud score, deliverability, vacancy, and address confidence in a single response.</p>
+      <p style="font-size:0.9rem;color:var(--muted);">All fraud-relevant fields are returned on the same call as address lookup, enrichment, and geocoding. No second request.</p>
+      <ul class="field-list">
+        <li>
+          <span class="field-key">fraud_score</span>
+          <span class="field-desc">0–1. Velocity + chargeback history + unit anomaly.</span>
+        </li>
+        <li>
+          <span class="field-key">deliverability</span>
+          <span class="field-desc">Will a parcel arrive? Address quality + precision score.</span>
+        </li>
+        <li>
+          <span class="field-key">vacancy_score</span>
+          <span class="field-desc">Is anyone home? Query activity + class heuristics.</span>
+        </li>
+        <li>
+          <span class="field-key">address_confidence</span>
+          <span class="field-desc">Match quality against 198M+ verified US records.</span>
+        </li>
+        <li>
+          <span class="field-key">_flags</span>
+          <span class="field-desc">Boolean shorthand: high_fraud_risk, likely_vacant, address_verified.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── TIER NOTE -->
+<div class="tier-section">
+  <div class="container">
+    <div class="tier-banner" data-fade>
+      <div class="tier-icon">💡</div>
+      <div class="tier-text">
+        <strong>Availability by plan</strong>
+        <p>
+          Deliverability and address confidence are available on all plans including Free (10,000 lookups/month, no credit card).
+          Fraud score and vacancy signal require <span class="tier-badge">Professional $499/mo</span>.
+          <a href="/#pricing" style="color:var(--sky);font-weight:600;margin-left:4px;">See all plans →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────── CTA -->
+<section class="cta-section">
+  <div class="cta-orb"></div>
+  <div class="cta-inner">
+    <div class="section-label" style="justify-content:center" data-fade>Get started</div>
+    <h2 class="sh2" data-fade>Stop the next chargeback.</h2>
+    <p class="ssub" data-fade>10,000 address lookups free. No credit card. Fraud score and vacancy available on Professional.</p>
+    <div class="cta-btns" data-fade>
+      <button class="btn-red" onclick="openModal()">Get free API key →</button>
+      <a href="/docs" class="btn-ghost">Read the docs →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────────────────────────────────────────────────────────── FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <svg width="18" height="23" viewBox="0 0 22 28" fill="none" aria-hidden="true">
+        <path d="M11 0C4.93 0 0 4.93 0 11C0 18.7 11 28 11 28C11 28 22 18.7 22 11C22 4.93 17.07 0 11 0Z" fill="#2e936f"/>
+        <circle cx="11" cy="10.5" r="4.8" fill="#ffffff"/>
+        <circle cx="11" cy="10.5" r="1.9" fill="#2e936f"/>
+      </svg>
+      GeoClear
+    </div>
+    <nav class="footer-nav">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/docs">Docs</a>
+      <a href="/">Back to main site</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 GeoClear. All rights reserved.</p>
+    <div class="footer-bottom-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/docs">Docs</a>
+      <a href="/">Main site</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ──────────────────────────────────────────────────────────────── MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <div id="modal-form">
+      <h2 id="modal-title">Get your free API key</h2>
+      <p class="modal-sub">10,000 lookups/month, all enrichment fields included. No credit card. Instant delivery. Open to teams worldwide.</p>
+      <label for="modal-email">Work email</label>
+      <input type="email" id="modal-email" placeholder="you@company.com" />
+      <button class="modal-cta" onclick="submitSignup()">Get my free key →</button>
+      <p class="modal-note">By signing up you agree to our <a href="/terms" style="color:var(--sky)">Terms</a> and <a href="/privacy" style="color:var(--sky)">Privacy Policy</a>.</p>
+    </div>
+
+    <div id="modal-success" class="modal-success" style="display:none">
+      <div class="success-icon">✓</div>
+      <h3>Check your inbox</h3>
+      <p>Your API key has been sent to<br><strong id="modal-sent-email" style="color:var(--sky)"></strong></p>
+      <p style="margin-top:12px;font-size:0.8rem;color:var(--dim)">
+        Start with:<br>
+        <span style="font-family:var(--mono);font-size:0.75rem;color:var(--sky)">
+          GET /v1/address?street=...&city=...&state=...
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────── JS -->
+<script>
+  /* ── Modal ── */
+  let _pendingTier = null;
+
+  function openModal(tier) {
+    _pendingTier = tier || null;
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (tier && tier !== 'free') {
+      const labels = { growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
+      if (titleEl) titleEl.textContent = 'Get started with ' + (labels[tier] || tier);
+      if (ctaEl)   ctaEl.textContent   = 'Continue to checkout →';
+    } else {
+      if (titleEl) titleEl.textContent = 'Get your free API key';
+      if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    }
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('modal-email').focus();
+  }
+
+  function closeModal() {
+    _pendingTier = null;
+    document.getElementById('modal').classList.remove('open');
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (titleEl) titleEl.textContent = 'Get your free API key';
+    if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    document.getElementById('modal-form').style.display = '';
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal-email').value = '';
+  }
+
+  function closeOnOverlay(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  async function submitSignup() {
+    const email = document.getElementById('modal-email').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('modal-email').style.borderColor = 'var(--red)';
+      return;
+    }
+    const btn = document.querySelector('.modal-cta');
+    btn.disabled = true;
+
+    if (_pendingTier && _pendingTier !== 'free') {
+      btn.textContent = 'Redirecting to checkout…';
+      try {
+        const r = await fetch('/v1/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, tier: _pendingTier })
+        });
+        const data = await r.json();
+        if (data.ok && data.data?.url) {
+          window.location.href = data.data.url;
+        } else {
+          btn.textContent = data.error || 'Error — try again';
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = 'Error — try again';
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    btn.textContent = 'Sending…';
+    try {
+      const r = await fetch('/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, tier: 'free', name: email.split('@')[0] })
+      });
+      const data = await r.json();
+      if (data.ok || data.key) {
+        document.getElementById('modal-sent-email').textContent = email;
+        document.getElementById('modal-form').style.display = 'none';
+        document.getElementById('modal-success').style.display = 'block';
+      } else {
+        btn.textContent = data.error || 'Error — try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+    }
+  }
+
+  function openCheckout(tier) {
+    openModal(tier);
+  }
+
+  /* ── Auto-open modal on #signup hash ── */
+  if (window.location.hash === '#signup') openModal();
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#signup') openModal();
+  });
+
+  /* ── Scroll fade-up animations ── */
+  (function initScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('[data-fade]').forEach(el => observer.observe(el));
+    document.querySelectorAll('[data-fade-group]').forEach(el => observer.observe(el));
+  })();
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>

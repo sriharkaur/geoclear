@@ -1876,6 +1876,18 @@ app.get('/sitemap.xml', (req, res) => {
 app.get('/bulk', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'bulk.html'));
 });
+app.get('/insurance', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'insurance.html'));
+});
+app.get('/mortgage', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'mortgage.html'));
+});
+app.get('/fintech', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fintech.html'));
+});
+app.get('/drone', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'drone.html'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });

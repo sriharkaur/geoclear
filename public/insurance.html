@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="GeoClear for P&C Insurance — flood zone, wildfire hazard, climate composite, and census tract for any US address. One API call. No manual lookup." />
+  <meta property="og:title" content="GeoClear for P&C Insurance — Underwriting Intelligence API" />
+  <meta property="og:description" content="Underwrite every US address. Flood zone, wildfire hazard, climate composite — one call, no manual lookup." />
+  <meta name="theme-color" content="#faf9f7" />
+  <title>GeoClear for P&amp;C Insurance — Underwriting Intelligence API</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
+    :root {
+      --bg:       #faf9f7;
+      --bg-alt:   #f2f0ed;
+      --surface:  #ffffff;
+      --surface2: #f0ebe4;
+      --glass:    rgba(250,249,247,0.85);
+
+      --border:   rgba(46,147,111,0.12);
+      --border2:  rgba(46,147,111,0.2);
+      --border3:  rgba(46,147,111,0.32);
+
+      --text:     #242220;
+      --muted:    #7a6e68;
+      --dim:      #a58979;
+
+      --sky:      #2e936f;
+      --indigo:   #956bad;
+      --violet:   #8cb0b2;
+      --green:    #2e936f;
+      --amber:    #c6a673;
+      --red:      #eb8771;
+
+      --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
+      --grad-r:   linear-gradient(135deg, #8cb0b2 0%, #2e936f 100%);
+      --glow:     rgba(46, 147, 111, 0.08);
+
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+
+      --r:   8px;
+      --rlg: 14px;
+      --rxl: 20px;
+      --max: 1140px;
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── HERO ──────────────────────────────────────────────────────────────── */
+    .hero-section {
+      padding-top: 120px;
+      padding-bottom: 80px;
+    }
+    .hero-inner {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+    .hero-left {
+      flex: 1;
+      min-width: 0;
+    }
+    .hero-right {
+      flex: 1;
+      min-width: 0;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(46,147,111,0.08);
+      border: 1px solid var(--border2);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--sky);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero-h1 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.12;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      max-width: 520px;
+    }
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--grad);
+      color: #fff;
+      border: none;
+      padding: 13px 26px;
+      border-radius: var(--r);
+      font-size: 0.92rem;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(46,147,111,0.28);
+      transition: opacity 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--sky);
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 13px 20px;
+      border-radius: var(--r);
+      border: 1px solid var(--border2);
+      background: transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-secondary:hover { background: rgba(46,147,111,0.05); border-color: var(--border3); }
+
+    /* ─── API RESPONSE CARD ──────────────────────────────────────────────────── */
+    .api-card {
+      background: #1a1a18;
+      border-radius: 12px;
+      padding: 24px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #e8e6e1;
+      position: relative;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .api-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .api-card-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .api-card-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red   { background: #ff5f56; }
+    .dot-amber { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+    .api-card-label {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.04em;
+      margin-left: 4px;
+    }
+    .api-card pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    /* JSON syntax highlight */
+    .j-key    { color: #8cb0b2; }
+    .j-str    { color: #5ccfa3; }
+    .j-num    { color: #c6a673; }
+    .j-bool-t { color: #5ccfa3; }
+    .j-bool-f { color: #ef4444; }
+    .j-brace  { color: #7a6e68; }
+
+    /* ─── SIGNAL CARDS ──────────────────────────────────────────────────────── */
+    .signals-section {
+      padding: 80px 0;
+    }
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .signal-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 28px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .signal-card:hover {
+      border-color: var(--border3);
+      box-shadow: 0 8px 32px rgba(46,147,111,0.07);
+    }
+    .signal-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(46,147,111,0.08);
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+    .signal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .signal-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ─── COMPARISON SECTION ─────────────────────────────────────────────────── */
+    .comparison-section {
+      padding: 80px 0;
+    }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sky);
+      margin-bottom: 12px;
+    }
+    .section-h2 {
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 48px;
+    }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .comparison-col {
+      border-radius: var(--rlg);
+      padding: 32px;
+    }
+    .comparison-col-without {
+      background: var(--bg-alt);
+      border: 1px solid rgba(235,135,113,0.18);
+    }
+    .comparison-col-with {
+      background: rgba(46,147,111,0.04);
+      border: 1px solid var(--border2);
+    }
+    .comparison-col-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .col-title-without { color: var(--red); }
+    .col-title-with    { color: var(--sky); }
+    .comparison-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .comparison-list li {
+      font-size: 0.9rem;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+    .comparison-list li .bullet-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+      font-size: 0.8rem;
+    }
+    .bullet-red   { color: var(--red); }
+    .bullet-green { color: var(--sky); }
+
+    /* ─── CODE SECTION ──────────────────────────────────────────────────────── */
+    .code-section {
+      padding: 80px 0;
+    }
+    .code-block {
+      background: #1a1a18;
+      border-radius: 12px;
+      padding: 24px;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #e8e6e1;
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow-x: auto;
+    }
+    .code-block pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+    .code-comment { color: rgba(255,255,255,0.28); }
+    .code-url     { color: #5ccfa3; }
+    .code-param   { color: #c6a673; }
+    .code-section-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-top: 40px;
+    }
+    .code-section-left {}
+    .code-section-right {}
+    .code-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 10px;
+    }
+
+    /* ─── CTA SECTION ───────────────────────────────────────────────────────── */
+    .cta-section {
+      padding: 80px 0 100px;
+      text-align: center;
+    }
+    .cta-inner {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .cta-h2 {
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .cta-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .cta-btns {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── FOOTER ────────────────────────────────────────────────────────────── */
+    .ins-footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0;
+      background: var(--bg);
+    }
+    .ins-footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ins-footer-copy {
+      font-size: 0.82rem;
+      color: var(--dim);
+    }
+    .ins-footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .ins-footer-links a {
+      font-size: 0.82rem;
+      color: var(--dim);
+      transition: color 0.15s;
+    }
+    .ins-footer-links a:hover { color: var(--muted); }
+
+    /* ─── SIGNUP MODAL ──────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(3,7,26,0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      padding: 40px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.10);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      color: var(--dim); font-size: 1.2rem;
+      padding: 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal h2 {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .modal-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 28px; }
+    .modal label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .modal input[type=email] {
+      width: 100%;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text);
+      padding: 12px 16px; font-size: 0.95rem;
+      font-family: var(--font); outline: none; margin-bottom: 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .modal input[type=email]:focus {
+      border-color: var(--sky); box-shadow: 0 0 0 3px rgba(46,147,111,0.12);
+    }
+    .modal-cta {
+      width: 100%; background: var(--grad); color: #fff; border: none;
+      padding: 13px; border-radius: var(--r); font-size: 0.92rem;
+      font-weight: 700; transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(46,147,111,0.2);
+    }
+    .modal-cta:hover { opacity: 0.9; }
+    .modal-note {
+      text-align: center; font-size: 0.75rem; color: var(--dim);
+      margin-top: 14px;
+    }
+    .modal-success { text-align: center; padding: 16px 0; }
+    .modal-success .success-icon {
+      font-size: 2.5rem; margin-bottom: 16px;
+    }
+    .modal-success h3 {
+      font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .modal-success p { font-size: 0.87rem; color: var(--muted); }
+    .modal-key-box {
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); padding: 12px 16px;
+      font-family: var(--mono); font-size: 0.8rem;
+      color: var(--sky); word-break: break-all;
+      margin: 16px 0; text-align: left;
+    }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero-inner {
+        flex-direction: column;
+      }
+      .hero-right {
+        width: 100%;
+      }
+      .signals-grid {
+        grid-template-columns: 1fr;
+      }
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      .code-section-inner {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 600px) {
+      .hero-section { padding-top: 96px; }
+      .container { padding: 0 20px; }
+      .hero-ctas { flex-direction: column; align-items: flex-start; }
+      .cta-btns { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<div id="gc-nav-placeholder"></div>
+
+<!-- ─── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="container">
+    <div class="hero-inner">
+
+      <div class="hero-left">
+        <div class="hero-badge">P&amp;C Insurance &middot; Underwriting &middot; Claims</div>
+        <h1 class="hero-h1">
+          Underwrite every US address.<br>
+          <span class="grad-text">One call. No manual lookup.</span>
+        </h1>
+        <p class="hero-sub">
+          GeoClear returns flood zone, wildfire hazard, climate composite, and census tract for any US address — the exact signals your underwriting engine needs, without a separate flood determination vendor.
+        </p>
+        <div class="hero-ctas">
+          <button class="btn-primary" onclick="openModal()">Get free API key</button>
+          <a class="btn-secondary" href="/landing.html#pricing">See pricing →</a>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="api-card">
+          <div class="api-card-header">
+            <div class="api-card-dots">
+              <div class="api-card-dot dot-red"></div>
+              <div class="api-card-dot dot-amber"></div>
+              <div class="api-card-dot dot-green"></div>
+            </div>
+            <span class="api-card-label">GET /v1/address — response</span>
+          </div>
+          <pre><span class="j-brace">{</span>
+  <span class="j-key">"flood_zone"</span><span class="j-brace">:</span> <span class="j-str">"AE"</span><span class="j-brace">,</span>
+  <span class="j-key">"flood_sfha"</span><span class="j-brace">:</span> <span class="j-bool-t">true</span><span class="j-brace">,</span>
+  <span class="j-key">"flood_zone_desc"</span><span class="j-brace">:</span> <span class="j-str">"Special Flood Hazard Area"</span><span class="j-brace">,</span>
+  <span class="j-key">"wildfire_class"</span><span class="j-brace">:</span> <span class="j-str">"High"</span><span class="j-brace">,</span>
+  <span class="j-key">"disaster_score"</span><span class="j-brace">:</span> <span class="j-num">0.71</span><span class="j-brace">,</span>
+  <span class="j-key">"climate_risk"</span><span class="j-brace">: {</span>
+    <span class="j-key">"composite"</span><span class="j-brace">:</span> <span class="j-num">0.68</span><span class="j-brace">,</span>
+    <span class="j-key">"flood"</span><span class="j-brace">:</span>     <span class="j-num">0.82</span><span class="j-brace">,</span>
+    <span class="j-key">"wildfire"</span><span class="j-brace">:</span> <span class="j-num">0.71</span><span class="j-brace">,</span>
+    <span class="j-key">"storm"</span><span class="j-brace">:</span>    <span class="j-num">0.44</span>
+  <span class="j-brace">},</span>
+  <span class="j-key">"census_tract"</span><span class="j-brace">:</span>  <span class="j-str">"060372601"</span><span class="j-brace">,</span>
+  <span class="j-key">"county_fips"</span><span class="j-brace">:</span>   <span class="j-str">"06037"</span>
+<span class="j-brace">}</span></pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── SIGNAL CARDS ──────────────────────────────────────────────────────── -->
+<section class="signals-section">
+  <div class="container">
+    <div class="signals-grid">
+
+      <div class="signal-card">
+        <div class="signal-icon">&#127754;</div>
+        <div class="signal-title">Flood zone — NFIP compliant</div>
+        <p class="signal-desc">
+          FEMA NFHL flood zone determination. AE, X, VE zones returned with SFHA flag. Meets NFIP disclosure requirements on every policy.
+        </p>
+      </div>
+
+      <div class="signal-card">
+        <div class="signal-icon">&#127760;</div>
+        <div class="signal-title">Climate composite — 5 federal sources</div>
+        <p class="signal-desc">
+          Weighted score across flood (30%), wildfire (25%), storm (20%), seismic (15%), drought (10%). All 3,221 US counties.
+        </p>
+      </div>
+
+      <div class="signal-card">
+        <div class="signal-icon">&#128293;</div>
+        <div class="signal-title">Wildfire hazard class</div>
+        <p class="signal-desc">
+          CAL FIRE + USFS hazard severity. Returns Very Low through Very High for every addressable parcel in fire-prone states.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── COMPARISON SECTION ────────────────────────────────────────────────── -->
+<section class="comparison-section">
+  <div class="container">
+    <div class="section-label">How it works</div>
+    <h2 class="section-h2">How it replaces your current workflow</h2>
+    <p class="section-sub">Stop stitching together flood certs, wildfire maps, and manual lookups. One call returns everything your underwriting engine needs.</p>
+
+    <div class="comparison-grid">
+
+      <div class="comparison-col comparison-col-without">
+        <div class="comparison-col-title col-title-without">
+          <span>&#10005;</span> Without GeoClear
+        </div>
+        <ul class="comparison-list">
+          <li>
+            <span class="bullet-icon bullet-red">&#8212;</span>
+            <span>Order a separate flood determination cert for each address ($12–$18/address)</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-red">&#8212;</span>
+            <span>Wait 1–3 business days for flood cert delivery on standard orders</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-red">&#8212;</span>
+            <span>Manually cross-reference wildfire hazard maps — no API, no programmatic access</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-red">&#8212;</span>
+            <span>No composite risk score — flood, wildfire, and storm data live in separate silos</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-red">&#8212;</span>
+            <span>No API integration for your underwriting automation pipeline</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-red">&#8212;</span>
+            <span>Census tract and county FIPS require a separate geocoding call</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="comparison-col comparison-col-with">
+        <div class="comparison-col-title col-title-with">
+          <span>&#10003;</span> With GeoClear
+        </div>
+        <ul class="comparison-list">
+          <li>
+            <span class="bullet-icon bullet-green">&#10003;</span>
+            <span>One API call returns flood zone, wildfire class, climate composite, and census tract</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-green">&#10003;</span>
+            <span>Under 5ms server-side response — no waiting, no batch jobs, no queues</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-green">&#10003;</span>
+            <span>Flood + wildfire + storm + seismic + drought in a single normalized JSON payload</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-green">&#10003;</span>
+            <span>Audit-ready: SFHA flag, zone code, and zone description in every response</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-green">&#10003;</span>
+            <span>REST API — plug directly into your underwriting engine or claims workflow</span>
+          </li>
+          <li>
+            <span class="bullet-icon bullet-green">&#10003;</span>
+            <span>Free tier for development — 10,000 lookups/month, no credit card required</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── CODE SECTION ──────────────────────────────────────────────────────── -->
+<section class="code-section">
+  <div class="container">
+    <div class="section-label">Integration</div>
+    <h2 class="section-h2">One curl. Everything you need.</h2>
+    <p class="section-sub">Drop it into your underwriting pipeline. Same response shape on every call. No SDK required.</p>
+
+    <div class="code-section-inner">
+
+      <div class="code-section-left">
+        <div class="code-label">Request</div>
+        <div class="code-block">
+          <pre><span class="code-comment"># Underwrite a Miami Beach address</span>
+curl "<span class="code-url">https://geoclear.io/v1/address</span>?<span class="code-param">street</span>=123+Ocean+Dr&amp;<span class="code-param">city</span>=Miami&amp;<span class="code-param">state</span>=FL&amp;<span class="code-param">key</span>=YOUR_KEY"</pre>
+        </div>
+      </div>
+
+      <div class="code-section-right">
+        <div class="code-label">Response — insurance fields</div>
+        <div class="code-block">
+          <pre><span class="j-brace">{</span>
+  <span class="j-key">"flood_zone"</span><span class="j-brace">:</span>      <span class="j-str">"AE"</span><span class="j-brace">,</span>
+  <span class="j-key">"flood_sfha"</span><span class="j-brace">:</span>      <span class="j-bool-t">true</span><span class="j-brace">,</span>
+  <span class="j-key">"flood_zone_desc"</span><span class="j-brace">:</span> <span class="j-str">"Special Flood Hazard Area"</span><span class="j-brace">,</span>
+  <span class="j-key">"wildfire_class"</span><span class="j-brace">:</span>  <span class="j-str">"High"</span><span class="j-brace">,</span>
+  <span class="j-key">"disaster_score"</span><span class="j-brace">:</span>  <span class="j-num">0.71</span><span class="j-brace">,</span>
+  <span class="j-key">"climate_risk"</span><span class="j-brace">: {</span>
+    <span class="j-key">"composite"</span><span class="j-brace">:</span> <span class="j-num">0.68</span><span class="j-brace">,</span>
+    <span class="j-key">"flood"</span><span class="j-brace">:</span>     <span class="j-num">0.82</span><span class="j-brace">,</span>
+    <span class="j-key">"wildfire"</span><span class="j-brace">:</span> <span class="j-num">0.71</span><span class="j-brace">,</span>
+    <span class="j-key">"storm"</span><span class="j-brace">:</span>    <span class="j-num">0.44</span>
+  <span class="j-brace">},</span>
+  <span class="j-key">"census_tract"</span><span class="j-brace">:</span>  <span class="j-str">"060372601"</span><span class="j-brace">,</span>
+  <span class="j-key">"county_fips"</span><span class="j-brace">:</span>   <span class="j-str">"06037"</span>
+<span class="j-brace">}</span></pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA SECTION ───────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-inner">
+      <h2 class="cta-h2">Start underwriting smarter today</h2>
+      <p class="cta-sub">
+        10,000 free lookups per month. All enrichment fields included. No credit card. Instant delivery.
+      </p>
+      <div class="cta-btns">
+        <button class="btn-primary" onclick="openModal()">Get free API key</button>
+        <a class="btn-secondary" href="/compliance">Compliance details →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer class="ins-footer">
+  <div class="container">
+    <div class="ins-footer-inner">
+      <span class="ins-footer-copy">&copy; GeoClear</span>
+      <div class="ins-footer-links">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/docs">Docs</a>
+        <a href="/">Back to main site</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── MODAL ─────────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&#10005;</button>
+
+    <div id="modal-form">
+      <h2 id="modal-title">Get your free API key</h2>
+      <p class="modal-sub">10,000 lookups/month, all enrichment fields included. No credit card. Instant delivery. Open to teams worldwide.</p>
+      <label for="modal-email">Work email</label>
+      <input type="email" id="modal-email" placeholder="you@company.com" />
+      <button class="modal-cta" onclick="submitSignup()">Get my free key &rarr;</button>
+      <p class="modal-note">By signing up you agree to our <a href="/terms" style="color:var(--sky)">Terms</a> and <a href="/privacy" style="color:var(--sky)">Privacy Policy</a>.</p>
+    </div>
+
+    <div id="modal-success" class="modal-success" style="display:none">
+      <div class="success-icon">&#10003;</div>
+      <h3>Check your inbox</h3>
+      <p>Your API key has been sent to<br><strong id="modal-sent-email" style="color:var(--sky)"></strong></p>
+      <p style="margin-top:12px;font-size:0.8rem;color:var(--dim)">
+        Start with:<br>
+        <span style="font-family:var(--mono);font-size:0.75rem;color:var(--sky)">
+          GET /v1/address?street=...&amp;city=...&amp;state=...
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── JS ───────────────────────────────────────────────────────────────── -->
+<script>
+  /* ── Modal ── */
+  let _pendingTier = null;
+
+  function openModal(tier) {
+    _pendingTier = tier || null;
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (tier && tier !== 'free') {
+      const labels = { growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
+      if (titleEl) titleEl.textContent = 'Get started with ' + (labels[tier] || tier);
+      if (ctaEl)   ctaEl.textContent   = 'Continue to checkout →';
+    } else {
+      if (titleEl) titleEl.textContent = 'Get your free API key';
+      if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    }
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('modal-email').focus();
+  }
+
+  function closeModal() {
+    _pendingTier = null;
+    document.getElementById('modal').classList.remove('open');
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (titleEl) titleEl.textContent = 'Get your free API key';
+    if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    document.getElementById('modal-form').style.display = '';
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal-email').value = '';
+  }
+
+  function closeOnOverlay(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  async function submitSignup() {
+    const email = document.getElementById('modal-email').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('modal-email').style.borderColor = 'var(--red)';
+      return;
+    }
+    const btn = document.querySelector('.modal-cta');
+    btn.disabled = true;
+
+    if (_pendingTier && _pendingTier !== 'free') {
+      btn.textContent = 'Redirecting to checkout…';
+      try {
+        const r = await fetch('/v1/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, tier: _pendingTier })
+        });
+        const data = await r.json();
+        if (data.ok && data.data?.url) {
+          window.location.href = data.data.url;
+        } else {
+          btn.textContent = data.error || 'Error — try again';
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = 'Error — try again';
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    btn.textContent = 'Sending…';
+    try {
+      const r = await fetch('/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, tier: 'free', name: email.split('@')[0] })
+      });
+      const data = await r.json();
+      if (data.ok || data.key) {
+        document.getElementById('modal-sent-email').textContent = email;
+        document.getElementById('modal-form').style.display = 'none';
+        document.getElementById('modal-success').style.display = 'block';
+      } else {
+        btn.textContent = data.error || 'Error — try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+    }
+  }
+
+  function openCheckout(tier) {
+    openModal(tier);
+  }
+
+  /* ── Auto-open modal on #signup hash ── */
+  if (window.location.hash === '#signup') openModal();
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#signup') openModal();
+  });
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>

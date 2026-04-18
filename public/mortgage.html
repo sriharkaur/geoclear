@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="HMDA LAR census tract, NFIP flood zone determination, and CRA county FIPS in one API call. Audit-ready compliance data for mortgage originators. Free tier included." />
+  <meta property="og:title" content="GeoClear — Mortgage Compliance API: HMDA, NFIP, CRA" />
+  <meta property="og:description" content="One API call returns flood zone, census tract, and county FIPS — the exact fields your compliance team needs for LAR reporting and flood disclosure." />
+  <meta name="theme-color" content="#faf9f7" />
+  <title>HMDA, NFIP &amp; CRA Compliance API — GeoClear Mortgage</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── DESIGN TOKENS ─────────────────────────────────────────────────────── */
+    :root {
+      --bg:       #faf9f7;
+      --bg-alt:   #f2f0ed;
+      --surface:  #ffffff;
+      --surface2: #f0ebe4;
+      --glass:    rgba(250,249,247,0.85);
+      --border:   rgba(46,147,111,0.12);
+      --border2:  rgba(46,147,111,0.2);
+      --border3:  rgba(46,147,111,0.32);
+      --text:     #242220;
+      --muted:    #7a6e68;
+      --dim:      #a58979;
+      --sky:      #2e936f;
+      --indigo:   #956bad;
+      --violet:   #8cb0b2;
+      --green:    #2e936f;
+      --amber:    #c6a673;
+      --red:      #eb8771;
+      --grad:     linear-gradient(135deg, #2e936f 0%, #8cb0b2 100%);
+      --grad-r:   linear-gradient(135deg, #8cb0b2 0%, #2e936f 100%);
+      --glow:     rgba(46, 147, 111, 0.08);
+      --font:     'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+      --r:   8px;
+      --rlg: 14px;
+      --rxl: 20px;
+      --max: 1140px;
+    }
+
+    /* ─── RESET ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: var(--font); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .grad-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── HERO ──────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative; overflow: hidden;
+      padding: 120px 0 80px;
+      background: #efefed;
+      border-bottom: 1px solid rgba(46,147,111,0.12);
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(circle, rgba(46,147,111,0.13) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 80%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 80%, transparent 100%);
+    }
+    .hero-orb {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 50% 100% at 0% 50%, rgba(46,147,111,0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 100% at 100% 50%, rgba(140,176,178,0.04) 0%, transparent 70%);
+    }
+    .hero-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: grid; grid-template-columns: 1.05fr 0.95fr;
+      gap: 72px; align-items: center;
+      position: relative; z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(46,147,111,0.06);
+      border: 1px solid rgba(46,147,111,0.2);
+      border-radius: 30px;
+      padding: 5px 14px 5px 8px;
+      font-size: 0.78rem; font-weight: 600; color: var(--sky);
+      margin-bottom: 28px; width: fit-content;
+      letter-spacing: 0.01em;
+    }
+    .badge-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--sky);
+      box-shadow: 0 0 10px var(--sky);
+      animation: badge-pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--sky); }
+      50% { opacity: 0.4; box-shadow: 0 0 4px var(--sky); }
+    }
+    .hero h1 {
+      font-size: clamp(2.6rem, 4.8vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+      margin-bottom: 26px;
+    }
+    .hero-sub {
+      font-size: 1.1rem; color: var(--muted);
+      line-height: 1.75; max-width: 490px;
+      margin-bottom: 36px;
+    }
+    .hero-btns {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .btn-primary {
+      background: var(--grad);
+      color: #fff; border: none;
+      padding: 14px 28px; border-radius: var(--r);
+      font-size: 0.975rem; font-weight: 700;
+      letter-spacing: -0.01em;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 24px rgba(46,147,111,0.2);
+    }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 32px rgba(46,147,111,0.35); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      padding: 13px 24px; border-radius: var(--r);
+      border: 1px solid var(--border2); font-size: 0.975rem; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--border3); background: var(--surface); }
+
+    .hero-trust {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      padding-top: 28px;
+    }
+    .trust-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--muted); font-weight: 500;
+    }
+
+    /* ─── JSON RESPONSE CARD ─────────────────────────────────────────────────── */
+    .code-card {
+      background: #1a1a18;
+      border-radius: var(--rxl);
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.22);
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .code-dot-r { background: #ff5f57; }
+    .code-dot-y { background: #febc2e; }
+    .code-dot-g { background: #28c840; }
+    .code-label { font-size: 0.72rem; color: rgba(255,255,255,0.3); font-family: var(--mono); }
+    .code-body {
+      padding: 24px 26px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.8;
+      color: #e2ddd8;
+    }
+    /* JSON syntax tokens — exact colors from spec */
+    .j-key    { color: #8cb0b2; }
+    .j-str    { color: #5ccfa3; }
+    .j-bool-t { color: #5ccfa3; }
+    .j-bool-f { color: #ef4444; }
+    .j-num    { color: #c6a673; }
+    .j-brace  { color: rgba(255,255,255,0.5); }
+    .j-comment { color: rgba(255,255,255,0.22); font-style: italic; }
+    .highlight-row {
+      display: block;
+      background: rgba(46,147,111,0.10);
+      border-radius: 4px;
+      margin: 0 -8px;
+      padding: 0 8px;
+    }
+
+    /* ─── SECTIONS ──────────────────────────────────────────────────────────── */
+    section { padding: 88px 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.76rem; font-weight: 700;
+      color: var(--sky); letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-label::before {
+      content: '';
+      display: block; width: 18px; height: 1.5px;
+      background: var(--sky); opacity: 0.7;
+    }
+    .sh2 {
+      font-size: clamp(2rem, 3.8vw, 3rem);
+      font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .ssub {
+      font-size: 1.05rem; color: var(--muted); line-height: 1.75;
+      max-width: 540px; margin-bottom: 48px;
+    }
+
+    /* ─── SIGNAL CARDS ───────────────────────────────────────────────────────── */
+    .signal-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      overflow: hidden;
+    }
+    .signal-card {
+      background: var(--bg-alt);
+      padding: 32px 30px;
+      transition: background 0.2s;
+      position: relative;
+    }
+    .signal-card:hover { background: var(--surface); }
+    .signal-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--grad); opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .signal-card:hover::before { opacity: 1; }
+    .signal-icon {
+      width: 42px; height: 42px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; margin-bottom: 20px;
+      background: rgba(46,147,111,0.08);
+      border: 1px solid rgba(46,147,111,0.15);
+    }
+    .signal-reg {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sky); margin-bottom: 6px;
+    }
+    .signal-title {
+      font-size: 1rem; font-weight: 700;
+      letter-spacing: -0.015em; margin-bottom: 10px;
+    }
+    .signal-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+    .signal-fields {
+      margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .signal-field {
+      font-family: var(--mono); font-size: 0.72rem;
+      background: rgba(46,147,111,0.07);
+      border: 1px solid rgba(46,147,111,0.18);
+      color: var(--sky);
+      padding: 3px 9px; border-radius: 4px;
+    }
+
+    /* ─── WORKFLOW COMPARISON ────────────────────────────────────────────────── */
+    .workflow-section { background: var(--bg-alt); }
+    .workflow-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .workflow-col {
+      border-radius: var(--rxl);
+      padding: 36px 32px;
+      border: 1px solid;
+    }
+    .workflow-col-manual {
+      background: rgba(235,135,113,0.04);
+      border-color: rgba(235,135,113,0.2);
+    }
+    .workflow-col-geo {
+      background: rgba(46,147,111,0.04);
+      border-color: rgba(46,147,111,0.22);
+    }
+    .workflow-label {
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 14px;
+    }
+    .workflow-col-manual .workflow-label { color: var(--red); }
+    .workflow-col-geo    .workflow-label { color: var(--sky); }
+    .workflow-title {
+      font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 24px;
+    }
+    .workflow-list {
+      list-style: none; display: flex; flex-direction: column; gap: 13px;
+    }
+    .workflow-list li {
+      display: flex; align-items: flex-start; gap: 11px;
+      font-size: 0.9rem; line-height: 1.55;
+    }
+    .wf-icon {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 800;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .wf-icon-bad {
+      background: rgba(235,135,113,0.12);
+      border: 1px solid rgba(235,135,113,0.3);
+      color: var(--red);
+    }
+    .wf-icon-good {
+      background: rgba(46,147,111,0.1);
+      border: 1px solid rgba(46,147,111,0.25);
+      color: var(--sky);
+    }
+    .wf-text-bad { color: var(--muted); }
+    .wf-text-good { color: var(--text); font-weight: 500; }
+    .workflow-stat {
+      margin-top: 28px; padding-top: 20px;
+      border-top: 1px solid;
+      display: flex; gap: 24px;
+    }
+    .workflow-col-manual .workflow-stat { border-color: rgba(235,135,113,0.2); }
+    .workflow-col-geo    .workflow-stat { border-color: rgba(46,147,111,0.18); }
+    .wf-stat { display: flex; flex-direction: column; }
+    .wf-stat-val {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1;
+    }
+    .workflow-col-manual .wf-stat-val { color: var(--red); }
+    .workflow-col-geo    .wf-stat-val { color: var(--sky); }
+    .wf-stat-label { font-size: 0.73rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+    /* ─── REGULATORY TABLE ───────────────────────────────────────────────────── */
+    .reg-table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid var(--border2);
+      border-radius: var(--rlg);
+      overflow: hidden;
+      font-size: 0.9rem;
+    }
+    .reg-table th {
+      text-align: left; padding: 12px 20px;
+      font-size: 0.76rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border2);
+    }
+    .reg-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .reg-table tr:last-child td { border-bottom: none; }
+    .reg-table tr:hover td { background: rgba(46,147,111,0.02); }
+    .reg-req { font-weight: 600; }
+    .reg-fields {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .reg-field {
+      font-family: var(--mono); font-size: 0.74rem;
+      background: rgba(46,147,111,0.07);
+      border: 1px solid rgba(46,147,111,0.18);
+      color: var(--sky);
+      padding: 2px 9px; border-radius: 4px;
+    }
+    .tier-badge {
+      display: inline-block;
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 3px 10px; border-radius: 20px;
+      background: rgba(46,147,111,0.08);
+      border: 1px solid rgba(46,147,111,0.2);
+      color: var(--sky);
+    }
+
+    /* ─── CODE SECTION ───────────────────────────────────────────────────────── */
+    .code-section { background: var(--bg); }
+    .code-block {
+      background: #1a1a18;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--rxl);
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.10);
+    }
+    .code-block-header {
+      background: rgba(255,255,255,0.04);
+      padding: 13px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .code-block-header .code-dots { display: flex; gap: 6px; }
+    .code-file-label {
+      font-family: var(--mono); font-size: 0.73rem;
+      color: rgba(255,255,255,0.28);
+    }
+    .code-block pre {
+      padding: 24px 28px;
+      font-family: var(--mono); font-size: 0.78rem;
+      line-height: 1.85; overflow-x: auto;
+      color: #c8c4be;
+    }
+    .c-comment { color: rgba(255,255,255,0.25); font-style: italic; }
+    .c-cmd     { color: #8cb0b2; }
+    .c-str     { color: #5ccfa3; }
+    .c-flag    { color: #c6a673; }
+    .c-key     { color: #8cb0b2; }
+    .c-val     { color: #5ccfa3; }
+    .c-bool    { color: #5ccfa3; }
+    .c-num     { color: #c6a673; }
+    .c-url     { color: rgba(255,255,255,0.5); }
+
+    /* ─── FINAL CTA ──────────────────────────────────────────────────────────── */
+    .cta-section {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .cta-inner {
+      max-width: var(--max); margin: 0 auto; padding: 88px 32px;
+      text-align: center;
+    }
+    .cta-inner .sh2 { font-size: clamp(2.2rem, 4vw, 3.2rem); }
+    .cta-inner .ssub { margin: 0 auto 36px; text-align: center; }
+    .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      padding: 28px 0;
+    }
+    .footer-inner {
+      max-width: var(--max); margin: 0 auto; padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+      font-size: 0.82rem; color: var(--dim);
+    }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { color: var(--dim); transition: color 0.15s; }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ─── MODAL ──────────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(3,7,26,0.85);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--rxl);
+      padding: 40px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.10);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      color: var(--dim); font-size: 1.2rem;
+      padding: 6px; border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal h2 {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .modal-sub { font-size: 0.95rem; color: var(--muted); margin-bottom: 28px; }
+    .modal label {
+      display: block; font-size: 0.82rem; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px;
+    }
+    .modal input[type=email] {
+      width: 100%;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: var(--r); color: var(--text);
+      padding: 12px 16px; font-size: 0.95rem;
+      font-family: var(--font); outline: none; margin-bottom: 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .modal input[type=email]:focus {
+      border-color: var(--sky); box-shadow: 0 0 0 3px rgba(46,147,111,0.12);
+    }
+    .modal-cta {
+      width: 100%; background: var(--grad); color: #fff; border: none;
+      padding: 13px; border-radius: var(--r); font-size: 0.92rem;
+      font-weight: 700; transition: opacity 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(46,147,111,0.2);
+    }
+    .modal-cta:hover { opacity: 0.9; }
+    .modal-note {
+      text-align: center; font-size: 0.75rem; color: var(--dim);
+      margin-top: 14px;
+    }
+    .modal-success { text-align: center; padding: 16px 0; }
+    .modal-success .success-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .modal-success h3 {
+      font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .modal-success p { font-size: 0.87rem; color: var(--muted); }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .hero { padding: 100px 0 60px; }
+      .signal-grid { grid-template-columns: 1fr; }
+      .workflow-grid { grid-template-columns: 1fr; }
+      .container { padding: 0 20px; }
+      .reg-table { font-size: 0.82rem; }
+    }
+    @media (max-width: 640px) {
+      .cta-inner { padding: 64px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="gc-nav-placeholder"></div>
+
+<!-- ─────────────────────────────────────────────────────────── HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-orb"></div>
+  <div class="hero-inner">
+
+    <div class="hero-left">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Mortgage &middot; HMDA &middot; NFIP &middot; CRA
+      </div>
+
+      <h1>
+        HMDA, NFIP, and CRA fields.<br>
+        <span class="grad-text">One call. Audit-ready.</span>
+      </h1>
+
+      <p class="hero-sub">
+        GeoClear returns flood zone determination, census tract, block group, and county FIPS for any US address — the exact fields your compliance team needs for LAR reporting, flood disclosure, and CRA mapping. No geocoder step, no third-party vendor.
+      </p>
+
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="openModal()">
+          Get free API key →
+        </button>
+        <a href="/compliance" class="btn-ghost">See compliance docs →</a>
+      </div>
+
+      <div class="hero-trust">
+        <div class="trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="6" width="12" height="7" rx="1"/><path d="M3 6V4a4 4 0 0 1 8 0v2"/></svg>
+          NFIP-compliant flood zones
+        </div>
+        <div class="trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="1" width="10" height="12" rx="1"/><line x1="4.5" y1="5" x2="9.5" y2="5"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5"/></svg>
+          HMDA census tract
+        </div>
+        <div class="trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="7,1 7,7 10,10"/><circle cx="7" cy="7" r="6"/></svg>
+          &lt;5ms server-side
+        </div>
+        <div class="trust-item">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="1,7 5,11 13,3"/></svg>
+          Free tier — no credit card
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="code-card">
+        <div class="code-header">
+          <div class="code-dots">
+            <span class="code-dot code-dot-r"></span>
+            <span class="code-dot code-dot-y"></span>
+            <span class="code-dot code-dot-g"></span>
+          </div>
+          <span class="code-label">geoclear — compliance enrichment response</span>
+        </div>
+        <div class="code-body">
+<span class="j-brace">{</span>
+  <span class="j-key">"flood_zone"</span><span style="color:rgba(255,255,255,0.4)">:          </span><span class="j-str">"AE"</span>,
+  <span class="highlight-row"><span class="j-key">"flood_sfha"</span><span style="color:rgba(255,255,255,0.4)">:          </span><span class="j-bool-t">true</span>,</span>
+  <span class="j-key">"flood_zone_desc"</span><span style="color:rgba(255,255,255,0.4)">:     </span><span class="j-str">"Special Flood Hazard Area"</span>,
+  <span class="highlight-row"><span class="j-key">"census_tract"</span><span style="color:rgba(255,255,255,0.4)">:        </span><span class="j-str">"060372601"</span>,</span>
+  <span class="highlight-row"><span class="j-key">"census_block_group"</span><span style="color:rgba(255,255,255,0.4)">:  </span><span class="j-str">"1"</span>,</span>
+  <span class="highlight-row"><span class="j-key">"county_fips"</span><span style="color:rgba(255,255,255,0.4)">:         </span><span class="j-str">"06037"</span>,</span>
+  <span class="j-key">"county_name"</span><span style="color:rgba(255,255,255,0.4)">:         </span><span class="j-str">"Los Angeles County"</span>,
+  <span class="j-key">"state_fips"</span><span style="color:rgba(255,255,255,0.4)">:          </span><span class="j-str">"06"</span>,
+  <span class="j-key">"hmda_ready"</span><span style="color:rgba(255,255,255,0.4)">:          </span><span class="j-bool-t">true</span>,
+  <span class="j-key">"cra_eligible"</span><span style="color:rgba(255,255,255,0.4)">:        </span><span class="j-bool-t">true</span>
+<span class="j-brace">}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────────────────────── COMPLIANCE SIGNAL CARDS -->
+<section style="background:var(--bg);padding:80px 0;">
+  <div class="container">
+    <div class="section-label">Compliance signals</div>
+    <h2 class="sh2">Three fields. Three regulations. One call.</h2>
+    <p class="ssub">Every mortgage address lookup returns the data your compliance, underwriting, and servicing teams need — structured, authoritative, and LOS-ready.</p>
+
+    <div class="signal-grid">
+
+      <div class="signal-card">
+        <div class="signal-icon">🌊</div>
+        <div class="signal-reg">NFIP &middot; Flood Disclosure</div>
+        <div class="signal-title">Flood zone — NFIP disclosure</div>
+        <p class="signal-desc">
+          FEMA NFHL zone designation (AE, X, VE, A) and the SFHA boolean flag. Required for flood insurance disclosure on every federally-backed mortgage. No manual determination needed, no per-cert fee.
+        </p>
+        <div class="signal-fields">
+          <span class="signal-field">flood_zone</span>
+          <span class="signal-field">flood_sfha</span>
+          <span class="signal-field">flood_zone_desc</span>
+        </div>
+      </div>
+
+      <div class="signal-card">
+        <div class="signal-icon">📋</div>
+        <div class="signal-reg">HMDA &middot; LAR Reporting</div>
+        <div class="signal-title">Census tract — HMDA LAR</div>
+        <p class="signal-desc">
+          Official Census TIGER/Line tract and block group, geocoded to the parcel — not just the ZIP code. Required for HMDA Loan Application Register reporting under Regulation C. Matches the CFPB's geocoding standard.
+        </p>
+        <div class="signal-fields">
+          <span class="signal-field">census_tract</span>
+          <span class="signal-field">census_block_group</span>
+        </div>
+      </div>
+
+      <div class="signal-card">
+        <div class="signal-icon">🗺️</div>
+        <div class="signal-reg">CRA &middot; Assessment Area</div>
+        <div class="signal-title">County FIPS — CRA mapping</div>
+        <p class="signal-desc">
+          5-digit FIPS identifier for every US county. Required for CRA assessment area mapping, tax jurisdiction routing, and government district classification. Returned with every address — no crosswalk table required.
+        </p>
+        <div class="signal-fields">
+          <span class="signal-field">county_fips</span>
+          <span class="signal-field">county_name</span>
+          <span class="signal-field">state_fips</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────── WORKFLOW COMPARISON -->
+<section class="workflow-section">
+  <div class="container">
+    <div class="section-label">Before &amp; after</div>
+    <h2 class="sh2">The old way costs time and money.</h2>
+    <p class="ssub" style="margin-bottom:40px;">Every loan file needs flood cert, census tract, and county FIPS. The manual process stacks vendor fees and 2-day SLAs at every step.</p>
+
+    <div class="workflow-grid">
+
+      <div class="workflow-col workflow-col-manual">
+        <div class="workflow-label">Manual compliance process</div>
+        <div class="workflow-title">Fragmented vendors, manual steps</div>
+        <ul class="workflow-list">
+          <li>
+            <span class="wf-icon wf-icon-bad">✕</span>
+            <span class="wf-text-bad">Order flood cert from determination vendor — $3–15/address, 2-day SLA</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-bad">✕</span>
+            <span class="wf-text-bad">Pull census tract from a separate geocoding API, reconcile results manually</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-bad">✕</span>
+            <span class="wf-text-bad">Cross-reference FIPS table from Census Bureau to get county FIPS</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-bad">✕</span>
+            <span class="wf-text-bad">Risk of stale flood maps — vendors update at their own cadence</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-bad">✕</span>
+            <span class="wf-text-bad">No API for LOS integration — export, paste, or re-key into loan file</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-bad">✕</span>
+            <span class="wf-text-bad">Each vendor requires its own contract, billing relationship, and uptime SLA</span>
+          </li>
+        </ul>
+        <div class="workflow-stat">
+          <div class="wf-stat">
+            <span class="wf-stat-val">$3–15</span>
+            <span class="wf-stat-label">per determination</span>
+          </div>
+          <div class="wf-stat">
+            <span class="wf-stat-val">2 days</span>
+            <span class="wf-stat-label">typical turnaround</span>
+          </div>
+          <div class="wf-stat">
+            <span class="wf-stat-val">3+</span>
+            <span class="wf-stat-label">vendor contracts</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-col workflow-col-geo">
+        <div class="workflow-label">With GeoClear</div>
+        <div class="workflow-title">One API, all fields, instant</div>
+        <ul class="workflow-list">
+          <li>
+            <span class="wf-icon wf-icon-good">✓</span>
+            <span class="wf-text-good">One API call per address — flood + census + FIPS in a single JSON response</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-good">✓</span>
+            <span class="wf-text-good">Sub-5ms server-side — inline with loan origination, no batch queue</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-good">✓</span>
+            <span class="wf-text-good">Authoritative sources for flood and census data — always current</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-good">✓</span>
+            <span class="wf-text-good">LOS-ready JSON — integrate directly into your origination system</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-good">✓</span>
+            <span class="wf-text-good">Included in Free tier — 10K lookups/month at no cost</span>
+          </li>
+          <li>
+            <span class="wf-icon wf-icon-good">✓</span>
+            <span class="wf-text-good">One vendor, one contract, one key — flood + HMDA + CRA in one place</span>
+          </li>
+        </ul>
+        <div class="workflow-stat">
+          <div class="wf-stat">
+            <span class="wf-stat-val">$0</span>
+            <span class="wf-stat-label">Free tier included</span>
+          </div>
+          <div class="wf-stat">
+            <span class="wf-stat-val">&lt;5ms</span>
+            <span class="wf-stat-label">server-side latency</span>
+          </div>
+          <div class="wf-stat">
+            <span class="wf-stat-val">1</span>
+            <span class="wf-stat-label">API call covers all</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────── REGULATORY COVERAGE TABLE -->
+<section style="background:var(--bg);padding:80px 0;">
+  <div class="container">
+    <div class="section-label">Regulatory coverage</div>
+    <h2 class="sh2">Every field. All free.</h2>
+    <p class="ssub" style="margin-bottom:36px;">All three compliance fields are returned on every lookup — including the Free tier. No premium tier required to access HMDA, NFIP, or CRA fields.</p>
+
+    <table class="reg-table">
+      <thead>
+        <tr>
+          <th>Requirement</th>
+          <th>Fields returned</th>
+          <th>Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="reg-req">NFIP flood disclosure</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Required for flood insurance disclosure on every federally-backed mortgage. Regulation: NFIA §102.</div>
+          </td>
+          <td>
+            <div class="reg-fields">
+              <span class="reg-field">flood_zone</span>
+              <span class="reg-field">flood_sfha</span>
+              <span class="reg-field">flood_zone_desc</span>
+            </div>
+          </td>
+          <td><span class="tier-badge">Free</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="reg-req">HMDA LAR reporting</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Required for Loan Application Register filing under Regulation C. Census TIGER/Line tract, parcel-level geocode.</div>
+          </td>
+          <td>
+            <div class="reg-fields">
+              <span class="reg-field">census_tract</span>
+              <span class="reg-field">census_block_group</span>
+            </div>
+          </td>
+          <td><span class="tier-badge">Free</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="reg-req">CRA assessment area</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Required for Community Reinvestment Act assessment area mapping, tax district routing, and government district classification.</div>
+          </td>
+          <td>
+            <div class="reg-fields">
+              <span class="reg-field">county_fips</span>
+              <span class="reg-field">county_name</span>
+              <span class="reg-field">state_fips</span>
+            </div>
+          </td>
+          <td><span class="tier-badge">Free</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────── CODE EXAMPLE -->
+<section class="code-section" style="background:var(--bg-alt);padding:80px 0;">
+  <div class="container">
+    <div class="section-label">Integration</div>
+    <h2 class="sh2">Two lines to compliance-ready enrichment.</h2>
+    <p class="ssub" style="margin-bottom:36px;">REST + JSON. No SDK, no configuration. Pass a street address, get back every field your LAR and flood disclosure workflow needs — inline, at origination time.</p>
+
+    <div class="code-block">
+      <div class="code-block-header">
+        <div class="code-dots">
+          <span class="code-dot code-dot-r"></span>
+          <span class="code-dot code-dot-y"></span>
+          <span class="code-dot code-dot-g"></span>
+        </div>
+        <span class="code-file-label">LAR address lookup — curl example</span>
+      </div>
+      <pre><span class="c-comment"># Lookup a loan address — returns flood zone, census tract, county FIPS in one call</span>
+<span class="c-cmd">curl</span> <span class="c-flag">-s</span> <span class="c-flag">-H</span> <span class="c-str">"X-API-Key: YOUR_API_KEY"</span> \
+  <span class="c-str">"https://geoclear.io/api/address?street=3250+Wilshire+Blvd&amp;city=Los+Angeles&amp;state=CA"</span>
+
+<span class="c-comment"># Response — every HMDA, NFIP, and CRA field you need</span>
+{
+  <span class="c-key">"ok"</span>: <span class="c-bool">true</span>,
+  <span class="c-key">"data"</span>: {
+    <span class="c-key">"full_address"</span>:        <span class="c-val">"3250 Wilshire Blvd, Los Angeles, CA 90010"</span>,
+    <span class="c-key">"latitude"</span>:            <span class="c-num">34.057880</span>,
+    <span class="c-key">"longitude"</span>:           <span class="c-num">-118.290442</span>,
+
+    <span class="c-comment">// NFIP — flood zone determination</span>
+    <span class="c-key">"flood_zone"</span>:          <span class="c-val">"X"</span>,
+    <span class="c-key">"flood_sfha"</span>:          <span class="c-bool">false</span>,
+    <span class="c-key">"flood_zone_desc"</span>:     <span class="c-val">"Minimal flood hazard"</span>,
+
+    <span class="c-comment">// HMDA — census tract &amp; block group for LAR</span>
+    <span class="c-key">"census_tract"</span>:        <span class="c-val">"060372601"</span>,
+    <span class="c-key">"census_block_group"</span>:  <span class="c-val">"1"</span>,
+
+    <span class="c-comment">// CRA — county FIPS for assessment area mapping</span>
+    <span class="c-key">"county_fips"</span>:         <span class="c-val">"06037"</span>,
+    <span class="c-key">"county_name"</span>:         <span class="c-val">"Los Angeles County"</span>,
+    <span class="c-key">"state_fips"</span>:          <span class="c-val">"06"</span>,
+
+    <span class="c-comment">// Composite compliance flags</span>
+    <span class="c-key">"hmda_ready"</span>:          <span class="c-bool">true</span>,
+    <span class="c-key">"cra_eligible"</span>:        <span class="c-bool">true</span>
+  }
+}</pre>
+    </div>
+
+    <div style="margin-top:28px;padding:20px 24px;background:rgba(46,147,111,0.05);border:1px solid rgba(46,147,111,0.18);border-radius:var(--rlg);display:flex;align-items:flex-start;gap:16px;">
+      <span style="font-size:1.2rem;flex-shrink:0;">💡</span>
+      <div style="font-size:0.88rem;color:var(--muted);line-height:1.6;">
+        <strong style="color:var(--text);">Bulk processing:</strong> For high-volume LAR workflows, pass a CSV of addresses to the batch endpoint or use the <a href="/docs" style="color:var(--sky);">bulk API</a>. All compliance fields are included in every batch response at the same per-lookup price.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────── FINAL CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="section-label" style="justify-content:center;margin-bottom:16px;">Start today</div>
+    <h2 class="sh2">Start your free integration today.</h2>
+    <p class="ssub">10,000 lookups per month — flood zone, census tract, county FIPS. All compliance fields. No credit card. Instant key delivery.</p>
+    <div class="cta-btns">
+      <button class="btn-primary" onclick="openModal()" style="font-size:1rem;padding:15px 32px;">
+        Get free API key →
+      </button>
+      <a href="/compliance" class="btn-ghost" style="font-size:1rem;padding:15px 28px;">
+        Compliance docs
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span>© GeoClear</span>
+    <div class="footer-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/docs">Docs</a>
+      <a href="/">Back to main site</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ─────────────────────────────────────────────────────────── MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <div id="modal-form">
+      <h2 id="modal-title">Get your free API key</h2>
+      <p class="modal-sub">10,000 lookups/month, all enrichment fields included. No credit card. Instant delivery. Open to teams worldwide.</p>
+      <label for="modal-email">Work email</label>
+      <input type="email" id="modal-email" placeholder="you@company.com" />
+      <button class="modal-cta" onclick="submitSignup()">Get my free key →</button>
+      <p class="modal-note">By signing up you agree to our <a href="/terms" style="color:var(--sky)">Terms</a> and <a href="/privacy" style="color:var(--sky)">Privacy Policy</a>.</p>
+    </div>
+
+    <div id="modal-success" class="modal-success" style="display:none">
+      <div class="success-icon">✓</div>
+      <h3>Check your inbox</h3>
+      <p>Your API key has been sent to<br><strong id="modal-sent-email" style="color:var(--sky)"></strong></p>
+      <p style="margin-top:12px;font-size:0.8rem;color:var(--dim)">
+        Start with:<br>
+        <span style="font-family:var(--mono);font-size:0.75rem;color:var(--sky)">
+          GET /api/address?street=...&amp;city=...&amp;state=...
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── JS -->
+<script>
+  /* ── Modal ── */
+  let _pendingTier = null;
+
+  function openModal(tier) {
+    _pendingTier = tier || null;
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (tier && tier !== 'free') {
+      const labels = { growth: 'Growth — $199/mo', pro: 'Professional — $499/mo', scale: 'Scale — $999/mo', payg: 'Pay-as-you-go — $0.001/call' };
+      if (titleEl) titleEl.textContent = 'Get started with ' + (labels[tier] || tier);
+      if (ctaEl)   ctaEl.textContent   = 'Continue to checkout →';
+    } else {
+      if (titleEl) titleEl.textContent = 'Get your free API key';
+      if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    }
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('modal-email').focus();
+  }
+
+  function closeModal() {
+    _pendingTier = null;
+    document.getElementById('modal').classList.remove('open');
+    const titleEl = document.getElementById('modal-title');
+    const ctaEl   = document.querySelector('.modal-cta');
+    if (titleEl) titleEl.textContent = 'Get your free API key';
+    if (ctaEl)   ctaEl.textContent   = 'Get my free key →';
+    document.getElementById('modal-form').style.display = '';
+    document.getElementById('modal-success').style.display = 'none';
+    document.getElementById('modal-email').value = '';
+  }
+
+  function closeOnOverlay(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  async function submitSignup() {
+    const email = document.getElementById('modal-email').value.trim();
+    if (!email || !email.includes('@')) {
+      document.getElementById('modal-email').style.borderColor = 'var(--red)';
+      return;
+    }
+    const btn = document.querySelector('.modal-cta');
+    btn.disabled = true;
+
+    if (_pendingTier && _pendingTier !== 'free') {
+      btn.textContent = 'Redirecting to checkout…';
+      try {
+        const r = await fetch('/v1/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, tier: _pendingTier })
+        });
+        const data = await r.json();
+        if (data.ok && data.data?.url) {
+          window.location.href = data.data.url;
+        } else {
+          btn.textContent = data.error || 'Error — try again';
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = 'Error — try again';
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    btn.textContent = 'Sending…';
+    try {
+      const r = await fetch('/v1/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, tier: 'free', name: email.split('@')[0] })
+      });
+      const data = await r.json();
+      if (data.ok || data.key) {
+        document.getElementById('modal-sent-email').textContent = email;
+        document.getElementById('modal-form').style.display = 'none';
+        document.getElementById('modal-success').style.display = 'block';
+      } else {
+        btn.textContent = data.error || 'Error — try again';
+        btn.disabled = false;
+      }
+    } catch {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+    }
+  }
+
+  /* ── Auto-open modal on #signup hash ── */
+  if (window.location.hash === '#signup') openModal();
+  window.addEventListener('hashchange', () => {
+    if (window.location.hash === '#signup') openModal();
+  });
+</script>
+
+<script src="/nav.js"></script>
+</body>
+</html>
