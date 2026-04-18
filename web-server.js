@@ -1936,6 +1936,7 @@ function _createMcpServer(keyInfo) {
   server.tool(
     'verify_address',
     'Verify and enrich a US address. Returns geo-coordinates, flood zone, risk scores, census tract, and 15+ enrichment fields.',
+    { title: 'Verify Address', readOnlyHint: true },
     {
       street: z.string().describe('Street address with number, e.g. "123 Main St"'),
       city:   z.string().optional().describe('City name'),
@@ -1993,6 +1994,7 @@ function _createMcpServer(keyInfo) {
   server.tool(
     'suggest_address',
     'Auto-complete a partial US address. Returns up to 10 matching addresses for user selection.',
+    { title: 'Suggest Address', readOnlyHint: true },
     {
       q:     z.string().describe('Partial address query, e.g. "123 Mai" or "123 Main St, Tex"'),
       state: z.string().length(2).optional().describe('Narrow results to a specific state'),
@@ -2012,6 +2014,7 @@ function _createMcpServer(keyInfo) {
   server.tool(
     'reverse_geocode',
     'Look up the nearest US address for a lat/lon coordinate. Returns address + enrichment fields.',
+    { title: 'Reverse Geocode', readOnlyHint: true },
     {
       lat: z.number().describe('Latitude (e.g. 30.2672)'),
       lon: z.number().describe('Longitude (e.g. -97.7431)'),
@@ -2031,6 +2034,7 @@ function _createMcpServer(keyInfo) {
   server.tool(
     'get_coverage',
     'Get GeoClear address coverage statistics for US states. Returns address count, Census housing unit count, and coverage tier for each state.',
+    { title: 'Get Coverage', readOnlyHint: true },
     {},
     async () => {
       try {
