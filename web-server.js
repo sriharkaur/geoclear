@@ -2219,6 +2219,12 @@ app.delete('/mcp', mcpAuth, async (req, res) => {
 
 app.get('/mcp-docs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mcp.html')));
 
+// OpenAI ChatGPT Apps domain verification
+app.get('/.well-known/openai-apps-challenge', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.send('nsAVKrg5kBHpkbb0q-J-Zu3lSb9_mhjuFo1ScbU6O6M');
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
