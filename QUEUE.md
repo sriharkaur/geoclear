@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-18 (session 33 — Q-186 + Q-187 done (MCP Phase 1 + x402 Phase 2).)_
+_Last updated: 2026-04-18 (session 34 — Q-188–Q-197 added: Hawaii/PR coverage gaps, OpenAddresses, MCP launch. See [DATA-GAP-ANALYSIS-2026-04-18.md](architecture/DATA-GAP-ANALYSIS-2026-04-18.md).)_
 
 ---
 
@@ -718,6 +718,46 @@ Open:
 ### Distribution
 - [ ] ~~**Q-106 · [P3-DIST] Node.js SDK**~~ (`npm install geoclear`) — **SUPERSEDED by Q-163 (Hono RPC).** Hono `AppType` export + `@geoclear/client` npm package IS the Node.js SDK. Ships in 4 hours after Q-162, not a separate sprint.
 - [ ] ~~**Q-107 · [P3-DIST] Python SDK**~~ (`pip install geoclear`) — **PARTIALLY SUPERSEDED by Q-164 (OpenAPI).** `/openapi.json` from Hono zod-openapi → `openapi-generator` auto-generates Python, Go, Java clients. Manual SDK work no longer needed.
+- [ ] **Q-195 · [P3-DIST] MCP directory listings — Anthropic, Cursor, Cline, Claude Desktop**
+  The MCP server is live at `mcp.geoclear.io/mcp` (StreamableHTTP + SSE, API key auth + x402 USDC micropayments). The address intelligence category has zero production MCP servers from any competitor. This is a first-mover window of ~6–12 months. Directory submissions are the primary distribution lever — every Claude/Cursor/Cline user building an agent with address intelligence will find GeoClear here.
+  **Submissions to complete:**
+  1. **Anthropic MCP directory** — `modelcontextprotocol.io/directory` → submit `mcp.geoclear.io`. Server name: `geoclear`. Description: "Verify, enrich, and score any US address. 198M+ addresses, FEMA flood zones, climate risk, census tract, fraud scores."
+  2. **Cursor marketplace** — Cursor supports StreamableHTTP MCP servers. Add to `~/.cursor/mcp.json` docs: `"url": "https://mcp.geoclear.io/mcp"`. Submit to `forum.cursor.com` as a showcase.
+  3. **Cline (VS Code)** — Cline marketplace at `github.com/cline/cline`. Open a PR to add GeoClear to the community server list.
+  4. **Claude Desktop config docs** — Document the exact config block to add to `claude_desktop_config.json`:
+     ```json
+     "geoclear": {
+       "url": "https://mcp.geoclear.io/mcp",
+       "headers": { "X-Api-Key": "your_geoclear_key" }
+     }
+     ```
+  5. **Glama.ai / mcp.so / mcphub.net** — emerging MCP discovery sites; submit to all three.
+  **Acceptance:** GeoClear appears in at least 2 MCP directories. A Claude Desktop user can add and use the server in under 5 minutes using published docs.
+  **Effort:** 3–4 hrs (submissions + docs page). No code changes required.
+
+- [ ] **Q-196 · [P3-DIST] Homepage "AI-native / MCP-ready" section**
+  Add a section to `public/landing.html` between the use-case switcher and pricing that positions GeoClear as the address API built for the agentic era. Current homepage has no mention of MCP, agents, or AI-native positioning. This is the differentiator no USPS-licensed vendor can claim.
+  **Section content:**
+  - Headline: "Built for AI agents. Not just humans."
+  - Sub: "GeoClear is MCP-native. Connect any Claude, Cursor, or Cline agent to 198M US addresses in 60 seconds."
+  - Three bullets: (1) One-line config — add to any MCP client; (2) Structured guidance — `recommended_action: approved/hold/deny` for every address; (3) x402 micropayments — agents pay per call in USDC, no signup required.
+  - CTA: "Add to Claude Desktop →" (links to /docs#mcp) + "Get API key →"
+  - Code block showing the 4-line Claude Desktop config
+  **File:** `public/landing.html`. New section ~40 lines HTML, minimal CSS additions.
+  **Acceptance:** Section visible on landing page, loads without layout shift, CTA links work.
+  **Effort:** 2–3 hrs.
+
+- [ ] **Q-197 · [P3-DIST] MCP launch post — "First MCP server for US address intelligence"**
+  Publish across: LinkedIn, Hacker News (Show HN), Indie Hackers, X/Twitter, and the Anthropic Discord developer channel. The narrative: address intelligence is a category with zero production MCP servers — GeoClear is the reference implementation.
+  **LinkedIn post** — already drafted in `docs/geoclear-launch-pack.txt`. Adapt to add MCP angle:
+  "GeoClear is now MCP-native. Add the first address intelligence MCP server to Claude, Cursor, or Cline in 60 seconds. 198M addresses. FEMA flood zones. Fraud scores. One config line."
+  **HN Show HN title:** "Show HN: GeoClear – MCP server for US address intelligence (198M addresses, flood zones, climate risk)"
+  **HN first comment** (draft):
+  "I built this because every AI agent I was working on needed address intelligence — HMDA census tracts, FEMA flood zones, deliverability — and had to either hallucinate or fall back to web search. GeoClear exposes all of it via MCP's StreamableHTTP transport. Add to Claude Desktop: [config block]. Free tier, no card. Open to feedback on the tool schema — specifically the `guidance.recommended_action` field which gives agents a structured decision signal."
+  **Anthropic Discord** — post in `#mcp-servers` channel with the config block.
+  **Acceptance:** Post published on LinkedIn + HN with positive reception (≥5 HN points, ≥1 substantive comment).
+  **Effort:** 2 hrs (writing + posting across channels).
+
 - [ ] **Q-108 · [P3-DIST]** Zapier integration ("Verify US address" action)
 - [ ] **Q-109 · [P3-DIST]** Shopify App
 - [ ] **Q-110 · [P3-DIST]** WordPress / WooCommerce plugin
@@ -734,6 +774,63 @@ Open:
 ### Address Intelligence
 - [ ] **Q-118 · [P3-FEAT]** Address history / change log
 - [ ] **Q-119 · [P3-FEAT]** Neighborhood character score (urban/suburban/rural)
+
+- [ ] **Q-190 · [P3-FEAT] OpenAddresses full US import — ~80M addresses, fills thin states**
+  OpenAddresses (`openaddresses.io`) aggregates address data from 5,000+ state and county GIS portals into a single open dataset. CDLA-Permissive license (same as Overture — safe to use). Total US compressed: ~22GB. Expected net new addresses after dedup with existing 198M: 8–15M (heavy overlap in dense states, meaningful additions in rural midwest, thin states, and territories).
+  **Why this matters:** OpenAddresses sources directly from county assessors and state GIS programs — the same source-of-truth that USPS uses for route planning. It is the best open proxy for USPS coverage.
+  **Key thin-state fills expected:**
+  - South Dakota: ~150–200K additional (currently 206K, expected ~400K total)
+  - Montana, Wyoming, ND: 50–100K each
+  - Hawaii and PR: check `us/hi` and `us/pr` sources first (may be faster than separate Q-188/Q-189)
+  **Import pipeline (same as Overture):**
+  ```bash
+  # On staging Render Shell
+  # Download US sources (22GB compressed)
+  wget https://batch.openaddresses.io/data/us-latest.zip
+  # Convert: lon,lat,number,street,unit,city,district,region,postcode → TSV
+  # Run into staging db, verify counts, upload-chunk to prod, merge
+  ```
+  **Acceptance:** `GET /api/stats` shows total addresses ≥ 205M. South Dakota count ≥ 350K.
+  **Effort:** 1 day import run on staging + 2–3 hrs engineering for CSV→TSV conversion. *Staging-first rule applies.*
+
+- [ ] **Q-191 · [P3-FEAT] Run Microsoft Building Footprints import on staging (script already written)**
+  `building-import.js` was written as part of Q-102 but never run on staging. The script downloads per-state GeoJSON.gz from Microsoft Azure Open Data (125M US building polygons, MIT license), streams polygon centroid + area into `building_footprints` table in risk.db. This fills the new-construction gap — structures that exist physically but aren't yet in any government address file.
+  **What it enables:** `building_area_sqft` and `building_type` as enrichment fields on `/v1/enrich` and `/v1/risk`. Better drone landing zone estimates. Higher confidence scores for newly constructed addresses. The ~2M new USPS addresses added in 2024 are likely buildings already in MS footprints but not yet in NAD r22.
+  **Run:**
+  ```bash
+  # On staging Render Shell
+  DATA_DIR=/data node building-import.js
+  # States: all 50, ~125M polygons, ~40GB download
+  # After: verify building_footprints table row count
+  # Then: upload risk.db to prod (POST /v1/admin/upload-chunk)
+  ```
+  **Acceptance:** `GET /v1/enrich?nad_uuid=...` returns `building_area_sqft` for a known residential address. Admin `/v1/admin/db-probe` shows `building_footprints` table with ≥100M rows.
+  **Effort:** 4–6 hrs run time on staging (IO-bound). 1 hr engineering prep. *Staging-first rule applies.*
+
+- [ ] **Q-192 · [P3-FEAT] Quarterly Overture refresh cadence — next: July 2026**
+  Overture Maps releases quarterly. The current import used the April 2025 release. The July 2026 release will include: ~2M net new US addresses (new construction + government updates), corrections to known quality issues, and potentially new schema fields (building height, age). This should be a scheduled, repeatable operation, not a one-off.
+  **Cadence:** January, April, July, October each year. Set calendar reminder for 2026-07-01.
+  **Scope per refresh:** Only re-run states where delta is meaningful (urban growth corridors: TX, FL, AZ, NC, GA). Skip stable states to reduce staging disk usage.
+  **Automation path:** Long-term, this becomes a GitHub Actions workflow triggered monthly that: (1) checks Overture's S3 bucket for new release, (2) compares checksums, (3) triggers staging import if new release detected. For now: manual trigger on staging Render Shell.
+  **Acceptance:** Process documented in `docs/runbooks/RUNBOOK-DATA.md` with exact commands. Next refresh scheduled for July 2026.
+  **Effort:** 2 hrs process documentation. Import run: 4–6 hrs on staging.
+
+- [ ] **Q-193 · [P3-FEAT] Store Overture GERS ID in address schema**
+  Overture assigns a Global Entity Reference System (GERS) ID to every address — a stable, permanent identifier that persists even if street names change. Currently GeoClear discards the GERS ID during import. Storing it as `overture_id` enables: (1) customers correlating GeoClear data with other Overture-based tools (Foursquare, Esri, etc.), (2) future linkage to Overture's Buildings and Places themes, (3) dataset export with stable cross-reference keys.
+  **Schema change:** Add `overture_id TEXT` column to `addresses` table in nad.db. Backfill from Overture import files for the ~78M Overture-sourced rows. Leave NULL for NAD-only rows.
+  **Migration:** `ALTER TABLE addresses ADD COLUMN overture_id TEXT` (SQLite — instant, no rebuild). Backfill: read Overture TSV files saved on staging disk, UPDATE WHERE nad_uuid matches.
+  **API change:** Expose `overture_id` in `enrichAddress()` output (alongside `nad_uuid`). Add to `/v1/address`, `/v1/enrich`, `/v1/risk` responses.
+  **Acceptance:** `GET /api/address?street=...&state=CA` returns `overture_id` for Overture-sourced CA addresses. NULL for NAD-only addresses. Documented in ARCHITECTURE.md.
+  **Effort:** 3–4 hrs. Requires staging disk to still have Overture TSV files for backfill.
+
+- [ ] **Q-194 · [P3-FEAT] South Dakota targeted gap-fill**
+  South Dakota has 206,082 addresses in GeoClear vs ~400,000 expected from Census housing unit data (~52% coverage). SD is a moderate-priority gap — not zero like HI/PR, but thin enough to affect customers querying rural SD addresses. NAD r22 has sparse SD participation.
+  **Fix options (in order of preference):**
+  1. OpenAddresses `us/sd` sources — check `openaddresses.io/sources?country=us&state=sd`. SD GIS-Share publishes county address files. Expected yield: 150–200K additional addresses.
+  2. SD GIS-Share direct: `sdgis.sd.gov` → Address Points layer → download as CSV or GeoJSON.
+  3. Overture targeted re-run `--state=SD` — quick to try, may yield 50–100K.
+  **Acceptance:** South Dakota address_count in `GET /api/states` ≥ 350,000.
+  **Effort:** 2–3 hrs. Often worth bundling with Q-190 (OpenAddresses full import handles SD as part of the full run). *Staging-first rule applies.*
 
 ---
 
@@ -771,6 +868,29 @@ Open:
 - [ ] **Q-141 · Import CAL FIRE FHSZ into risk.db** — `calfire-import.js` exists and is ready but was never run. `calfire_fhsz` table absent from risk.db. CAL FIRE FHSZ is more granular than USFS WHP (polygon-level vs county-level) for CA wildfire risk and is the primary signal used in the `/v1/risk` CA wildfire score. Run on staging Render Shell: `node calfire-import.js --db=/data/risk.db` (SRA + LRA sources). Then re-upload risk.db to prod. Dependency: Q-140 (CA addresses need county_fips for the combined wildfire score to be useful).
 - [ ] **Q-142 · Galveston TX address coverage gap** — ZIP 77550 (Galveston Island) addresses return "No addresses found" from all lookup attempts. Galveston is a high-priority flood zone demo target (coastal VE/AE zones confirmed via FEMA API). NAD r22 likely has sparse Galveston coverage. Fix: check Overture parquet for Galveston County (FIPS 48167) — if present, import via staging pipeline. Also check Texas GLO (General Land Office) for coastal address data.
 
+- [ ] **Q-188 · [P2-DATA] Hawaii coverage — 0 addresses in prod**
+  GeoClear currently returns zero results for any Hawaii address. Hawaii has ~560,000 housing units and 1.5M people. Any customer or prospect testing the API with a Hawaii address gets an immediate product fail. This is a data quality issue, not a missing feature.
+  **Root cause:** NAD r22 has no Hawaii data (Hawaii does not participate in the USDOT National Address Database program). Overture full run may have excluded HI or failed silently during the April 2026 import.
+  **Fix sequence:**
+  1. Try Overture targeted re-run for HI on staging Render Shell:
+     ```bash
+     node overture-import.js --db=/data/hi-overture.db --state=HI
+     ```
+     Verify row count (expect 350–500K). If ≥300K: upload-chunk → merge → verify `/api/stats`.
+  2. If Overture yield <300K: pull Hawaii State GIS directly. Four county files available at `geodata.hawaii.gov` — Hawaii County, Honolulu, Kauai, Maui. CSV format: `lon, lat, number, street, unit, city, postcode`. Convert to TSV → staging pipeline.
+  3. As a fallback: OpenAddresses has `us/hi` sources (county GIS aggregated). Download from `openaddresses.io/sources?country=us&state=hi`.
+  **Acceptance:** `GET /api/address?street=100+Paoakalani+Ave&city=Honolulu&state=HI` returns a verified address. `GET /api/states` shows HI address_count ≥ 300,000.
+  **Effort:** 2–4 hrs (Overture path) or 4–6 hrs (direct GIS path). *Staging-first rule applies.*
+
+- [ ] **Q-189 · [P2-DATA] Puerto Rico coverage — 0 addresses in prod**
+  Puerto Rico has ~1.3M housing units and 3.2M residents. GeoClear returns zero results for all PR addresses. NAD r22 does not include Puerto Rico. PR is a US territory with active USPS delivery routes — every insurance, mortgage, and logistics company operating in PR needs address intelligence.
+  **Fix:**
+  1. Try Overture targeted re-run for PR (`--state=PR`). Overture has global coverage including PR.
+  2. If insufficient: Puerto Rico Planning Board publishes address data via ArcGIS Online (`egis.pr.gov`). Contact: `gis@jp.pr.gov`. Data is public.
+  3. OpenAddresses has `us/pr` sources.
+  **Acceptance:** `GET /api/address?street=100+Calle+Fortaleza&city=San+Juan&state=PR` returns a result. HI address_count ≥ 800,000.
+  **Effort:** 3–5 hrs. *Staging-first rule applies.*
+
 ---
 
 - [ ] **Q-133 · [P3-FEAT]** Physical World Graph API — address nodes connected to businesses, schools, flood zones
@@ -785,6 +905,7 @@ Open:
 | Item | Status |
 |------|--------|
 | geoclear.io DNS | ✅ Cloudflare proxy (orange cloud), Full (strict) SSL |
+| mcp.geoclear.io DNS | ✅ Cloudflare CNAME → geoclear.onrender.com (DNS-only, added 2026-04-18) — MCP server endpoint |
 | Render prod | ✅ `srv-d7ep7bfavr4c73d46gng` — auto-deploys on push |
 | Render staging | ✅ `srv-d7f6rh58nd3s73cve8dg` — 100GB disk, autoDeploy OFF |
 | GitHub | ✅ `sriharkaur/geoclear` |
