@@ -2469,9 +2469,9 @@ app.post('/mcp', express.json(), mcpAuth, async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 });
 
-// GET /mcp — browser: serve marketing page; agent: SSE event stream
+// GET /mcp — browser: serve marketing page; agent (with session-id): SSE stream
 app.get('/mcp', async (req, res, next) => {
-  if (!req.headers['mcp-session-id'] && req.accepts('html')) {
+  if (!req.headers['mcp-session-id']) {
     return res.sendFile(path.join(__dirname, 'public', 'mcp.html'));
   }
   next();
