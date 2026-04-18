@@ -152,15 +152,6 @@
         <span class="pill pill-unknown" id="db-pill">Checking…</span>
       </div>
     </div>
-    <div class="service-row">
-      <div>
-        <div class="service-name">Point Enrichment</div>
-        <div class="service-sub">Census tract + FEMA flood zone</div>
-      </div>
-      <div class="service-right">
-        <span class="pill pill-unknown" id="enrich-pill">Checking…</span>
-      </div>
-    </div>
   </div>
 
   <!-- Uptime history (real data from UptimeRobot) -->
@@ -296,24 +287,9 @@ async function loadUptimeData() {
   }
 }
 
-// ── Enrichment check ─────────────────────────────────────────────
-async function checkEnrich() {
-  try {
-    const r = await fetch('/api/enrich?lat=38.878&lon=-77.175');
-    const pill = document.getElementById('enrich-pill');
-    pill.textContent = r.ok ? 'Operational' : 'Degraded';
-    pill.className   = r.ok ? 'pill pill-up' : 'pill pill-unknown';
-  } catch (_) {
-    const pill = document.getElementById('enrich-pill');
-    pill.textContent = 'Error';
-    pill.className   = 'pill pill-down';
-  }
-}
-
 // ── Boot ──────────────────────────────────────────────────────────
 checkHealth();
 loadUptimeData();
-checkEnrich();
 
 setInterval(checkHealth, 30_000);
 setInterval(loadUptimeData, 300_000); // refresh UptimeRobot data every 5 min
