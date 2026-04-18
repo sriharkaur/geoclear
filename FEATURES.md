@@ -272,13 +272,17 @@ Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-G
 
 | Item | Location | Notes |
 |------|----------|-------|
-| MCP HTTP server | `POST /mcp` | Streamable HTTP transport, 4 tools, API-key auth |
-| `verify_address` tool | `/mcp` | Full address verify + enrichment via MCP |
-| `suggest_address` tool | `/mcp` | Address autocomplete, up to 10 suggestions |
-| `reverse_geocode` tool | `/mcp` | Lat/lon → nearest address + enrichment |
-| `get_coverage` tool | `/mcp` | State-level coverage stats |
+| MCP HTTP server | `POST /mcp` | Streamable HTTP transport, 8 tools, API-key + x402 + free tier |
+| `verify_address` tool | `/mcp` | Full address verify + enrichment — $0.002 x402 |
+| `suggest_address` tool | `/mcp` | Address autocomplete, up to 10 suggestions — $0.002 x402 |
+| `reverse_geocode` tool | `/mcp` | Lat/lon → nearest address + enrichment — $0.002 x402 |
+| `get_coverage` tool | `/mcp` | State-level coverage stats — $0.002 x402 |
+| `climate_risk_decision` tool | `/mcp` | Flood + wildfire + storm + earthquake + drought + recommended_action — $0.02 x402 |
+| `hmda_compliance_check` tool | `/mcp` | Census tract, FIPS, flood determination, HMDA-ready bundle — $0.05 x402 |
+| `drone_deliverability` tool | `/mcp` | FAA airspace class, LAANC eligibility, authorized altitude, decision — $0.05 x402 |
+| `full_risk_assessment` tool | `/mcp` | All risk dimensions (climate + drone + HMDA + scores) in one call — $0.10 x402 |
 | MCP docs page | `/mcp-docs` | Setup guide for Claude Desktop + Cursor + x402 flow |
-| x402 micropayment auth | `/mcp` | HTTP 402 + USDC on Base — $0.004/session, no signup required |
+| x402 outcome-based pricing | `/mcp` | Per-tool USDC pricing on Base: $0.002 base → $0.10 full risk |
 
 ---
 

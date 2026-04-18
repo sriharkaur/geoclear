@@ -1927,7 +1927,35 @@ app.get('/coverage', (req, res) => {
 // Auth: X-Api-Key header (same key as REST API).
 const _mcpSessions = new Map(); // sessionId → StreamableHTTPServerTransport
 
-function _createMcpServer(keyInfo) {
+// Full risk pipeline for premium MCP tools
+async function _mcpRiskLookup(street, city, state, zip) {
+  const results = nad.searchAddress({ street, city, state, zip, limit: 1 });
+  if (!results.length) return null;
+  const addr     = results[0];
+  const enriched = enrichAddress(addr);
+  const addrLat  = enriched.latitude  ?? null;
+  const addrLon  = enriched.longitude ?? null;
+  const fips5    = enriched.fips      || null;
+  const hardNull = (ms) => new Promise(r => setTimeout(() => r(null), ms));
+  const [femaResult, wildfireRow, stormRow, earthquakeResult, droughtResult, pointData] = await Promise.all([
+    (addrLat && addrLon) ? Promise.race([getFEMAFloodZone(addrLat, addrLon).catch(() => null), hardNull(4000)]) : Promise.resolve(null),
+    fips5 ? riskData.getWildfireRisk(fips5).catch(() => null)   : Promise.resolve(null),
+    fips5 ? riskData.getStormRisk(fips5).catch(() => null)      : Promise.resolve(null),
+    fips5 ? riskData.getEarthquakeRisk(fips5).catch(() => null) : Promise.resolve(null),
+    fips5 ? riskData.getDroughtRisk(fips5).catch(() => null)    : Promise.resolve(null),
+    (addrLat && addrLon) ? Promise.race([enrichPoint(addrLat, addrLon).catch(() => null), hardNull(4000)]) : Promise.resolve(null),
+  ]);
+  const calFireRow = (enriched.state === 'CA' && addrLat && addrLon)
+    ? await riskData.getCalFireFHSZ(addrLat, addrLon).catch(() => null) : null;
+  const droneData  = (addrLat && addrLon)
+    ? await getFAADroneAirspace(addrLat, addrLon).catch(() => null) : null;
+  return { addr, enriched, femaResult, wildfireRow, stormRow, earthquakeResult, droughtResult, calFireRow, droneData, pointData, addrLat, addrLon, fips5 };
+}
+
+const _PREMIUM_TOOLS = new Set(['climate_risk_decision', 'hmda_compliance_check', 'drone_deliverability', 'full_risk_assessment']);
+const _PREMIUM_GATE  = { content: [{ type: 'text', text: JSON.stringify({ error: 'premium_tool', message: 'This tool requires an API key or x402 micropayment. See geoclear.io for pricing.' }) }], isError: true };
+
+function _createMcpServer(keyInfo, authMethod) {
   const server = new McpServer({
     name: 'geoclear',
     version: '1.0.0',
@@ -2046,15 +2074,251 @@ function _createMcpServer(keyInfo) {
     }
   );
 
+  // ── Premium outcome-based tools (x402: $0.02–$0.10) ─────────────
+
+  const _addrParams = {
+    street: z.string().describe('Street address with number, e.g. "123 Main St"'),
+    city:   z.string().optional().describe('City name'),
+    state:  z.string().length(2).optional().describe('Two-letter state code'),
+    zip:    z.string().optional().describe('ZIP code'),
+  };
+
+  server.tool(
+    'climate_risk_decision',
+    'Decision-grade climate risk for a US address. Returns flood zone, wildfire severity, storm exposure, earthquake and drought risk, composite climate score, and a recommended_action. Replaces $2–4/call third-party climate data (First Street, ZestyAI). x402 price: $0.02.',
+    { title: 'Climate Risk Decision', readOnlyHint: true },
+    _addrParams,
+    async ({ street, city, state, zip }) => {
+      if (authMethod === 'free') return _PREMIUM_GATE;
+      try {
+        const d = await _mcpRiskLookup(street, city, state, zip);
+        if (!d) return { content: [{ type: 'text', text: JSON.stringify({ found: false, input: { street, city, state, zip } }) }] };
+        const { enriched, femaResult, wildfireRow, stormRow, earthquakeResult, droughtResult, calFireRow } = d;
+
+        const floodScore    = femaResult?.sfha ? 0.8 : (femaResult ? 0.2 : 0.1);
+        const wfClass       = wildfireRow?.whp_class || calFireRow?.fhsz_label || null;
+        const wildfireScore = wfClass === 'Very High' ? 0.9 : wfClass === 'High' ? 0.65 : wfClass === 'Moderate' ? 0.35 : 0.1;
+        const stormScore    = stormRow ? Math.min((stormRow.event_count || 0) / 20, 1) : 0.1;
+        const composite     = +((floodScore * 0.4 + wildfireScore * 0.35 + stormScore * 0.25).toFixed(3));
+
+        let recommended_action, reasoning;
+        if (femaResult?.sfha || composite >= 0.65) {
+          recommended_action = 'high_risk';
+          reasoning = 'Significant climate exposure detected. Enhanced underwriting review required.';
+        } else if (composite >= 0.35) {
+          recommended_action = 'moderate_risk';
+          reasoning = 'Moderate climate exposure. Standard risk assessment applies.';
+        } else {
+          recommended_action = 'low_risk';
+          reasoning = 'Low climate risk at this address.';
+        }
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          address:          enriched.full_address,
+          flood:            { zone: femaResult?.flood_zone || null, sfha: femaResult?.sfha ?? null },
+          wildfire:         { class: wfClass, score: wildfireScore },
+          storm:            { events_10yr: stormRow?.event_count ?? null },
+          earthquake:       earthquakeResult ? { label: earthquakeResult.risk_label, pgam: earthquakeResult.pgam, sdc: earthquakeResult.sdc } : null,
+          drought:          droughtResult   ? { level: droughtResult.current_level, score: droughtResult.risk_score } : null,
+          composite_score:  composite,
+          decision:         { recommended_action, reasoning },
+          confidence:       enriched.confidence,
+          price_tier:       'climate_decision',
+        }) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  server.tool(
+    'hmda_compliance_check',
+    'HMDA/CRA compliance bundle for a US address. Returns census tract, county FIPS, flood determination, MSA indicator, and HMDA-ready enrichment fields in one call. Replaces $3–15 manual flood determinations. x402 price: $0.05.',
+    { title: 'HMDA Compliance Check', readOnlyHint: true },
+    _addrParams,
+    async ({ street, city, state, zip }) => {
+      if (authMethod === 'free') return _PREMIUM_GATE;
+      try {
+        const d = await _mcpRiskLookup(street, city, state, zip);
+        if (!d) return { content: [{ type: 'text', text: JSON.stringify({ found: false, input: { street, city, state, zip } }) }] };
+        const { enriched, femaResult, pointData } = d;
+
+        const sfha = femaResult?.sfha ?? null;
+        let flood_determination, flood_reasoning;
+        if (sfha === true) {
+          flood_determination = 'SFHA';
+          flood_reasoning     = `Address is in FEMA Special Flood Hazard Area (zone ${femaResult.flood_zone}). Mandatory flood insurance required for federally-backed loans.`;
+        } else if (sfha === false) {
+          flood_determination = 'NON_SFHA';
+          flood_reasoning     = `Address is outside FEMA Special Flood Hazard Area (zone ${femaResult.flood_zone || 'X'}).`;
+        } else {
+          flood_determination = 'UNDETERMINED';
+          flood_reasoning     = 'FEMA flood zone data not available for this address.';
+        }
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          address:             enriched.full_address,
+          fips:                enriched.fips          || null,
+          county:              enriched.county         || null,
+          state:               enriched.state          || null,
+          census_tract:        pointData?.census_tract ?? null,
+          census_block_group:  pointData?.census_block_grp ?? null,
+          census_geoid:        pointData?.census_geoid ?? null,
+          msa_indicator:       enriched.fips ? true : false,
+          flood:               { determination: flood_determination, zone: femaResult?.flood_zone || null, sfha, reasoning: flood_reasoning },
+          address_verified:    enriched.verified,
+          confidence:          enriched.confidence,
+          hmda_ready:          !!(enriched.fips && enriched.verified),
+          price_tier:          'hmda_compliance',
+        }) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  server.tool(
+    'drone_deliverability',
+    'FAA airspace classification and drone delivery decision for a US address. Returns airspace class, LAANC eligibility, authorized altitude, building presence, and a recommended_action. Replaces human dispatch review. x402 price: $0.05.',
+    { title: 'Drone Deliverability', readOnlyHint: true },
+    _addrParams,
+    async ({ street, city, state, zip }) => {
+      if (authMethod === 'free') return _PREMIUM_GATE;
+      try {
+        const d = await _mcpRiskLookup(street, city, state, zip);
+        if (!d) return { content: [{ type: 'text', text: JSON.stringify({ found: false, input: { street, city, state, zip } }) }] };
+        const { enriched, droneData } = d;
+
+        const inControlled   = droneData?.in_controlled_airspace ?? false;
+        const authAlt        = droneData?.authorized_altitude_ft ?? (inControlled ? 0 : 400);
+        const laancAvailable = droneData?.laanc_available ?? false;
+        const deliverable    = !inControlled || laancAvailable;
+
+        let recommended_action, reasoning;
+        if (!enriched.verified) {
+          recommended_action = 'deny';
+          reasoning          = 'Address could not be verified. Do not dispatch.';
+        } else if (inControlled && !laancAvailable) {
+          recommended_action = 'deny';
+          reasoning          = 'Controlled airspace with no LAANC authorization available. Manual FAA waiver required.';
+        } else if (inControlled && laancAvailable) {
+          recommended_action = 'laanc_required';
+          reasoning          = `Controlled airspace (${droneData?.airport_id || 'nearby airport'}). Obtain LAANC authorization before flight. Max altitude: ${authAlt} ft.`;
+        } else {
+          recommended_action = 'approved';
+          reasoning          = `Class G airspace. Standard Part 107 rules apply. Max altitude: ${authAlt} ft AGL.`;
+        }
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          address:          enriched.full_address,
+          deliverable,
+          airspace_class:   inControlled ? 'controlled' : 'G',
+          authorized_altitude_ft: authAlt,
+          laanc_available:  laancAvailable,
+          airport_id:       droneData?.airport_id ?? null,
+          decision:         { recommended_action, reasoning },
+          confidence:       enriched.confidence,
+          price_tier:       'drone_deliverability',
+        }) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  server.tool(
+    'full_risk_assessment',
+    'All risk dimensions for a US address in one call: flood zone, wildfire, storm, earthquake, drought, drone airspace, HMDA/flood determination, address confidence, and composite scores. Replaces multiple third-party API calls. x402 price: $0.10.',
+    { title: 'Full Risk Assessment', readOnlyHint: true },
+    _addrParams,
+    async ({ street, city, state, zip }) => {
+      if (authMethod === 'free') return _PREMIUM_GATE;
+      try {
+        const d = await _mcpRiskLookup(street, city, state, zip);
+        if (!d) return { content: [{ type: 'text', text: JSON.stringify({ found: false, input: { street, city, state, zip } }) }] };
+        const { enriched, femaResult, wildfireRow, stormRow, earthquakeResult, droughtResult, calFireRow, droneData, pointData } = d;
+
+        const floodScore    = femaResult?.sfha ? 0.8 : (femaResult ? 0.2 : 0.1);
+        const wfClass       = wildfireRow?.whp_class || calFireRow?.fhsz_label || null;
+        const wildfireScore = wfClass === 'Very High' ? 0.9 : wfClass === 'High' ? 0.65 : wfClass === 'Moderate' ? 0.35 : 0.1;
+        const stormScore    = stormRow ? Math.min((stormRow.event_count || 0) / 20, 1) : 0.1;
+        const climateScore  = +((floodScore * 0.4 + wildfireScore * 0.35 + stormScore * 0.25).toFixed(3));
+
+        const conf          = enriched.confidence || 0;
+        const confNorm      = conf / 100;
+        const delivScore    = +(Math.min(0.95, confNorm * 0.7 + (enriched.residential ? 0.1 : 0) + (femaResult ? 0 : 0.1)).toFixed(3));
+
+        const inControlled  = droneData?.in_controlled_airspace ?? false;
+        const laancAvail    = droneData?.laanc_available ?? false;
+        const droneOk       = !inControlled || laancAvail;
+
+        let overall_decision;
+        if (!enriched.verified || conf < 30)          overall_decision = 'deny';
+        else if (femaResult?.sfha || climateScore >= 0.65) overall_decision = 'high_risk';
+        else if (climateScore >= 0.35 || conf < 60)   overall_decision = 'moderate_risk';
+        else                                           overall_decision = 'approved';
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          address:         enriched.full_address,
+          verified:        enriched.verified,
+          confidence:      conf,
+          overall_decision,
+          climate: {
+            composite:   climateScore,
+            flood:       { zone: femaResult?.flood_zone || null, sfha: femaResult?.sfha ?? null, score: floodScore },
+            wildfire:    { class: wfClass, score: wildfireScore },
+            storm:       { events_10yr: stormRow?.event_count ?? null, score: stormScore },
+            earthquake:  earthquakeResult ? { label: earthquakeResult.risk_label, pgam: earthquakeResult.pgam } : null,
+            drought:     droughtResult   ? { level: droughtResult.current_level, score: droughtResult.risk_score } : null,
+          },
+          drone: {
+            deliverable:          droneOk,
+            airspace_class:       inControlled ? 'controlled' : 'G',
+            authorized_altitude_ft: droneData?.authorized_altitude_ft ?? (inControlled ? 0 : 400),
+            laanc_available:      laancAvail,
+            airport_id:           droneData?.airport_id ?? null,
+          },
+          hmda: {
+            fips:               enriched.fips          || null,
+            census_tract:       pointData?.census_tract ?? null,
+            census_geoid:       pointData?.census_geoid ?? null,
+            flood_determination: femaResult?.sfha ? 'SFHA' : femaResult ? 'NON_SFHA' : 'UNDETERMINED',
+            flood_zone:         femaResult?.flood_zone  || null,
+            hmda_ready:         !!(enriched.fips && enriched.verified),
+          },
+          scores: {
+            deliverability: delivScore,
+            climate:        climateScore,
+          },
+          price_tier: 'full_risk_assessment',
+        }) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
   return server;
 }
 
 // ── x402 payment infrastructure ──────────────────────────────────
-// USDC on Base mainnet (6 decimals). $0.004 = 4000 raw units.
+// USDC on Base mainnet (6 decimals). 1 USDC = 1_000_000 raw units.
 const X402_USDC_ASSET   = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const X402_NETWORK      = 'eip155:8453'; // Base mainnet
-const X402_AMOUNT       = '4000';        // $0.004 USDC
 const X402_TIMEOUT_SECS = 60;
+
+// Outcome-based pricing (Phase 3). Premium tools replace expensive third-party calls.
+const TOOL_PRICES = {
+  verify_address:          2000,   // $0.002 — base lookup
+  suggest_address:         2000,   // $0.002
+  reverse_geocode:         2000,   // $0.002
+  get_coverage:            2000,   // $0.002
+  climate_risk_decision:  20000,   // $0.02  — replaces $2-4 First Street / ZestyAI calls
+  hmda_compliance_check:  50000,   // $0.05  — replaces $3-15 flood determination
+  drone_deliverability:   50000,   // $0.05  — replaces human dispatch review
+  full_risk_assessment:  100000,   // $0.10  — all risk dimensions in one call
+};
+const DEFAULT_TOOL_PRICE = 2000;
 
 let _x402Facilitator = null;
 let _x402Server      = null;
@@ -2071,14 +2335,14 @@ if (GEOCLEAR_USDC_WALLET) {
   }
 }
 
-function _buildMcpPaymentRequirements() {
+function _buildMcpPaymentRequirements(toolName) {
   return {
     scheme:             'exact',
     network:            X402_NETWORK,
     maxTimeoutSeconds:  X402_TIMEOUT_SECS,
     asset:              X402_USDC_ASSET,
     payTo:              GEOCLEAR_USDC_WALLET,
-    amount:             X402_AMOUNT,
+    amount:             String(TOOL_PRICES[toolName] || DEFAULT_TOOL_PRICE),
     extra:              { name: 'USDC', version: '2' },
   };
 }
@@ -2090,34 +2354,39 @@ function _decodeb64(str) {
   return JSON.parse(Buffer.from(str, 'base64').toString('utf8'));
 }
 
-function _sendMcpPaymentRequired(req, res) {
+function _sendMcpPaymentRequired(req, res, toolName) {
   if (!GEOCLEAR_USDC_WALLET) {
     return res.status(401).json({ error: 'X-Api-Key header required for MCP endpoint.' });
   }
+  const reqs = _buildMcpPaymentRequirements(toolName);
   const paymentRequired = {
     x402Version: 2,
     error:       'Payment required',
     resource: {
       url:         `${BASE_URL}/mcp`,
-      description: 'GeoClear MCP — verify_address, suggest_address, reverse_geocode, get_coverage',
+      description: 'GeoClear MCP — verify_address, suggest_address, reverse_geocode, get_coverage, climate_risk_decision, hmda_compliance_check, drone_deliverability, full_risk_assessment',
       mimeType:    'application/json',
     },
-    accepts: [_buildMcpPaymentRequirements()],
+    accepts: [reqs],
   };
   res.status(402)
     .setHeader('PAYMENT-REQUIRED', _encodeb64(paymentRequired))
     .setHeader('Content-Type', 'application/json')
-    .json({ x402Version: 2, error: 'Payment required', accepts: [_buildMcpPaymentRequirements()] });
+    .json({ x402Version: 2, error: 'Payment required', accepts: [reqs] });
 }
 
 // MCP auth middleware — X-Api-Key key auth OR x402 micropayment
 async function mcpAuth(req, res, next) {
+  // Extract tool name for per-tool x402 pricing (present only on tools/call requests)
+  const _toolName = req.body?.method === 'tools/call' ? (req.body?.params?.name || '') : '';
+  req._mcpToolName = _toolName;
+
   // ① Existing session bypass: x402-authed sessions don't re-pay per request;
   //    key-authed sessions re-validate so revoked keys are caught promptly.
   const sessionId = req.headers['mcp-session-id'];
   if (sessionId && _mcpSessions.has(sessionId)) {
     const t = _mcpSessions.get(sessionId);
-    if (t._gcAuthMethod === 'x402') return next(); // already paid
+    if (t._gcAuthMethod === 'x402') return next(); // already paid for this session
     // For key sessions, fall through to re-validate below
     if (t._gcAuthMethod === 'apikey') {
       try {
@@ -2142,13 +2411,13 @@ async function mcpAuth(req, res, next) {
     } catch { return res.status(500).json({ error: 'Key validation error.' }); }
   }
 
-  // ③ x402 path (only if wallet configured)
+  // ③ x402 path — per-tool pricing (only if wallet configured)
   if (_x402Facilitator) {
     const paymentSig = req.headers['payment-signature'] || req.headers['x-payment'];
     if (paymentSig) {
       try {
         const paymentPayload  = _decodeb64(paymentSig);
-        const requirements    = _buildMcpPaymentRequirements();
+        const requirements    = _buildMcpPaymentRequirements(_toolName);
         const verifyResult = await _x402Facilitator.verify(paymentPayload, requirements);
         if (!verifyResult.isValid) {
           return res.status(402)
@@ -2190,7 +2459,7 @@ app.post('/mcp', express.json(), mcpAuth, async (req, res) => {
     transport.onclose = () => {
       if (transport.sessionId) _mcpSessions.delete(transport.sessionId);
     };
-    const server = _createMcpServer(req._mcpKeyInfo);
+    const server = _createMcpServer(req._mcpKeyInfo, req._mcpAuthMethod);
     await server.connect(transport);
   }
   // Set PAYMENT-RESPONSE header for x402 clients so they can confirm settlement
