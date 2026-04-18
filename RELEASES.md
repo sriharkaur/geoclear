@@ -9,6 +9,9 @@
 
 ## Unreleased
 
+- **MCP HTTP server (Phase 1)** — `POST /mcp`, `GET /mcp`, `DELETE /mcp` using `StreamableHTTPServerTransport`. 4 tools: `verify_address`, `suggest_address`, `reverse_geocode`, `get_coverage`. Auth via `X-Api-Key` header (same keys as REST API). Per-session `McpServer` factory. Connects Claude Desktop, Cursor, and any MCP-compatible agent.
+- **`/mcp-docs` marketing page** — explains MCP setup with copy-ready config snippets for Claude Desktop + Cursor. Tab switcher for different clients. Lists all 4 tools. Added to nav + sitemap.
+- **Coverage cache pre-warm** — `onListening()` now calls `listStatesCoverage()` via `setImmediate()` on startup when nad.db is ready, so first `/api/coverage` request is instant.
 - **Starter tier restored** — $49/mo (50K lookups, 100 req/min) added back to landing.html pricing grid, feature comparison table (6-column), volume calculator, and portal.html. Canonical tier table now: Free / Starter $49 / Growth $199 / Professional $499 / Scale $999.
 - **Pricing consistency pass** — Fixed all `$249/mo` references site-wide (docs.html rate-limits table, compliance.html cost calculator, portal.html plan cards, bulk.html FAQ, changelog.html). Renamed portal plans: Builder→Starter, Professional ($249)→Growth ($199), Pro Compliance→Professional ($499). Updated web-server.js Stripe tier comment + error messages.
 - **Compliance page credibility fix** — `<5ms median latency` → `<5ms server-side p95` in trust strip (P2).

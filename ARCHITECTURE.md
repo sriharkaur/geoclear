@@ -102,6 +102,7 @@ NAD_DB=data/dev.db node web-server.js
 |---|---|---|
 | GET | `/api/health` | Health check — DB status, address count |
 | GET | `/api/stats` | DB coverage stats |
+| GET | `/api/coverage` | Per-state address counts + coverage tier (6h cache, no auth) |
 | GET | `/api/states` | All states with address counts |
 | POST | `/v1/signup` | Self-serve free tier key (email only, 5/hr/IP rate limit) |
 | POST | `/v1/checkout` | Create Stripe checkout session (starter / pro / metered) |
@@ -126,6 +127,9 @@ NAD_DB=data/dev.db node web-server.js
 | GET | `/v1/me` | Key status — tier, limits, usage today/total |
 | GET | `/v1/risk` | Risk Score (Professional+) — deliverability, fraud, disaster, vacancy (0–1); `score_version: v1|v2`; resolves by nad_uuid, street+city+state, or lat+lon |
 | POST | `/v1/outcomes` | Outcome feedback — report delivery/fraud/chargeback per nad_uuid; upgrades v1 heuristic to v2 outcome-backed score |
+| POST | `/mcp` | MCP Streamable HTTP — initialize or continue a session; auth via `X-Api-Key` |
+| GET | `/mcp` | MCP SSE event stream for an active session (`Mcp-Session-Id` required) |
+| DELETE | `/mcp` | Terminate an MCP session |
 
 ### Admin (requires `X-Admin-Secret` header)
 

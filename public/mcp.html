@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoClear MCP Server — Address Intelligence for AI Agents</title>
+  <meta name="description" content="Connect GeoClear to Claude, Cursor, and any MCP-compatible AI agent. Verify addresses, get flood zones, risk scores, and 15+ enrichment fields — all from natural language." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #faf9f7; --surface: #ffffff; --surface2: #f0ebe4; --border: rgba(46,147,111,0.15); --border2: #e0d8cf;
+      --sky: #2e936f; --text: #242220; --muted: #7a6e68; --dim: #a09890;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --r: 8px; --rxl: 12px; --max: 860px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+
+    main { max-width: var(--max); margin: 0 auto; padding: 56px 24px 96px; }
+
+    .page-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sky); margin-bottom: 10px; }
+    h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 14px; }
+    .page-sub { font-size: 1.05rem; color: var(--muted); max-width: 600px; line-height: 1.65; margin-bottom: 40px; }
+
+    /* Tool grid */
+    .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 48px; }
+    @media (max-width: 600px) { .tools-grid { grid-template-columns: 1fr; } }
+    .tool-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rxl); padding: 20px 22px; }
+    .tool-name { font-size: 0.82rem; font-weight: 700; color: var(--sky); font-family: 'Courier New', monospace; margin-bottom: 6px; }
+    .tool-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.55; }
+
+    /* Section headers */
+    h2 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 18px; margin-top: 48px; }
+
+    /* Code blocks */
+    .code-block { background: #1a1917; color: #e8e4de; border-radius: var(--rxl); padding: 22px 24px; font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; line-height: 1.7; overflow-x: auto; margin-bottom: 28px; position: relative; }
+    .code-block .c-green { color: #7ec8a4; }
+    .code-block .c-yellow { color: #f0c060; }
+    .code-block .c-muted { color: #7a7066; }
+    .copy-btn { position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #ccc; border-radius: 6px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer; font-family: var(--font); transition: background .15s; }
+    .copy-btn:hover { background: rgba(255,255,255,0.18); }
+
+    /* Step list */
+    .steps { list-style: none; counter-reset: step; margin-bottom: 32px; }
+    .steps li { counter-increment: step; display: flex; gap: 16px; margin-bottom: 20px; }
+    .steps li::before { content: counter(step); min-width: 28px; height: 28px; border-radius: 50%; background: rgba(46,147,111,0.12); color: var(--sky); font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .steps li .step-body strong { display: block; font-weight: 600; margin-bottom: 2px; }
+    .steps li .step-body { font-size: 0.9rem; color: var(--muted); }
+
+    /* Tab switcher */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab-btn { padding: 7px 16px; border-radius: 7px; border: 1px solid var(--border2); background: transparent; font-family: var(--font); font-size: 0.84rem; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .15s; }
+    .tab-btn.active { background: var(--sky); color: #fff; border-color: var(--sky); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Endpoint pill */
+    .endpoint-pill { display: inline-flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--rxl); padding: 14px 20px; margin-bottom: 28px; font-family: 'Courier New', monospace; font-size: 0.9rem; }
+    .method { background: rgba(46,147,111,0.12); color: #1d7a57; font-weight: 700; padding: 3px 8px; border-radius: 5px; font-size: 0.8rem; }
+
+    /* CTA */
+    .cta-bar { text-align: center; margin-top: 56px; padding: 40px 32px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--rxl); }
+    .cta-bar h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 10px; }
+    .cta-bar p { color: var(--muted); font-size: 0.95rem; margin-bottom: 22px; }
+    .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 26px; background: var(--sky); color: #fff; border-radius: var(--r); font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+    .btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 26px; background: transparent; color: var(--text); border: 1px solid var(--border2); border-radius: var(--r); font-size: 0.9rem; font-weight: 600; text-decoration: none; }
+
+    /* Note */
+    .note { font-size: 0.82rem; color: var(--dim); margin-top: 10px; }
+  </style>
+  <script src="/nav.js" defer></script>
+</head>
+<body>
+<div id="gc-nav-placeholder"></div>
+
+<main>
+  <div class="page-label">MCP Server</div>
+  <h1>Address Intelligence<br>for AI Agents</h1>
+  <p class="page-sub">Connect GeoClear to Claude, Cursor, or any MCP-compatible agent. Verify addresses, fetch flood zones, risk scores, and 15+ enrichment fields — from natural language, with your API key.</p>
+
+  <div class="tools-grid">
+    <div class="tool-card">
+      <div class="tool-name">verify_address</div>
+      <div class="tool-desc">Verify any US address and return coordinates, flood zone, fire/wind/earthquake risk, census tract, residential flag, and match confidence.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">suggest_address</div>
+      <div class="tool-desc">Auto-complete a partial address. Returns up to 10 candidates for the agent to present or disambiguate.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">reverse_geocode</div>
+      <div class="tool-desc">Look up the nearest verified US address for a lat/lon pair. Returns the matched address plus full enrichment.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">get_coverage</div>
+      <div class="tool-desc">Retrieve address counts and coverage tier (Full / Gap-fill / Partial) for all 50 states and territories.</div>
+    </div>
+  </div>
+
+  <h2>Connect in 3 steps</h2>
+  <ol class="steps">
+    <li><div class="step-body"><strong>Get an API key</strong>Sign up at <a href="/portal">geoclear.io/portal</a> — free tier includes 10K lookups/month.</div></li>
+    <li><div class="step-body"><strong>Add GeoClear to your agent config</strong>Paste the JSON block below into your client's MCP config file.</div></li>
+    <li><div class="step-body"><strong>Ask your agent about addresses</strong>"What's the flood risk at 123 Main St, Austin TX?" — the agent calls GeoClear automatically.</div></li>
+  </ol>
+
+  <h2>Client Configuration</h2>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('claude-desktop', this)">Claude Desktop</button>
+    <button class="tab-btn" onclick="showTab('cursor', this)">Cursor</button>
+    <button class="tab-btn" onclick="showTab('other', this)">Other (HTTP)</button>
+  </div>
+
+  <div id="tab-claude-desktop" class="tab-panel active">
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">Add to <code style="font-size:0.82rem;background:var(--surface2);padding:2px 6px;border-radius:4px;">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+    <div class="code-block" id="code-claude">
+<button class="copy-btn" onclick="copyCode('code-claude')">Copy</button><span class="c-muted">{
+  "mcpServers": {</span>
+    <span class="c-yellow">"geoclear"</span>: {
+      <span class="c-yellow">"type"</span>: <span class="c-green">"http"</span>,
+      <span class="c-yellow">"url"</span>:  <span class="c-green">"https://geoclear.io/mcp"</span>,
+      <span class="c-yellow">"headers"</span>: {
+        <span class="c-yellow">"X-Api-Key"</span>: <span class="c-green">"YOUR_API_KEY"</span>
+      }
+    }
+  <span class="c-muted">}
+}</span></div>
+  </div>
+
+  <div id="tab-cursor" class="tab-panel">
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">Add to <code style="font-size:0.82rem;background:var(--surface2);padding:2px 6px;border-radius:4px;">~/.cursor/mcp.json</code></p>
+    <div class="code-block" id="code-cursor">
+<button class="copy-btn" onclick="copyCode('code-cursor')">Copy</button><span class="c-muted">{
+  "mcpServers": {</span>
+    <span class="c-yellow">"geoclear"</span>: {
+      <span class="c-yellow">"type"</span>: <span class="c-green">"http"</span>,
+      <span class="c-yellow">"url"</span>:  <span class="c-green">"https://geoclear.io/mcp"</span>,
+      <span class="c-yellow">"headers"</span>: {
+        <span class="c-yellow">"X-Api-Key"</span>: <span class="c-green">"YOUR_API_KEY"</span>
+      }
+    }
+  <span class="c-muted">}
+}</span></div>
+  </div>
+
+  <div id="tab-other" class="tab-panel">
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:12px;">Any client that supports the MCP Streamable HTTP transport:</p>
+    <div class="endpoint-pill">
+      <span class="method">POST</span>
+      <span>https://geoclear.io/mcp</span>
+    </div>
+    <div class="code-block" id="code-other">
+<button class="copy-btn" onclick="copyCode('code-other')">Copy</button><span class="c-muted"># Required headers on every request:</span>
+Content-Type:    application/json
+X-Api-Key:       <span class="c-green">YOUR_API_KEY</span>
+Accept:          application/json, text/event-stream
+
+<span class="c-muted"># For subsequent requests in a session:</span>
+Mcp-Session-Id:  <span class="c-green">&lt;id returned in first response&gt;</span></div>
+    <p class="note">Supports MCP protocol version 2025-03-26 (Streamable HTTP). Session lifecycle: POST to initialize, GET for SSE notifications, DELETE to terminate.</p>
+  </div>
+
+  <h2>Example interactions</h2>
+  <div class="code-block">
+<span class="c-muted"># In Claude / Cursor — just ask naturally:</span>
+
+<span class="c-green">"Is 123 Main Street, Houston TX 77001 in a flood zone?"</span>
+<span class="c-muted">→ verify_address → returns fema_flood_zone: "AE", flood_risk: "High"</span>
+
+<span class="c-green">"What's the wildfire risk for 4567 Oak Canyon Rd, Malibu CA 90265?"</span>
+<span class="c-muted">→ verify_address → returns wildfire_risk: "Very High", census_tract: "..."</span>
+
+<span class="c-green">"Find the address nearest to lat 37.7749, lon -122.4194"</span>
+<span class="c-muted">→ reverse_geocode → returns nearest verified address + coordinates</span>
+
+<span class="c-green">"Complete the address: 1600 Penn"</span>
+<span class="c-muted">→ suggest_address → returns up to 5 matching addresses</span></div>
+
+  <div class="cta-bar">
+    <h3>Ready to connect?</h3>
+    <p>Get your API key in 30 seconds — free tier, no credit card required.</p>
+    <div class="btn-row">
+      <a href="/portal" class="btn-primary">Get API key →</a>
+      <a href="/docs" class="btn-secondary">API Documentation</a>
+    </div>
+  </div>
+</main>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function copyCode(id) {
+  const el = document.getElementById(id);
+  const text = el.innerText.replace(/^Copy\n/, '');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = el.querySelector('.copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+</script>
+</body>
+</html>

@@ -24,6 +24,9 @@ const { enrich }      = require('./enrich.js');
 const { enrichPoint, getFEMAFloodZone, getEarthquakeRisk, getDroughtRisk, getFAADroneAirspace } = require('./geocode.js');
 const { KeyStore }    = require('./keys.js');
 const { RiskData }    = require('./risk-data.js');
+const { McpServer }   = require('@modelcontextprotocol/sdk/server/mcp.js');
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+const { z }           = require('zod');
 
 // ── Config ────────────────────────────────────────────────────────
 const argv  = process.argv.slice(2);
@@ -1915,6 +1918,150 @@ app.get('/changelog', (req, res) => {
 app.get('/coverage', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'coverage.html'));
 });
+// ── MCP HTTP Server ──────────────────────────────────────────────
+// Remote streamable-HTTP MCP server — one session per Mcp-Session-Id.
+// Auth: X-Api-Key header (same key as REST API).
+const _mcpSessions = new Map(); // sessionId → StreamableHTTPServerTransport
+
+function _createMcpServer(keyInfo) {
+  const server = new McpServer({
+    name: 'geoclear',
+    version: '1.0.0',
+  });
+
+  server.tool(
+    'verify_address',
+    'Verify and enrich a US address. Returns geo-coordinates, flood zone, risk scores, census tract, and 15+ enrichment fields.',
+    {
+      street: z.string().describe('Street address with number, e.g. "123 Main St"'),
+      city:   z.string().optional().describe('City name'),
+      state:  z.string().length(2).optional().describe('Two-letter state code, e.g. "TX"'),
+      zip:    z.string().optional().describe('ZIP code'),
+    },
+    async ({ street, city, state, zip }) => {
+      try {
+        const results = nad.searchAddress({ street, city, state, zip, limit: 1 });
+        if (!results.length) return { content: [{ type: 'text', text: JSON.stringify({ verified: false, input: { street, city, state, zip } }) }] };
+        const enriched = enrichAddress(results[0]);
+        return { content: [{ type: 'text', text: JSON.stringify(enriched) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  server.tool(
+    'suggest_address',
+    'Auto-complete a partial US address. Returns up to 10 matching addresses for user selection.',
+    {
+      q:     z.string().describe('Partial address query, e.g. "123 Mai" or "123 Main St, Tex"'),
+      state: z.string().length(2).optional().describe('Narrow results to a specific state'),
+      zip:   z.string().optional().describe('Narrow results to a ZIP code'),
+      limit: z.number().int().min(1).max(10).optional().default(5).describe('Max results (1–10)'),
+    },
+    async ({ q, state, zip, limit }) => {
+      try {
+        const data = nad.suggest({ q, stateCode: state, zipCode: zip, limit: limit || 5 });
+        return { content: [{ type: 'text', text: JSON.stringify({ count: data.length, suggestions: data }) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  server.tool(
+    'reverse_geocode',
+    'Look up the nearest US address for a lat/lon coordinate. Returns address + enrichment fields.',
+    {
+      lat: z.number().describe('Latitude (e.g. 30.2672)'),
+      lon: z.number().describe('Longitude (e.g. -97.7431)'),
+    },
+    async ({ lat, lon }) => {
+      try {
+        const results = nad.near({ lat, lon, radius_m: 500, limit: 1 });
+        if (!results.length) return { content: [{ type: 'text', text: JSON.stringify({ found: false, lat, lon }) }] };
+        const enriched = enrichAddress(results[0]);
+        return { content: [{ type: 'text', text: JSON.stringify(enriched) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  server.tool(
+    'get_coverage',
+    'Get GeoClear address coverage statistics for US states. Returns address count, Census housing unit count, and coverage tier for each state.',
+    {},
+    async () => {
+      try {
+        const data = cached('coverage:states', () => nad.listStatesCoverage(), 1000 * 60 * 60 * 6);
+        return { content: [{ type: 'text', text: JSON.stringify({ count: data.length, states: data }) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+      }
+    }
+  );
+
+  return server;
+}
+
+// MCP auth middleware — validates X-Api-Key, attaches keyInfo
+async function mcpAuth(req, res, next) {
+  const apiKey = req.headers['x-api-key'] || req.query.key;
+  if (!apiKey) return res.status(401).json({ error: 'X-Api-Key header required for MCP endpoint.' });
+  try {
+    const keyInfo = await keys.validate(apiKey);
+    if (!keyInfo || !keyInfo.valid) return res.status(403).json({ error: 'Invalid or revoked API key.' });
+    req._mcpKeyInfo = keyInfo;
+    next();
+  } catch (e) {
+    res.status(500).json({ error: 'Key validation error.' });
+  }
+}
+
+// POST /mcp — initialize or continue an MCP session
+app.post('/mcp', express.json(), mcpAuth, async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  let transport;
+  if (sessionId && _mcpSessions.has(sessionId)) {
+    transport = _mcpSessions.get(sessionId);
+  } else {
+    // New session
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+      onsessioninitialized: (id) => { _mcpSessions.set(id, transport); },
+    });
+    transport.onclose = () => {
+      if (transport.sessionId) _mcpSessions.delete(transport.sessionId);
+    };
+    const server = _createMcpServer(req._mcpKeyInfo);
+    await server.connect(transport);
+  }
+  await transport.handleRequest(req, res, req.body);
+});
+
+// GET /mcp — SSE event stream for server-sent notifications
+app.get('/mcp', mcpAuth, async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  if (!sessionId || !_mcpSessions.has(sessionId)) {
+    return res.status(400).json({ error: 'Missing or unknown Mcp-Session-Id. POST /mcp first.' });
+  }
+  await _mcpSessions.get(sessionId).handleRequest(req, res);
+});
+
+// DELETE /mcp — terminate a session
+app.delete('/mcp', mcpAuth, async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  if (sessionId && _mcpSessions.has(sessionId)) {
+    const t = _mcpSessions.get(sessionId);
+    _mcpSessions.delete(sessionId);
+    await t.close().catch(() => {});
+  }
+  res.json({ ok: true });
+});
+
+app.get('/mcp-docs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'mcp.html')));
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
@@ -1958,6 +2105,16 @@ async function onListening() {
   }
   console.log(`[startup] nad.db  : ${dbStatus}`);
   console.log(`[startup] risk.db : ✓ Xata PostgreSQL`);
+  if (dbReady) {
+    setImmediate(() => {
+      try {
+        cached('coverage:states', () => nad.listStatesCoverage(), 1000 * 60 * 60 * 6);
+        console.log('[startup] coverage cache : warmed');
+      } catch (e) {
+        console.warn('[startup] coverage cache warm failed:', e.message);
+      }
+    });
+  }
   const keyStats = await keys.stats();
   console.log(`\n  GeoClear Address Intelligence API`);
   console.log(`  ─────────────────────────────────────────────`);

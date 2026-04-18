@@ -268,6 +268,19 @@ Phase 2 (not yet built): FEMA NRI (18 hazards at county level), heat (NASA NEX-G
 
 ---
 
+## AI Agent Integrations
+
+| Item | Location | Notes |
+|------|----------|-------|
+| MCP HTTP server | `POST /mcp` | Streamable HTTP transport, 4 tools, API-key auth |
+| `verify_address` tool | `/mcp` | Full address verify + enrichment via MCP |
+| `suggest_address` tool | `/mcp` | Address autocomplete, up to 10 suggestions |
+| `reverse_geocode` tool | `/mcp` | Lat/lon → nearest address + enrichment |
+| `get_coverage` tool | `/mcp` | State-level coverage stats |
+| MCP docs page | `/mcp-docs` | Setup guide for Claude Desktop + Cursor |
+
+---
+
 ## Distribution & GTM
 
 | Item | Location | Notes |

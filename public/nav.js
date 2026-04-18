@@ -57,6 +57,7 @@
       <a href="/compliance"${cls('/compliance')}>Compliance</a>
       <a href="/coverage"${cls('/coverage')}>Coverage</a>
       <a href="/docs"${cls('/docs')}>Docs</a>
+      <a href="/mcp-docs"${cls('/mcp-docs')}>MCP</a>
     </div>
     <div class="gc-nav-right">
       <a href="/status" class="gc-nav-status" title="Live system status" target="_blank">

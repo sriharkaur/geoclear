@@ -1,6 +1,6 @@
 # GeoClear — Master Queue
 **Single source of truth for all work. Check items off as done.**
-_Last updated: 2026-04-17 (session 32 — Q-185 added (migration window skeleton sprint). Reference links added to Q-054, Q-161, Q-166, Q-169, Q-171, Q-179, Q-180, Q-181, Q-182, Q-184.)_
+_Last updated: 2026-04-18 (session 33 — Q-186 done (MCP HTTP server Phase 1 + coverage pre-warm + /mcp-docs page).)_
 
 ---
 
@@ -157,6 +157,8 @@ _No active P0 incidents. If prod goes down or data is found actively wrong, add 
 
 - [ ] **Q-184 · [P2-DATA] Data freshness SLA test in Vitest + GitHub Actions summary** — Add `src/db/health.ts` with `getDataFreshness()`: queries `MAX(updated_at)` from `risk_data`, returns `{ lastUpdate, hoursOld }`. Add Vitest SLA test (`src/api/v2/data-health.test.ts`): `expect(hoursOld).toBeLessThan(24)` — fails CI build if the 150GB data is stale. Add GitHub Actions step that appends a "GeoClear Data Health Report" block to `$GITHUB_STEP_SUMMARY` (status, threshold, last update). **Why:** code tests pass even when the Sunday import fails silently. This test catches the data staleness before customers see wrong scores on Monday. *Effort: 1 hr. Gate: Q-054 (Vitest setup) + Q-161 (Xata migration — needs real `updated_at` column).*
   > 📄 Reference: `architecture/DEV-SYSTEM-REF-2026-04-17.md` § 12. Data Freshness SLA Test
+
+- ✅ **Q-186 · [P3-FEAT] MCP HTTP server Phase 1** — DONE 2026-04-18 — `POST /mcp`, `GET /mcp`, `DELETE /mcp` using `StreamableHTTPServerTransport`. 4 tools: `verify_address`, `suggest_address`, `reverse_geocode`, `get_coverage`. Auth via `X-Api-Key` (same key as REST API). Per-session McpServer instances in `_mcpSessions` Map. `/mcp-docs` marketing page with Claude Desktop + Cursor setup snippets. Coverage cache pre-warm on startup via `setImmediate()`.
 
 - ✅ **Q-185 · [P1-INFRA] Migration Window Skeleton Sprint — parallel work while xata-clone runs** · DONE 2026-04-17 — xata-clone of 150GB takes 1–3 hours. Use that window to build the skeleton of the new system so code is ready the moment clone finishes. Five steps, ~2 hours total, all safe (no DB write, no prod change):
 
@@ -796,7 +798,7 @@ Open:
 | Tier key | Display name | Price | Lookups/mo | Stripe price ID | Notes |
 |----------|-------------|-------|------------|-----------------|-------|
 | `free` | Free | $0 | 10,000 | — | No credit card |
-| `starter` | — | $49/mo | — | `price_1TM8sFClBrXaJBXikafSD5le` | **Grandfathered only** — not shown on pricing page |
+| `starter` | Starter | $49/mo | 50,000 | `price_1TM8sFClBrXaJBXikafSD5le` | Entry paid tier — shown on pricing page |
 | `growth` | Growth | $199/mo | 150,000 | `price_1TNBwaClBrXaJBXi2CtyoE7s` | New entry paid tier |
 | `pro` | Professional | $499/mo | 500,000 | `price_1TNBwbClBrXaJBXidt43zB1M` | Most Popular; compliance fields merged in |
 | `scale` | Scale | $999/mo | 5,000,000 | `price_1TNBwcClBrXaJBXiC1G0g1Kx` | Volume anchor |
