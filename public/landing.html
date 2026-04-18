@@ -2364,95 +2364,205 @@ data = <span style="color:#C4B5FD">verify_address</span>(<span style="color:#86E
 <!-- ──────────────────────────────────────── FEATURE TABLE -->
 <section style="padding:80px 0;border-top:1px solid var(--border);">
   <div class="container" style="max-width:var(--max);margin:0 auto;padding:0 32px;">
-    <div class="section-label" style="justify-content:center;">Everything in one call</div>
-    <h2 class="sh2" style="text-align:center;">The complete GeoClear API</h2>
-    <p class="ssub" style="text-align:center;margin-bottom:48px;">Every field available on every address lookup — flood zone, census tract, risk scores, drone clearance. No separate vendor calls.</p>
+    <div class="section-label" style="justify-content:center;">Pricing by feature</div>
+    <h2 class="sh2" style="text-align:center;">What's included in each plan</h2>
+    <p class="ssub" style="text-align:center;margin-bottom:48px;">Every enrichment field, tiered by plan. Free tier covers the core data — upgrade for volume and advanced signals.</p>
     <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
         <thead>
           <tr style="border-bottom:2px solid var(--border2);">
-            <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;width:40%;">Feature</th>
-            <th style="text-align:center;padding:12px 16px;color:var(--sky);font-weight:700;background:rgba(46,147,111,0.04);border-radius:8px 8px 0 0;width:20%;">Available</th>
-            <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;">Business value</th>
+            <th style="text-align:left;padding:12px 16px;color:var(--muted);font-weight:600;min-width:220px;">Feature</th>
+            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Free<br><span style="font-size:0.72rem;font-weight:500">$0</span></th>
+            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Growth<br><span style="font-size:0.72rem;font-weight:500">$199/mo</span></th>
+            <th style="text-align:center;padding:12px 16px;color:var(--sky);font-weight:700;background:rgba(46,147,111,0.04);min-width:100px;">Professional<br><span style="font-size:0.72rem;font-weight:500">$499/mo</span></th>
+            <th style="text-align:center;padding:12px 16px;color:var(--muted);font-weight:600;min-width:80px;">Scale<br><span style="font-size:0.72rem;font-weight:500">$999/mo</span></th>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);background:var(--bg-alt);">
+            <td style="padding:8px 16px;font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Lookups / month</td>
+            <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">10K</td>
+            <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">150K</td>
+            <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--sky);font-weight:600;background:rgba(46,147,111,0.04);">500K</td>
+            <td style="text-align:center;padding:8px 16px;font-size:0.78rem;color:var(--muted);">5M</td>
           </tr>
         </thead>
         <tbody>
-          <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Address validation &amp; standardization</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Eliminate bad addresses at point of entry — reduce failed deliveries and returned mail</td>
+          <!-- GROUP: Core address data -->
+          <tr style="background:var(--bg-alt);">
+            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Core address data</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">County FIPS code</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Required for CRA compliance, tax jurisdiction, and financial district mapping</td>
+            <td style="padding:11px 16px;color:var(--text);">Address validation &amp; standardization</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Census tract + block group</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">HMDA LAR reporting, CRA mapping, demographic analysis — no separate geocoder step</td>
+            <td style="padding:11px 16px;color:var(--text);">Geocoordinates (lat/lon)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Flood zone determination</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">NFIP-compliant flood zone (AE, X, VE) — replaces $8–15 per-determination flood cert fee</td>
+            <td style="padding:11px 16px;color:var(--text);">ZIP+4 code</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">ZIP+4 code</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Delivery precision, postal routing, and pre-sort discount eligibility</td>
+            <td style="padding:11px 16px;color:var(--text);">Residential / commercial (RDI)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Residential / commercial classification</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Route differently, price differently, comply differently — based on property type</td>
+            <td style="padding:11px 16px;color:var(--text);">Timezone (IANA)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <!-- GROUP: Compliance data -->
+          <tr style="background:var(--bg-alt);">
+            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Compliance &amp; regulatory</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Timezone</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Schedule calls, display local times, enforce business hour rules — no timezone lookup step</td>
+            <td style="padding:11px 16px;color:var(--text);">County FIPS code</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Deliverability score</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">0–1 confidence that a package or courier can reach this address successfully</td>
+            <td style="padding:11px 16px;color:var(--text);">Census tract + block group (HMDA / CRA)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Disaster risk score (flood · wildfire · storm)</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">P&amp;C underwriting, property lending risk, climate exposure — per-address, not ZIP-level</td>
+            <td style="padding:11px 16px;color:var(--text);">Flood zone determination (NFIP / FEMA)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <!-- GROUP: Risk signals -->
+          <tr style="background:var(--bg-alt);">
+            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Risk signals</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Climate risk composite (5 dimensions)</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Flood, wildfire, storm, seismic, drought — weighted composite for reinsurance and climate-adjusted pricing</td>
+            <td style="padding:11px 16px;color:var(--text);">Deliverability score (0–1)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Elevation (feet above sea level)</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Flood underwriting, sea level rise exposure, terrain-aware routing</td>
+            <td style="padding:11px 16px;color:var(--text);">Disaster risk score (flood · wildfire · storm)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Fraud score</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Pro</td>
-            <td style="padding:13px 16px;color:var(--muted);">Velocity + unit anomaly + chargeback history — catch ring farms before the ship label prints</td>
+            <td style="padding:11px 16px;color:var(--text);">Climate risk composite (5 federal sources)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Vacancy score</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Pro</td>
-            <td style="padding:13px 16px;color:var(--muted);">Likely unoccupied signal — skip tracing, insurance lapse detection, utility forecasting</td>
+            <td style="padding:11px 16px;color:var(--text);">Elevation (ft above sea level)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr style="border-bottom:1px solid var(--border);">
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Drone deliverability + airspace class</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Pro</td>
-            <td style="padding:13px 16px;color:var(--muted);">FAA airspace clearance, open landing zone estimate, confidence score — autonomous delivery go/no-go in one call</td>
+            <td style="padding:11px 16px;color:var(--text);">Fraud score <span style="font-size:0.72rem;color:var(--dim)">(velocity + chargeback history)</span></td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:11px 16px;color:var(--text);">Vacancy score <span style="font-size:0.72rem;color:var(--dim)">(occupancy signal)</span></td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <!-- GROUP: Drone & autonomous -->
+          <tr style="background:var(--bg-alt);">
+            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Drone &amp; autonomous delivery</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:11px 16px;color:var(--text);">FAA airspace class (UASFM)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
           </tr>
           <tr>
-            <td style="padding:13px 16px;font-weight:500;color:var(--text);">Flood zone · census tract · county FIPS</td>
-            <td style="text-align:center;padding:13px 16px;background:rgba(46,147,111,0.04);color:var(--sky);font-weight:700;">✓ Free</td>
-            <td style="padding:13px 16px;color:var(--muted);">Audit-ready flood zone + census tract for HMDA, NFIP, and CRA — included on all plans, no per-lookup charge</td>
+            <td style="padding:11px 16px;color:var(--text);">Drone deliverability + landing zone confidence</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <!-- GROUP: Platform -->
+          <tr style="background:var(--bg-alt);">
+            <td colspan="5" style="padding:10px 16px;font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Platform</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:11px 16px;color:var(--text);">Autocomplete / suggest API</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:11px 16px;color:var(--text);">Bulk address API (up to 1,000/call)</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:11px 16px;color:var(--text);">Rate limit</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">10 req/min</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">500 req/min</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--sky);font-weight:600;background:rgba(46,147,111,0.04);">1,000 req/min</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Custom</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:11px 16px;color:var(--text);">Compliance SLA</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--border2);font-size:1rem;">—</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;background:rgba(46,147,111,0.04);">✓</td>
+            <td style="text-align:center;padding:11px 16px;color:var(--sky);font-size:1rem;">✓</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 16px;color:var(--text);">Support</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Community</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Email</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--sky);font-weight:600;background:rgba(46,147,111,0.04);">Priority</td>
+            <td style="text-align:center;padding:11px 16px;font-size:0.78rem;color:var(--muted);">Dedicated</td>
           </tr>
         </tbody>
+        <tfoot>
+          <tr style="border-top:2px solid var(--border2);background:var(--bg-alt);">
+            <td style="padding:16px;"></td>
+            <td style="text-align:center;padding:16px;"><button onclick="openModal()" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Start free</button></td>
+            <td style="text-align:center;padding:16px;"><button onclick="openCheckout('growth')" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Growth →</button></td>
+            <td style="text-align:center;padding:16px;background:rgba(46,147,111,0.04);"><button onclick="openCheckout('pro')" style="background:var(--sky);color:#fff;border:none;font-size:0.78rem;font-weight:700;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Professional →</button></td>
+            <td style="text-align:center;padding:16px;"><button onclick="openCheckout('scale')" style="background:var(--bg-alt);border:1px solid var(--border2);color:var(--text);font-size:0.78rem;font-weight:600;padding:8px 14px;border-radius:7px;cursor:pointer;font-family:var(--font);">Get Scale →</button></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
